@@ -63,7 +63,6 @@ DepthImageOctomapUpdater::DepthImageOctomapUpdater() :
   average_callback_dt_(0.0),
   good_tf_(5), // start optimistically, so we do not output warnings right from the beginning
   failed_tf_(0),
-  free_space_updater_(tree_),
   K0_(0.0), K2_(0.0), K4_(0.0), K5_(0.0)
 {
 }
@@ -119,6 +118,7 @@ bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
 bool DepthImageOctomapUpdater::initialize()
 {
   tf_ = monitor_->getTFClient();
+  free_space_updater_.reset(new LazyFreeSpaceUpdater(tree_));
   
   // create our mesh filter
   mesh_filter_.reset(new mesh_filter::MeshFilter<mesh_filter::StereoCameraModel>(mesh_filter::MeshFilterBase::TransformCallback(),
@@ -471,7 +471,7 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   tree_->triggerUpdateCallback();
 
   // at this point we still have not freed the space
-  free_space_updater_.pushLazyUpdate(occupied_cells_ptr, model_cells_ptr, sensor_origin);
+  free_space_updater_->pushLazyUpdate(occupied_cells_ptr, model_cells_ptr, sensor_origin);
   ROS_DEBUG("Processed depth image in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
 }
 
