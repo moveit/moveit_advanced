@@ -1,0 +1,8 @@
+<library path="libmoveit_depth_image_octomap_updater">
+
+  <class name="moveit/DepthOctomapImageUpdater" type="moveit::DepthImageOctomapUpdater" base_class_type="moveit::OctomapUpdater">
+    <description>
+    </description>
+  </class>
+
+</library>
