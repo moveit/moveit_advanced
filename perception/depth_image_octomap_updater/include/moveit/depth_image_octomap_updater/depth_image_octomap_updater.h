@@ -42,18 +42,18 @@
 #include <moveit/occupancy_map_monitor/occupancy_map_updater.h>
 #include <moveit/mesh_filter/mesh_filter.h>
 #include <moveit/mesh_filter/stereo_camera_model.h>
-#include <moveit/occupancy_map_monitor/lazy_free_space_updater.h>
+#include <moveit/depth_image_octomap_updater/lazy_free_space_updater.h>
 #include <image_transport/image_transport.h>
 #include <boost/scoped_ptr.hpp>
 
 namespace occupancy_map_monitor
 {
-class DepthImageOccupancyMapUpdater : public OccupancyMapUpdater
+class DepthImageOctomapUpdater : public OccupancyMapUpdater
 {
 public:
   
-  DepthImageOccupancyMapUpdater(OccupancyMapMonitor *monitor);
-  virtual ~DepthImageOccupancyMapUpdater();
+  DepthImageOctomapUpdater();
+  virtual ~DepthImageOctomapUpdater();
   
   virtual bool setParams(XmlRpc::XmlRpcValue &params);
   virtual bool initialize();

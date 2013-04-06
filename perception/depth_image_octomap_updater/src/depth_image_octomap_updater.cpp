@@ -34,7 +34,7 @@
 
 /* Author: Ioan Sucan, Suat Gedikli */
 
-#include <moveit/occupancy_map_monitor/depth_image_occupancy_map_updater.h>
+#include <moveit/depth_image_octomap_updater/depth_image_octomap_updater.h>
 #include <moveit/occupancy_map_monitor/occupancy_map_monitor.h>
 #include <geometric_shapes/shape_operations.h>
 #include <sensor_msgs/image_encodings.h>
@@ -44,10 +44,9 @@
 namespace occupancy_map_monitor
 {
 
-DepthImageOccupancyMapUpdater::DepthImageOccupancyMapUpdater(OccupancyMapMonitor *monitor) :
-  OccupancyMapUpdater(monitor, "DepthImageUpdater"),
+DepthImageOctomapUpdater::DepthImageOctomapUpdater() :
+  OccupancyMapUpdater("DepthImageUpdater"),
   nh_("~"),
-  tf_(monitor->getTFClient()),
   input_depth_transport_(nh_),
   model_depth_transport_(nh_),
   filtered_depth_transport_(nh_),
@@ -69,7 +68,7 @@ DepthImageOccupancyMapUpdater::DepthImageOccupancyMapUpdater(OccupancyMapMonitor
 {
 }
 
-DepthImageOccupancyMapUpdater::~DepthImageOccupancyMapUpdater()
+DepthImageOctomapUpdater::~DepthImageOctomapUpdater()
 {
   stopHelper();
 }
@@ -90,7 +89,7 @@ static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_n
     *value = (int) params[param_name];
 }
 
-bool DepthImageOccupancyMapUpdater::setParams(XmlRpc::XmlRpcValue &params)
+bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
 {
   try
   {
@@ -117,8 +116,10 @@ bool DepthImageOccupancyMapUpdater::setParams(XmlRpc::XmlRpcValue &params)
   return true;
 }
 
-bool DepthImageOccupancyMapUpdater::initialize()
+bool DepthImageOctomapUpdater::initialize()
 {
+  tf_ = monitor_->getTFClient();
+  
   // create our mesh filter
   mesh_filter_.reset(new mesh_filter::MeshFilter<mesh_filter::StereoCameraModel>(mesh_filter::MeshFilterBase::TransformCallback(),
                                                                                  mesh_filter::StereoCameraModel::RegisteredPSDKParams));
@@ -126,30 +127,30 @@ bool DepthImageOccupancyMapUpdater::initialize()
   mesh_filter_->setShadowThreshold(shadow_threshold_);
   mesh_filter_->setPaddingOffset(padding_offset_);
   mesh_filter_->setPaddingScale(padding_scale_);
-  mesh_filter_->setTransformCallback(boost::bind(&DepthImageOccupancyMapUpdater::getShapeTransform, this, _1, _2));
+  mesh_filter_->setTransformCallback(boost::bind(&DepthImageOctomapUpdater::getShapeTransform, this, _1, _2));
   
   return true;
 }
 
-void DepthImageOccupancyMapUpdater::start()
+void DepthImageOctomapUpdater::start()
 {
   image_transport::TransportHints hints("raw", ros::TransportHints(), nh_);
   pub_model_depth_image_ = model_depth_transport_.advertiseCamera("model_depth", 10);
   pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera("filtered_depth", 10);
-  sub_depth_image_ = input_depth_transport_.subscribeCamera(image_topic_, queue_size_, &DepthImageOccupancyMapUpdater::depthImageCallback, this, hints);
+  sub_depth_image_ = input_depth_transport_.subscribeCamera(image_topic_, queue_size_, &DepthImageOctomapUpdater::depthImageCallback, this, hints);
 }
 
-void DepthImageOccupancyMapUpdater::stop()
+void DepthImageOctomapUpdater::stop()
 { 
   stopHelper();
 }
 
-void DepthImageOccupancyMapUpdater::stopHelper()
+void DepthImageOctomapUpdater::stopHelper()
 {   
   sub_depth_image_.shutdown();
 }
 
-mesh_filter::MeshHandle DepthImageOccupancyMapUpdater::excludeShape(const shapes::ShapeConstPtr &shape)
+mesh_filter::MeshHandle DepthImageOctomapUpdater::excludeShape(const shapes::ShapeConstPtr &shape)
 {
   mesh_filter::MeshHandle h = 0;
   if (mesh_filter_)
@@ -168,12 +169,12 @@ mesh_filter::MeshHandle DepthImageOccupancyMapUpdater::excludeShape(const shapes
   return h;
 }
 
-void DepthImageOccupancyMapUpdater::forgetShape(mesh_filter::MeshHandle handle)
+void DepthImageOctomapUpdater::forgetShape(mesh_filter::MeshHandle handle)
 {
   mesh_filter_->removeMesh(handle);
 }
 
-bool DepthImageOccupancyMapUpdater::getShapeTransform(mesh_filter::MeshHandle h, Eigen::Affine3d &transform) const
+bool DepthImageOctomapUpdater::getShapeTransform(mesh_filter::MeshHandle h, Eigen::Affine3d &transform) const
 {
   ShapeTransformCache::const_iterator it = transform_cache_.find(h);
   if (it == transform_cache_.end())
@@ -199,7 +200,7 @@ bool host_is_big_endian(void)
 
 static const bool HOST_IS_BIG_ENDIAN = host_is_big_endian();
 
-void DepthImageOccupancyMapUpdater::depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
+void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
   ROS_DEBUG("Received a new depth image message");
 
