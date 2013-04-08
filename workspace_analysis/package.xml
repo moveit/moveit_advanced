@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>workspace_analysis</name>
+  <name>moveit_workspace_analysis</name>
   <version>0.0.0</version>
-  <description>The workspace_analysis package</description>
+  <description>A package for workspace analysis with MoveIt!</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->

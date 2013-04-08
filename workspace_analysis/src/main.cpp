@@ -52,6 +52,7 @@ int main(int argc, char **argv)
   double min_x, min_y, min_z;
   double max_x, max_y, max_z;
   double joint_limits_penalty_multiplier;  
+  std::string group_name;  
   
   if (!node_handle.getParam("min_x", min_x))
     min_x = 0.0;
@@ -81,6 +82,9 @@ int main(int argc, char **argv)
   if (!node_handle.getParam("filename", filename))
     ROS_ERROR("Will not write to file");  
 
+  if (!node_handle.getParam("group_name", group_name))
+    ROS_FATAL("Must have valid group name");  
+
   /* Load the robot model */
   robot_model_loader::RobotModelLoader robot_model_loader("robot_description"); 
 
@@ -90,7 +94,10 @@ int main(int argc, char **argv)
   /* Create a robot state*/
   robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model));
 
-  robot_state::JointStateGroup* joint_state_group = robot_state->getJointStateGroup("arm");  
+  if(!robot_state->hasJointStateGroup(group_name))
+    ROS_FATAL("Invalid group name: %s", group_name.c_str());  
+
+  robot_state::JointStateGroup* joint_state_group = robot_state->getJointStateGroup(group_name);  
 
   /* Construct a planning scene - NOTE: this is for illustration purposes only.
      The recommended way to construct a planning scene is to use the planning_scene_monitor 
