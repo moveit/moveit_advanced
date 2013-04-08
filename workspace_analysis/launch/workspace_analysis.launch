@@ -16,6 +16,8 @@
     <param name="max_z" value="20.0" />
     <param name="res_z" value="0.5" />
 
-    <param name="filename" value="/u/sachinc/junk.txt" />
+    <param name="joint_limits_penalty_multiplier" value="0.0" />
+
+    <param name="filename" value="$(env ROS_LOG_DIR)/workspace_analysis_results.txt" />
   </node>
 </launch>

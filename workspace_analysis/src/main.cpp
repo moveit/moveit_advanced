@@ -51,6 +51,7 @@ int main(int argc, char **argv)
   double res_x, res_y, res_z;
   double min_x, min_y, min_z;
   double max_x, max_y, max_z;
+  double joint_limits_penalty_multiplier;  
   
   if (!node_handle.getParam("min_x", min_x))
     min_x = 0.0;
@@ -72,6 +73,9 @@ int main(int argc, char **argv)
     max_z = 0.0;
   if (!node_handle.getParam("res_z", res_z))
     res_z = 0.1;
+
+  if (!node_handle.getParam("joint_limits_penalty_multiplier", joint_limits_penalty_multiplier))
+    joint_limits_penalty_multiplier = 0.0;
 
   std::string filename;
   if (!node_handle.getParam("filename", filename))
@@ -103,7 +107,7 @@ int main(int argc, char **argv)
   workspace.max_corner.z = max_z;
 
   /* Load the workspace analysis */
-  workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true);  
+  workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);  
 
   /* Compute the metrics */
   std::vector<geometry_msgs::Quaternion> orientations;  

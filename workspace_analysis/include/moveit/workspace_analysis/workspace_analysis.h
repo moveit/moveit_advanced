@@ -70,7 +70,8 @@ class WorkspaceAnalysis
 public:
 
   WorkspaceAnalysis(const planning_scene::PlanningSceneConstPtr &planning_scene,
-                    bool position_only);
+                    bool position_only=false,
+                    double joint_limits_penalty_multiplier=0.0);
   
   virtual ~WorkspaceAnalysis()
   {
@@ -82,6 +83,12 @@ public:
                                                       double x_resolution,
                                                       double y_resolution,
                                                       double z_resolution) const;  
+
+  void setJointLimitsPenaltyMultiplier(double multiplier)
+  {
+    kinematics_metrics_->setPenaltyMultiplier(multiplier);
+  }
+  
 private:
  
   bool isIKSolutionCollisionFree(robot_state::JointStateGroup *joint_state_group,

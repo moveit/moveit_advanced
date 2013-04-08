@@ -43,10 +43,12 @@ namespace workspace_analysis
 {
 
 WorkspaceAnalysis::WorkspaceAnalysis(const planning_scene::PlanningSceneConstPtr &planning_scene,
-                                     bool position_only): planning_scene_(planning_scene), position_only_ik_(position_only)
+                                     bool position_only,
+                                     double joint_limits_penalty_multiplier): planning_scene_(planning_scene), position_only_ik_(position_only)
 {
   state_validity_callback_fn_ = boost::bind(&WorkspaceAnalysis::isIKSolutionCollisionFree, this, _1, _2);  
   kinematics_metrics_.reset(new kinematics_metrics::KinematicsMetrics(planning_scene->getCurrentState().getRobotModel()));
+  kinematics_metrics_->setPenaltyMultiplier(joint_limits_penalty_multiplier);  
 }
 
 bool WorkspaceAnalysis::isIKSolutionCollisionFree(robot_state::JointStateGroup *joint_state_group,
