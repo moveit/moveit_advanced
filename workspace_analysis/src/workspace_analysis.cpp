@@ -59,9 +59,9 @@ bool WorkspaceAnalysis::isIKSolutionCollisionFree(robot_state::JointStateGroup *
 
 std::vector<geometry_msgs::Pose> WorkspaceAnalysis::sampleUniform(const moveit_msgs::WorkspaceParameters &workspace, 
                                                                   const std::vector<geometry_msgs::Quaternion> &orientations,
-                                                                  const double &x_resolution,
-                                                                  const double &y_resolution,
-                                                                  const double &z_resolution) const
+                                                                  double x_resolution,
+                                                                  double y_resolution,
+                                                                  double z_resolution) const
 {
   std::vector<geometry_msgs::Pose> results;
   std::vector<geometry_msgs::Quaternion> rotations = orientations;  
@@ -112,9 +112,9 @@ std::vector<geometry_msgs::Pose> WorkspaceAnalysis::sampleUniform(const moveit_m
 workspace_analysis::WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
                                                                        const std::vector<geometry_msgs::Quaternion> &orientations,
                                                                        robot_state::JointStateGroup *joint_state_group,
-                                                                       const double &x_resolution,
-                                                                       const double &y_resolution,
-                                                                       const double &z_resolution) const
+                                                                       double x_resolution,
+                                                                       double y_resolution,
+                                                                       double z_resolution) const
 {
   workspace_analysis::WorkspaceMetrics metrics;
   if(!joint_state_group || !planning_scene_)
@@ -135,17 +135,19 @@ workspace_analysis::WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const mov
     bool found_ik = joint_state_group->setFromIK(points[i], 1, 0.01, state_validity_callback_fn_);
     if(found_ik)
     {
-      ROS_INFO("Found IK: %d", (int) i);      
+      ROS_DEBUG("Found IK: %d", (int) i);      
       double manipulability_index;      
       kinematics_metrics_->getManipulabilityIndex(*joint_state_group->getRobotState(), 
                                                   joint_state_group->getJointModelGroup(),
                                                   manipulability_index,
                                                   position_only_ik_);
+      std::pair<double,int> distance = joint_state_group->getMinDistanceToBounds();      
       std::vector<double> joint_values;      
       joint_state_group->getVariableValues(joint_values);
       metrics.points_.push_back(points[i]);      
       metrics.joint_values_.push_back(joint_values);      
       metrics.manipulability_.push_back(manipulability_index);      
+      metrics.min_distance_joint_limits_.push_back(distance.first);      
     }
     if(!ros::ok())
       return metrics;    
@@ -155,12 +157,12 @@ workspace_analysis::WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const mov
 
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
 {
-  logDebug("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());  
+  ROS_DEBUG("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());  
   std::ofstream file;
   file.open(filename.c_str());
   if(!file.is_open())
   {
-    logDebug("Could not open file: %s",filename.c_str());
+    ROS_DEBUG("Could not open file: %s",filename.c_str());
     return false;    
   }
   if(file.good())
@@ -179,7 +181,7 @@ bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::strin
       file << points_[i].orientation.x << delimiter << points_[i].orientation.y  << delimiter << points_[i].orientation.z << delimiter << points_[i].orientation.w << delimiter;
       for(std::size_t j=0; j < joint_values_[i].size(); ++j)
         file << joint_values_[i][j] << delimiter;        
-      file << manipulability_[i] << std::endl;      
+      file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << std::endl;      
     }
   }  
   file.close();

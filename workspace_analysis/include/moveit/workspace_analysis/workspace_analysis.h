@@ -53,14 +53,14 @@ namespace workspace_analysis
 {
 static const double DEFAULT_RESOLUTION = 2.0;
 
-class WorkspaceMetrics
+struct WorkspaceMetrics
 {
-public:
   std::string robot_name_;  
   std::string group_name_;  
   std::string frame_id_;  
   std::vector<geometry_msgs::Pose> points_;
   std::vector<double> manipulability_;
+  std::vector<double> min_distance_joint_limits_;  
   std::vector<std::vector<double> > joint_values_;
   bool writeToFile(const std::string &filename, const std::string &delimiter = ",", bool exclude_strings = true);  
 };
@@ -79,9 +79,9 @@ public:
   workspace_analysis::WorkspaceMetrics computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
                                                       const std::vector<geometry_msgs::Quaternion> &orientations,
                                                       robot_state::JointStateGroup *joint_state_group,
-                                                      const double &x_resolution = DEFAULT_RESOLUTION,
-                                                      const double &y_resolution = DEFAULT_RESOLUTION,
-                                                      const double &z_resolution = DEFAULT_RESOLUTION) const;  
+                                                      double x_resolution,
+                                                      double y_resolution,
+                                                      double z_resolution) const;  
 private:
  
   bool isIKSolutionCollisionFree(robot_state::JointStateGroup *joint_state_group,
@@ -89,9 +89,9 @@ private:
 
   std::vector<geometry_msgs::Pose> sampleUniform(const moveit_msgs::WorkspaceParameters &workspace, 
                                                  const std::vector<geometry_msgs::Quaternion> &orientations,
-                                                 const double &x_resolution = DEFAULT_RESOLUTION,
-                                                 const double &y_resolution = DEFAULT_RESOLUTION,
-                                                 const double &z_resolution = DEFAULT_RESOLUTION) const;
+                                                 double x_resolution,
+                                                 double y_resolution,
+                                                 double z_resolution) const;
   bool position_only_ik_;
   kinematics_metrics::KinematicsMetricsPtr kinematics_metrics_;
   robot_state::StateValidityCallbackFn state_validity_callback_fn_;
