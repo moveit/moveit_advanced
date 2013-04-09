@@ -39,7 +39,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace workspace_analysis
+namespace moveit_workspace_analysis
 {
 
 WorkspaceAnalysis::WorkspaceAnalysis(const planning_scene::PlanningSceneConstPtr &planning_scene,
@@ -111,14 +111,14 @@ std::vector<geometry_msgs::Pose> WorkspaceAnalysis::sampleUniform(const moveit_m
   return results;
 }
 
-workspace_analysis::WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
+WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
                                                                        const std::vector<geometry_msgs::Quaternion> &orientations,
                                                                        robot_state::JointStateGroup *joint_state_group,
                                                                        double x_resolution,
                                                                        double y_resolution,
                                                                        double z_resolution) const
 {
-  workspace_analysis::WorkspaceMetrics metrics;
+  WorkspaceMetrics metrics;
   if(!joint_state_group || !planning_scene_)
   {
     ROS_ERROR("Joint state group and planning scene should not be null");

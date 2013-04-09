@@ -114,11 +114,11 @@ int main(int argc, char **argv)
   workspace.max_corner.z = max_z;
 
   /* Load the workspace analysis */
-  workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);  
+  moveit_workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);  
 
   /* Compute the metrics */
   std::vector<geometry_msgs::Quaternion> orientations;  
-  workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, joint_state_group, res_x, res_y, res_z);
+  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, joint_state_group, res_x, res_y, res_z);
   
   if(!filename.empty())
     if(!metrics.writeToFile(filename))

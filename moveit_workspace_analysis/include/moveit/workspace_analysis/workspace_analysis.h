@@ -49,7 +49,7 @@
 #include <moveit_msgs/WorkspaceParameters.h>
 #include <moveit/planning_scene/planning_scene.h>
 
-namespace workspace_analysis
+namespace moveit_workspace_analysis
 {
 static const double DEFAULT_RESOLUTION = 2.0;
 
@@ -77,12 +77,12 @@ public:
   {
   };
 
-  workspace_analysis::WorkspaceMetrics computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
-                                                      const std::vector<geometry_msgs::Quaternion> &orientations,
-                                                      robot_state::JointStateGroup *joint_state_group,
-                                                      double x_resolution,
-                                                      double y_resolution,
-                                                      double z_resolution) const;  
+  WorkspaceMetrics computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
+                                  const std::vector<geometry_msgs::Quaternion> &orientations,
+                                  robot_state::JointStateGroup *joint_state_group,
+                                  double x_resolution,
+                                  double y_resolution,
+                                  double z_resolution) const;  
 
   void setJointLimitsPenaltyMultiplier(double multiplier)
   {
