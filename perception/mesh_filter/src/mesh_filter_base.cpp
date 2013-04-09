@@ -165,7 +165,7 @@ void mesh_filter::MeshFilterBase::setSize (unsigned int width, unsigned int heig
   depth_filter_->setCameraParameters (width, width, width >> 1, height >> 1);
 }
 
-void mesh_filter::MeshFilterBase::setTransformCallback (const function<bool(mesh_filter::MeshHandle, Affine3d&)>& transform_callback)
+void mesh_filter::MeshFilterBase::setTransformCallback (const TransformCallback& transform_callback)
 {
   transform_callback_ = transform_callback;
 }

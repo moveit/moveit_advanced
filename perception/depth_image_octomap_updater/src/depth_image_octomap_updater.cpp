@@ -72,22 +72,6 @@ DepthImageOctomapUpdater::~DepthImageOctomapUpdater()
   stopHelper();
 }
 
-static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, double *value)
-{
-  if (params.hasMember(param_name))
-  {
-    if (params[param_name].getType() == XmlRpc::XmlRpcValue::TypeInt)
-      *value = (int) params[param_name];
-    else
-      *value = (double) params[param_name];
-  }
-}
-static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, unsigned int *value)
-{
-  if (params.hasMember(param_name))
-    *value = (int) params[param_name];
-}
-
 bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
 {
   try
@@ -171,7 +155,8 @@ mesh_filter::MeshHandle DepthImageOctomapUpdater::excludeShape(const shapes::Sha
 
 void DepthImageOctomapUpdater::forgetShape(mesh_filter::MeshHandle handle)
 {
-  mesh_filter_->removeMesh(handle);
+  if (mesh_filter_)
+    mesh_filter_->removeMesh(handle);
 }
 
 bool DepthImageOctomapUpdater::getShapeTransform(mesh_filter::MeshHandle h, Eigen::Affine3d &transform) const

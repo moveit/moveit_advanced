@@ -152,7 +152,7 @@ class MeshFilterBase
      * \author Suat Gedikli (gedikli@willowgarage.com)
      * \param[in] transform_callback the callback
      */
-    void setTransformCallback (const boost::function<bool (MeshHandle, Eigen::Affine3d&)>& transform_callback);
+    void setTransformCallback (const TransformCallback& transform_callback);
     
     /**
      * \brief set the scale component of padding used to multiply with sensor-specific padding coefficients to get final coefficients.
@@ -256,7 +256,7 @@ class MeshFilterBase
     GLuint shadow_threshold_location_;
     
     /** \brief callback function for retrieving the mesh transformations*/
-    boost::function<bool (MeshHandle, Eigen::Affine3d&)> transform_callback_;
+    TransformCallback transform_callback_;
     
     /** \brief padding scale*/
     float padding_scale_;
