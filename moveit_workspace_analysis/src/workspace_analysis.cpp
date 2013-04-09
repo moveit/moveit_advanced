@@ -145,7 +145,8 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
 
 WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::JointStateGroup *joint_state_group,
                                                      unsigned int max_attempts,
-                                                     const ros::WallDuration &max_duration) const
+                                                     const ros::WallDuration &max_duration,
+                                                     const std::map<std::string, std::vector<double> > &fixed_joint_values) const
 {
   ros::WallTime start_time = ros::WallTime::now();  
   WorkspaceMetrics metrics;
@@ -154,6 +155,17 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::JointStateGrou
     ROS_ERROR("Joint state group and planning scene should not be null");
     return metrics;
   } 
+  if(!fixed_joint_values.empty())
+  {
+    for(std::map<std::string, std::vector<double> >::const_iterator iter=fixed_joint_values.begin(); iter != fixed_joint_values.end(); ++iter)
+    {
+      if(!joint_state_group->hasJointState((*iter).first))
+      {
+        ROS_ERROR("Could not find joint: %s in joint group: %s", (*iter).first.c_str(), joint_state_group->getName().c_str());
+        return metrics;
+      }      
+    }  
+  }
   metrics.group_name_ = joint_state_group->getName();
   metrics.robot_name_ = joint_state_group->getRobotState()->getRobotModel()->getName();
   metrics.frame_id_ =  joint_state_group->getRobotState()->getRobotModel()->getModelFrame();  
@@ -167,6 +179,14 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::JointStateGrou
     if(!ros::ok() || canceled_ || (ros::WallTime::now()-start_time) >= max_duration)
       return metrics;    
     joint_state_group->setToRandomValues();
+    if(!fixed_joint_values.empty())
+    {
+      for(std::map<std::string, std::vector<double> >::const_iterator iter=fixed_joint_values.begin(); iter != fixed_joint_values.end(); ++iter)
+      {
+        joint_state_group->getJointState((*iter).first)->setVariableValues((*iter).second);        
+      }      
+    }
+    
     if(planning_scene_->isStateColliding(*joint_state_group->getRobotState(), joint_state_group->getName()))
       continue;    
     const Eigen::Affine3d &link_pose = link_state->getGlobalLinkTransform();
