@@ -36,17 +36,20 @@
 *********************************************************************/
 
 #include <moveit/workspace_analysis/workspace_analysis.h>
+#include <eigen_conversions/eigen_msg.h>
 #include <fstream>
 #include <iostream>
 
-namespace workspace_analysis
+namespace moveit_workspace_analysis
 {
 
 WorkspaceAnalysis::WorkspaceAnalysis(const planning_scene::PlanningSceneConstPtr &planning_scene,
-                                     bool position_only): planning_scene_(planning_scene), position_only_ik_(position_only)
+                                     bool position_only,
+                                     double joint_limits_penalty_multiplier): planning_scene_(planning_scene), position_only_ik_(position_only), canceled_(false)
 {
   state_validity_callback_fn_ = boost::bind(&WorkspaceAnalysis::isIKSolutionCollisionFree, this, _1, _2);  
   kinematics_metrics_.reset(new kinematics_metrics::KinematicsMetrics(planning_scene->getCurrentState().getRobotModel()));
+  kinematics_metrics_->setPenaltyMultiplier(joint_limits_penalty_multiplier);  
 }
 
 bool WorkspaceAnalysis::isIKSolutionCollisionFree(robot_state::JointStateGroup *joint_state_group,
@@ -59,9 +62,9 @@ bool WorkspaceAnalysis::isIKSolutionCollisionFree(robot_state::JointStateGroup *
 
 std::vector<geometry_msgs::Pose> WorkspaceAnalysis::sampleUniform(const moveit_msgs::WorkspaceParameters &workspace, 
                                                                   const std::vector<geometry_msgs::Quaternion> &orientations,
-                                                                  const double &x_resolution,
-                                                                  const double &y_resolution,
-                                                                  const double &z_resolution) const
+                                                                  double x_resolution,
+                                                                  double y_resolution,
+                                                                  double z_resolution) const
 {
   std::vector<geometry_msgs::Pose> results;
   std::vector<geometry_msgs::Quaternion> rotations = orientations;  
@@ -98,8 +101,6 @@ std::vector<geometry_msgs::Pose> WorkspaceAnalysis::sampleUniform(const moveit_m
         for(std::size_t m=0; m < rotations.size(); ++m)
         {
           pose.orientation = rotations[m];
-          //          Eigen::Affine3d pose_eigen;
-          //          tf::poseMsgToEigen(pose, pose_eigen);
           results.push_back(pose);          
         }
       }
@@ -109,58 +110,119 @@ std::vector<geometry_msgs::Pose> WorkspaceAnalysis::sampleUniform(const moveit_m
   return results;
 }
 
-workspace_analysis::WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
-                                                                       const std::vector<geometry_msgs::Quaternion> &orientations,
-                                                                       robot_state::JointStateGroup *joint_state_group,
-                                                                       const double &x_resolution,
-                                                                       const double &y_resolution,
-                                                                       const double &z_resolution) const
+WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
+                                                   const std::vector<geometry_msgs::Quaternion> &orientations,
+                                                   robot_state::JointStateGroup *joint_state_group,
+                                                   double x_resolution,
+                                                   double y_resolution,
+                                                   double z_resolution) const
 {
-  workspace_analysis::WorkspaceMetrics metrics;
+  WorkspaceMetrics metrics;
   if(!joint_state_group || !planning_scene_)
   {
     ROS_ERROR("Joint state group and planning scene should not be null");
     return metrics;
   } 
-
   std::vector<geometry_msgs::Pose> points = sampleUniform(workspace, orientations, x_resolution, y_resolution, z_resolution);
-  //  metrics.joint_values_.resize(metrics.points_.size());
-  //  metrics.manipulability_.resize(metrics.points_.size());
   metrics.group_name_ = joint_state_group->getName();
   metrics.robot_name_ = joint_state_group->getRobotState()->getRobotModel()->getName();
   metrics.frame_id_ =  joint_state_group->getRobotState()->getRobotModel()->getModelFrame();  
   
   for(std::size_t i=0; i < points.size(); ++i)
   {   
+    if(!ros::ok() || canceled_)
+      return metrics;    
     bool found_ik = joint_state_group->setFromIK(points[i], 1, 0.01, state_validity_callback_fn_);
     if(found_ik)
     {
-      ROS_INFO("Found IK: %d", (int) i);      
-      double manipulability_index;      
-      kinematics_metrics_->getManipulabilityIndex(*joint_state_group->getRobotState(), 
-                                                  joint_state_group->getJointModelGroup(),
-                                                  manipulability_index,
-                                                  position_only_ik_);
-      std::vector<double> joint_values;      
-      joint_state_group->getVariableValues(joint_values);
+      ROS_DEBUG("Found IK: %d", (int) i);      
       metrics.points_.push_back(points[i]);      
-      metrics.joint_values_.push_back(joint_values);      
-      metrics.manipulability_.push_back(manipulability_index);      
+      updateMetrics(joint_state_group, metrics);      
     }
-    if(!ros::ok())
-      return metrics;    
   }
   return metrics;  
 }
 
+WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::JointStateGroup *joint_state_group,
+                                                     unsigned int max_attempts,
+                                                     const ros::WallDuration &max_duration,
+                                                     const std::map<std::string, std::vector<double> > &fixed_joint_values) const
+{
+  ros::WallTime start_time = ros::WallTime::now();  
+  WorkspaceMetrics metrics;
+  if(!joint_state_group || !planning_scene_)
+  {
+    ROS_ERROR("Joint state group and planning scene should not be null");
+    return metrics;
+  } 
+  if(!fixed_joint_values.empty())
+  {
+    for(std::map<std::string, std::vector<double> >::const_iterator iter=fixed_joint_values.begin(); iter != fixed_joint_values.end(); ++iter)
+    {
+      if(!joint_state_group->hasJointState((*iter).first))
+      {
+        ROS_ERROR("Could not find joint: %s in joint group: %s", (*iter).first.c_str(), joint_state_group->getName().c_str());
+        return metrics;
+      }      
+    }  
+  }
+  metrics.group_name_ = joint_state_group->getName();
+  metrics.robot_name_ = joint_state_group->getRobotState()->getRobotModel()->getName();
+  metrics.frame_id_ =  joint_state_group->getRobotState()->getRobotModel()->getModelFrame();  
+  
+  //Find end-effector link
+  std::string link_name = joint_state_group->getJointModelGroup()->getLinkModelNames().back();  
+  robot_state::LinkState *link_state = joint_state_group->getRobotState()->getLinkState(link_name);  
+
+  for(std::size_t i=0; i < max_attempts; ++i)
+  {   
+    if(!ros::ok() || canceled_ || (ros::WallTime::now()-start_time) >= max_duration)
+      return metrics;    
+    joint_state_group->setToRandomValues();
+    if(!fixed_joint_values.empty())
+    {
+      for(std::map<std::string, std::vector<double> >::const_iterator iter=fixed_joint_values.begin(); iter != fixed_joint_values.end(); ++iter)
+      {
+        joint_state_group->getJointState((*iter).first)->setVariableValues((*iter).second);        
+      }      
+      joint_state_group->updateLinkTransforms();    
+    }
+    if(planning_scene_->isStateColliding(*joint_state_group->getRobotState(), joint_state_group->getName()))
+      continue;    
+    const Eigen::Affine3d &link_pose = link_state->getGlobalLinkTransform();
+    geometry_msgs::Pose pose;    
+    tf::poseEigenToMsg(link_pose,pose);
+    metrics.points_.push_back(pose);    
+    updateMetrics(joint_state_group, metrics);      
+  }
+  return metrics;  
+}
+
+void WorkspaceAnalysis::updateMetrics(robot_state::JointStateGroup *joint_state_group,
+                                      moveit_workspace_analysis::WorkspaceMetrics &metrics) const
+{
+  double manipulability_index;      
+  kinematics_metrics_->getManipulabilityIndex(*joint_state_group->getRobotState(), 
+                                              joint_state_group->getJointModelGroup(),
+                                              manipulability_index,
+                                              position_only_ik_);
+  std::pair<double,int> distance = joint_state_group->getMinDistanceToBounds();      
+  std::vector<double> joint_values;      
+  joint_state_group->getVariableValues(joint_values);
+  metrics.joint_values_.push_back(joint_values);      
+  metrics.manipulability_.push_back(manipulability_index);      
+  metrics.min_distance_joint_limits_.push_back(distance.first);      
+  metrics.min_distance_joint_limit_index_.push_back(distance.second);      
+}
+
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
 {
-  logDebug("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());  
+  ROS_DEBUG("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());  
   std::ofstream file;
   file.open(filename.c_str());
   if(!file.is_open())
   {
-    logDebug("Could not open file: %s",filename.c_str());
+    ROS_DEBUG("Could not open file: %s",filename.c_str());
     return false;    
   }
   if(file.good())
@@ -179,7 +241,7 @@ bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::strin
       file << points_[i].orientation.x << delimiter << points_[i].orientation.y  << delimiter << points_[i].orientation.z << delimiter << points_[i].orientation.w << delimiter;
       for(std::size_t j=0; j < joint_values_[i].size(); ++j)
         file << joint_values_[i][j] << delimiter;        
-      file << manipulability_[i] << std::endl;      
+      file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << delimiter << min_distance_joint_limit_index_[i] << std::endl;
     }
   }  
   file.close();

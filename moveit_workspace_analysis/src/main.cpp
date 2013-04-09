@@ -51,6 +51,8 @@ int main(int argc, char **argv)
   double res_x, res_y, res_z;
   double min_x, min_y, min_z;
   double max_x, max_y, max_z;
+  double joint_limits_penalty_multiplier;  
+  std::string group_name;  
   
   if (!node_handle.getParam("min_x", min_x))
     min_x = 0.0;
@@ -73,9 +75,15 @@ int main(int argc, char **argv)
   if (!node_handle.getParam("res_z", res_z))
     res_z = 0.1;
 
+  if (!node_handle.getParam("joint_limits_penalty_multiplier", joint_limits_penalty_multiplier))
+    joint_limits_penalty_multiplier = 0.0;
+
   std::string filename;
   if (!node_handle.getParam("filename", filename))
     ROS_ERROR("Will not write to file");  
+
+  if (!node_handle.getParam("group_name", group_name))
+    ROS_FATAL("Must have valid group name");  
 
   /* Load the robot model */
   robot_model_loader::RobotModelLoader robot_model_loader("robot_description"); 
@@ -86,7 +94,10 @@ int main(int argc, char **argv)
   /* Create a robot state*/
   robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model));
 
-  robot_state::JointStateGroup* joint_state_group = robot_state->getJointStateGroup("arm");  
+  if(!robot_state->hasJointStateGroup(group_name))
+    ROS_FATAL("Invalid group name: %s", group_name.c_str());  
+
+  robot_state::JointStateGroup* joint_state_group = robot_state->getJointStateGroup(group_name);  
 
   /* Construct a planning scene - NOTE: this is for illustration purposes only.
      The recommended way to construct a planning scene is to use the planning_scene_monitor 
@@ -103,11 +114,11 @@ int main(int argc, char **argv)
   workspace.max_corner.z = max_z;
 
   /* Load the workspace analysis */
-  workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true);  
+  moveit_workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);  
 
   /* Compute the metrics */
   std::vector<geometry_msgs::Quaternion> orientations;  
-  workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, joint_state_group, res_x, res_y, res_z);
+  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, joint_state_group, res_x, res_y, res_z);
   
   if(!filename.empty())
     if(!metrics.writeToFile(filename))
