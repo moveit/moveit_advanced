@@ -185,8 +185,8 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::JointStateGrou
       {
         joint_state_group->getJointState((*iter).first)->setVariableValues((*iter).second);        
       }      
+      joint_state_group->updateLinkTransforms();    
     }
-    
     if(planning_scene_->isStateColliding(*joint_state_group->getRobotState(), joint_state_group->getName()))
       continue;    
     const Eigen::Affine3d &link_pose = link_state->getGlobalLinkTransform();
