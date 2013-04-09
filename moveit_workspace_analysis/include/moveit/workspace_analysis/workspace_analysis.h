@@ -87,7 +87,7 @@ public:
   WorkspaceMetrics computeMetricsFK(robot_state::JointStateGroup *joint_state_group,
                                     unsigned int max_attempts,
                                     const ros::WallDuration &max_duration,
-                                    const std::map<std::string, std::vector<double> > &fixed_joint_values) const;
+                                    const std::map<std::string, std::vector<double> > &fixed_joint_values = std::map<std::string, std::vector<double> >()) const;
 
   void setJointLimitsPenaltyMultiplier(double multiplier)
   {
