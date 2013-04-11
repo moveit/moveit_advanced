@@ -53,6 +53,8 @@ struct WorkspaceMetrics
   std::vector<unsigned int> min_distance_joint_limit_index_;  
   std::vector<std::vector<double> > joint_values_;
   bool writeToFile(const std::string &filename, const std::string &delimiter = ",", bool exclude_strings = true);  
+  bool readFromFile(const std::string &filename, unsigned int num_joints);
+  visualization_msgs::Marker getMarker(double marker_scale, unsigned int id, const std::string &ns) const;  
 };
   
 class WorkspaceAnalysis
