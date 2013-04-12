@@ -237,8 +237,8 @@ bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::strin
       file << points_[i].orientation.x << delimiter << points_[i].orientation.y  << delimiter << points_[i].orientation.z << delimiter << points_[i].orientation.w << delimiter;
       for(std::size_t j=0; j < joint_values_[i].size(); ++j)
         file << joint_values_[i][j] << delimiter;        
-      //      file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << delimiter << min_distance_joint_limit_index_[i] << std::endl;
-      file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << std::endl;
+      file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << delimiter << min_distance_joint_limit_index_[i] << std::endl;
+      //file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << std::endl;
     }
   }  
   file.close();
@@ -254,7 +254,20 @@ bool WorkspaceMetrics::readFromFile(const std::string &filename, unsigned int nu
     ROS_DEBUG("Could not open file: %s",filename.c_str());
     return false;    
   }
+
   std::vector<double> joint_values(num_joints);
+  std::vector<std::string> name_strings;  
+  for(std::size_t i=0; i < 3; ++i)
+  {    
+    std::string name_string;
+    std::getline(file, name_string);
+    name_strings.push_back(name_string);    
+  }  
+
+  robot_name_ = name_strings[0];
+  group_name_ = name_strings[1];
+  frame_id_ = name_strings[2];  
+
   while(!file.eof() && file.good())
   {
     std::string line;
@@ -289,7 +302,7 @@ bool WorkspaceMetrics::readFromFile(const std::string &filename, unsigned int nu
     
     manipulability_.push_back(record[7+num_joints]);
     min_distance_joint_limits_.push_back(record[8+num_joints]);
-    //    min_distance_joint_limit_index_.push_back(record[9+num_joints]);    
+    min_distance_joint_limit_index_.push_back(record[9+num_joints]);    
   }      
   ROS_DEBUG("Done reading");  
   file.close();
