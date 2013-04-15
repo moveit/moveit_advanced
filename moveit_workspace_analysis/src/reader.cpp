@@ -67,7 +67,7 @@ int main(int argc, char **argv)
       ROS_INFO("Could not write to file");
   */
   ros::Publisher display_publisher = node_handle.advertise<visualization_msgs::Marker>("workspace", 1, true);  
-  visualization_msgs::Marker marker = metrics.getMarker(0.1, 0, "me");
+  visualization_msgs::Marker marker = metrics.getMarker(0.25, 0, "me");
   marker.header.frame_id = metrics.frame_id_;  
   marker.header.stamp = ros::Time::now();  
   display_publisher.publish(marker);
