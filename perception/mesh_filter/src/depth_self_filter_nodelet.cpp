@@ -112,12 +112,15 @@ void mesh_filter::DepthSelfFiltering::filter (const sensor_msgs::ImageConstPtr& 
   
   const float* src = (const float*) &depth_msg->data[0];
   //*
-  unsigned short* data = new unsigned short [depth_msg->width * depth_msg->height];
+  static unsigned dataSize = 0;
+  static unsigned short* data = 0;
+  if (dataSize < depth_msg->width * depth_msg->height)
+    data = new unsigned short [depth_msg->width * depth_msg->height];
   for (unsigned idx = 0; idx < depth_msg->width * depth_msg->height; ++idx)
     data [idx] = (unsigned short)(src [idx] * 1000.0);
 
   mesh_filter_->filter (data, GL_UNSIGNED_SHORT);
-  delete[] data;
+  //delete[] data;
   /*/
   mesh_filter_->filter ((void*) &depth_msg->data[0], GL_FLOAT);
   //*/
@@ -168,7 +171,7 @@ void mesh_filter::DepthSelfFiltering::filter (const sensor_msgs::ImageConstPtr& 
 
 void mesh_filter::DepthSelfFiltering::addMeshes (MeshFilter<StereoCameraModel>& mesh_filter)
 {
-  robot_model_loader::RDFLoader robotModelLoader("robot_description");
+  robot_model_loader::RobotModelLoader robotModelLoader("robot_description");
   robot_model::RobotModelConstPtr robotModel = robotModelLoader.getModel();
   const vector<robot_model::LinkModel*> &links = robotModel->getLinkModelsWithCollisionGeometry();
   for (size_t i = 0 ; i < links.size() ; ++i)

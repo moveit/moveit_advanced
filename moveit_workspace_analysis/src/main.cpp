@@ -121,7 +121,7 @@ int main(int argc, char **argv)
   moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, joint_state_group, res_x, res_y, res_z);
   
   if(!filename.empty())
-    if(!metrics.writeToFile(filename))
+    if(!metrics.writeToFile(filename,",",false))
       ROS_INFO("Could not write to file");
   
   ros::shutdown();

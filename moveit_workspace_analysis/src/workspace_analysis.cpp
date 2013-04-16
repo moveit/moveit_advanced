@@ -1,23 +1,13 @@
 /*********************************************************************
 *
-* Software License Agreement (BSD License)
+* Software License Agreement (All Rights Reserved)
 *
-*  Copyright (c) 2012, Willow Garage, Inc.
+*  Copyright (c) 2013, Willow Garage, Inc.
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of Willow Garage, Inc. nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
+*  modification is not permitted without the explicit permission of 
+*  Willow Garage Inc.
 *
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -218,6 +208,12 @@ void WorkspaceAnalysis::updateMetrics(robot_state::JointStateGroup *joint_state_
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
 {
   ROS_DEBUG("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());  
+  if(points_.size() != manipulability_.size() || points_.size() != joint_values_.size() || points_.size() != min_distance_joint_limits_.size())
+  {
+    ROS_ERROR("Workspace metrics not fully formed");
+    return false;
+  }  
+  
   std::ofstream file;
   file.open(filename.c_str());
   if(!file.is_open())
@@ -242,10 +238,110 @@ bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::strin
       for(std::size_t j=0; j < joint_values_[i].size(); ++j)
         file << joint_values_[i][j] << delimiter;        
       file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << delimiter << min_distance_joint_limit_index_[i] << std::endl;
+      //file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << std::endl;
     }
   }  
   file.close();
   return true;   
+}
+
+bool WorkspaceMetrics::readFromFile(const std::string &filename, unsigned int num_joints)
+{
+  std::ifstream file;
+  file.open(filename.c_str());
+  if(!file.is_open())
+  {
+    ROS_DEBUG("Could not open file: %s",filename.c_str());
+    return false;    
+  }
+
+  std::vector<double> joint_values(num_joints);
+  std::vector<std::string> name_strings;  
+  for(std::size_t i=0; i < 3; ++i)
+  {    
+    std::string name_string;
+    std::getline(file, name_string);
+    name_strings.push_back(name_string);    
+  }  
+
+  robot_name_ = name_strings[0];
+  group_name_ = name_strings[1];
+  frame_id_ = name_strings[2];  
+
+  while(!file.eof() && file.good())
+  {
+    std::string line;
+    std::getline(file, line);
+
+    std::stringstream line_stream(line);
+    std::string field;
+    std::vector<double> record;    
+    while( std::getline(line_stream, field, ','))
+    {
+      double f(0.0);
+      std::stringstream field_stream(field);
+      field_stream >> f;
+      record.push_back(f);
+    }    
+    if(record.empty())
+      continue;    
+    ROS_DEBUG("Read: %d records", (int) record.size());    
+    geometry_msgs::Pose pose;
+    pose.position.x = record[0];
+    pose.position.y = record[1];
+    pose.position.z = record[2];
+    pose.orientation.x = record[3];
+    pose.orientation.y = record[4];
+    pose.orientation.z = record[5];
+    pose.orientation.w = record[6];    
+    points_.push_back(pose);
+
+    for(std::size_t i = 0; i < num_joints; ++i)
+      joint_values[i] = record[7+i];
+    joint_values_.push_back(joint_values);
+    
+    manipulability_.push_back(record[7+num_joints]);
+    min_distance_joint_limits_.push_back(record[8+num_joints]);
+    min_distance_joint_limit_index_.push_back(record[9+num_joints]);    
+  }      
+  ROS_DEBUG("Done reading");  
+  file.close();
+  return true;   
+}
+
+visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsigned int id, const std::string &ns) const
+{
+  visualization_msgs::Marker marker;  
+  marker.type = marker.SPHERE_LIST;
+  marker.action = 0;
+  marker.pose.orientation.w = 1.0;
+  marker.scale.x = marker_scale;
+  marker.scale.y = marker_scale;
+  marker.scale.z = marker_scale;
+  marker.id = id;
+  marker.ns = ns;  
+
+  double max_manip(-1.0), min_manip(std::numeric_limits<double>::max());
+  
+  for(std::size_t i=0; i < points_.size(); ++i)
+  {
+    if(manipulability_[i] > max_manip)
+      max_manip = manipulability_[i];
+    if(manipulability_[i] < min_manip)
+      min_manip = manipulability_[i];    
+  }
+  
+  for(std::size_t i = 0; i < points_.size(); ++i)
+  {
+    marker.points.push_back(points_[i].position);
+    std_msgs::ColorRGBA color;
+    color.a = 1.0;
+    color.g = 0.0;
+    color.r = manipulability_[i]/max_manip;
+    color.b = 1 - manipulability_[i]/max_manip;      
+    marker.colors.push_back(color);      
+  }    
+  return marker;  
 }
 
 }

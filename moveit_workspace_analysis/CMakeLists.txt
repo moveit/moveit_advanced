@@ -77,6 +77,7 @@ add_library(workspace_analysis
 
 ## Declare a cpp executable
 add_executable(workspace_analysis_node src/main.cpp)
+add_executable(workspace_reader_node src/reader.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -84,6 +85,8 @@ add_executable(workspace_analysis_node src/main.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(workspace_analysis_node
+ workspace_analysis ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(workspace_reader_node
  workspace_analysis ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
