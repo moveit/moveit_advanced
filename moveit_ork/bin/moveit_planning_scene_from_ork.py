@@ -6,7 +6,7 @@ import roslib
 import rospy
 from threading import Thread
 
-from moveit_commander import ObjectDetector, ObjectBroadcaster
+from moveit_ork import ObjectDetector, ObjectBroadcaster
 
 def auto_trigger(detector, wait):
     rospy.loginfo("Auto-triggering object detection every %s seconds" % str(wait))
