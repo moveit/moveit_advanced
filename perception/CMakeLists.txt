@@ -17,6 +17,8 @@ if (OPENGL_FOUND)
   set(gl_LIBS ${gl_LIBS} ${OPENGL_LIBRARIES})
 endif(OPENGL_FOUND)
 
+find_package(Boost REQUIRED thread)
+
 find_package(catkin REQUIRED COMPONENTS
   moveit_core
   moveit_ros_perception

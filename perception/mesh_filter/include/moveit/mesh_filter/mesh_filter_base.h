@@ -41,6 +41,7 @@
 #include <moveit/mesh_filter/gl_renderer.h>
 #include <moveit/mesh_filter/sensor_model.h>
 #include <boost/function.hpp>
+#include <boost/thread/mutex.hpp>
 #include <Eigen/Eigen>
 #include <queue>
 
@@ -237,6 +238,9 @@ class MeshFilterBase
     /** \brief OpenGL job queue that need to be processed by the worker thread*/
     mutable std::queue<boost::shared_ptr<FilterJob> > jobs_queue_;
     
+    /** \brief mutex for synchronization of updating filtered meshes */
+    mutable boost::mutex meshes_mutex_;
+  
     /** \brief indicates whether the filtering loop should stop*/
     bool stop_;
 

@@ -166,12 +166,15 @@ void mesh_filter::MeshFilterBase::setSize (unsigned int width, unsigned int heig
 }
 
 void mesh_filter::MeshFilterBase::setTransformCallback (const TransformCallback& transform_callback)
-{
+{ 
+  mutex::scoped_lock _(meshes_mutex_);
   transform_callback_ = transform_callback;
 }
 
 mesh_filter::MeshHandle mesh_filter::MeshFilterBase::addMesh (const Mesh& mesh)
 {
+  mutex::scoped_lock _(meshes_mutex_);
+  
   shared_ptr<FilterJob> job (new FilterJob (boost::bind (&MeshFilterBase::addMeshHelper, this, next_handle_, &mesh)));
   addJob(job);
   job->wait ();
@@ -193,7 +196,9 @@ void mesh_filter::MeshFilterBase::addMeshHelper (MeshHandle handle, const Mesh *
 }
 
 void mesh_filter::MeshFilterBase::removeMesh (MeshHandle handle)
-{
+{  
+  mutex::scoped_lock _(meshes_mutex_);
+
   std::size_t erased = meshes_.erase (handle);
   min_handle_ = handle;
   if (erased == 0)
@@ -288,7 +293,9 @@ void mesh_filter::MeshFilterBase::filter (const void* sensor_data, GLushort type
 }
 
 void mesh_filter::MeshFilterBase::doFilter (const void* sensor_data, const int encoding) const
-{
+{ 
+  mutex::scoped_lock _(meshes_mutex_);
+
   mesh_renderer_->begin ();
   sensor_parameters_->setRenderParameters (*mesh_renderer_);
   
