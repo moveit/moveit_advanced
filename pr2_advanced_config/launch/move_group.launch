@@ -1,0 +1,20 @@
+<launch>
+  <arg name="debug" default="false" />
+  <arg name="info" default="$(arg debug)" />
+
+  <arg name="allow_trajectory_execution" default="true"/>
+  <arg name="max_safe_path_cost" default="1"/>
+  <arg name="publish_monitored_planning_scene" default="true"/>
+  <arg name="moveit_octomap_sensor_params_file" default="$(find pr2_advanced_config)/config/sensors_kinect.yaml" />
+
+  <include file="$(find pr2_moveit_config)/launch/move_group.launch">
+    <arg name="debug" value="$(arg debug)"/>
+    <arg name="info" value="$(arg info)"/>
+
+    <arg name="allow_trajectory_execution" value="$(arg allow_trajectory_execution)"/>
+    <arg name="max_safe_path_cost" value="$(arg max_safe_path_cost)"/>
+    <arg name="publish_monitored_planning_scene" value="$(arg publish_monitored_planning_scene)"/>
+    <arg name="moveit_octomap_sensor_params_file" value="$(arg moveit_octomap_sensor_params_file)"/>
+  </include>
+</launch>
+
