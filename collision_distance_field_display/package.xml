@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<package>
+  <name>collision_distance_field_display</name>
+  <version>0.0.0</version>
+  <description>
+    Rviz display plugin for visualizing collision distance field information.
+  </description>
+
+  <maintainer email="acorn@willowgarage.com">Acorn Pooley</maintainer>
+  <license>BSD</license>
+
+
+  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <!-- Example: -->
+  <!-- <url type="website">http://ros.org/wiki/collision_distance_field_display</url> -->
+
+
+  <author email="acorn@willowgarage.com">Acorn Pooley</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend> 
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rviz</build_depend>
+  <build_depend>moveit_ros_planning_interface</build_depend>
+  <build_depend>moveit_ros_warehouse</build_depend>
+  <build_depend>moveit_ros_robot_interaction</build_depend>
+  <build_depend>pluginlib</build_depend> 
+  <build_depend>interactive_markers</build_depend>
+  <build_depend>geometric_shapes</build_depend>
+  
+  <run_depend>roscpp</run_depend>
+  <run_depend>rviz</run_depend>
+  <run_depend>moveit_ros_planning_interface</run_depend>
+  <run_depend>moveit_ros_warehouse</run_depend>
+  <run_depend>moveit_ros_robot_interaction</run_depend>
+  <run_depend>pluginlib</run_depend> 
+  <run_depend>interactive_markers</run_depend>
+  <run_depend>geometric_shapes</run_depend>
+
+
+  <export>
+    <rviz plugin="${prefix}/collision_distance_field_display_description.xml"/>
+  </export>
+</package>
