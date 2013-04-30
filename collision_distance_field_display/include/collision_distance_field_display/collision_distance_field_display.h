@@ -32,7 +32,7 @@
 #ifndef ACORN_DISPLAY_H
 #define ACORN_DISPLAY_H
 
-#include <rviz/display.h>
+#include <moveit/planning_scene_rviz_plugin/planning_scene_display.h>
 
 namespace Ogre
 {
@@ -50,7 +50,7 @@ namespace moveit_rviz_plugin
 {
 
 // Visualise collision distance field info.
-class CollisionDistanceFieldDisplay: public rviz::Display
+class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
 {
 Q_OBJECT
 public:
@@ -59,15 +59,31 @@ public:
 
 protected:
   virtual void onInitialize();
+  virtual void onEnable();
+  virtual void onDisable();
+  virtual void onRobotModelLoaded();
+  virtual void reset();
+  virtual void update(float wall_dt, float ros_dt);
 
 private Q_SLOTS:
-  void updateColorAndAlpha();
+  void robotAppearanceChanged();
 
 private:
+  void updateRobotVisual();
+
+
+  // for drawing the robot
+  RobotStateVisualizationPtr robot_visual_;
+  bool robot_visual_dirty_;
+  bool robot_model_loaded_;
+
+  
 
   // User-editable property variables.
-  rviz::ColorProperty* color_property_;
-  rviz::FloatProperty* alpha_property_;
+  rviz::BoolProperty* show_robot_visual_property_;
+  rviz::BoolProperty* show_robot_collision_property_;
+  rviz::ColorProperty* attached_object_color_property_;
+  rviz::FloatProperty* robot_alpha_property_;
 };
 
 }
