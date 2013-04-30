@@ -118,6 +118,7 @@ class ObjectBroadcaster:
                 co.meshes = [ob.bounding_mesh]
             co.mesh_poses = [ob.pose.pose.pose]
         else:
+            rospy.loginfo("Did not find information for object %s:" % (ob.type.key))
             co.id = ob.type.key + '_' + str(self._bump_index())
             co.meshes = [ob.bounding_mesh]
             co.mesh_poses = [ob.pose.pose.pose]
