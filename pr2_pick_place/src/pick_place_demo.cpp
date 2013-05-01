@@ -63,9 +63,9 @@ public:
     collision_object_publisher_ = node_handle_.advertise<moveit_msgs::CollisionObject>("/collision_object", 20);
   }
 
-  bool pick(const std::string &object, manipulation_msgs::Grasp &grasp)
+  bool pick(const std::string &object)
   {
-    return group_.pick(object, grasp);
+    return group_.pick(object);
   }
 
   void visualize(const std::vector<geometry_msgs::PoseStamped> &poses) const
@@ -120,21 +120,29 @@ public:
     return true;
   }
 
-  bool place(const std::string &object, const manipulation_msgs::Grasp &grasp)
+  void clear()
+  {
+    moveit_msgs::CollisionObject co;
+    co.operation = moveit_msgs::CollisionObject::REMOVE;
+    collision_object_publisher_.publish(co);     
+  }
+
+  bool place(const std::string &object, double height_above_table)
   {
     std::vector<geometry_msgs::PoseStamped> poses;
     ROS_DEBUG("Finding possible place positions");
-    findPossiblePlacePoses(poses);
+    findPossiblePlacePoses(poses, height_above_table);
     visualize(poses);
     if(!setupTables())
       return false;
     group_.setSupportSurfaceName("table");
-    return group_.place(object, grasp, poses);
+    return group_.place(object, poses);
   }
 
 
   std::vector<geometry_msgs::PoseStamped> generatePlacePoses(const object_recognition_msgs::TableArray &table_array,
 							     double resolution, 
+							     double height_above_table,
 							     double min_distance_from_edge = 0.10) const
   {
     std::vector<geometry_msgs::PoseStamped> place_poses;
@@ -195,7 +203,7 @@ public:
 	    place_pose.pose.orientation.w = 1.0;
 	    place_pose.pose.position.x = point.x();
 	    place_pose.pose.position.y = point.y();
-	    place_pose.pose.position.z = point.z() + 0.025;
+	    place_pose.pose.position.z = point.z() + height_above_table;
 	    place_pose.header = table_array.tables[i].pose.header;
 	    place_poses.push_back(place_pose);
 	  }
@@ -206,14 +214,14 @@ public:
     return place_poses;
   }
 
-  void findPossiblePlacePoses(std::vector<geometry_msgs::PoseStamped> &poses)
+  void findPossiblePlacePoses(std::vector<geometry_msgs::PoseStamped> &poses, double height_above_table)
   {
     if(table_dirty_)
     {  
       {
 	boost::mutex::scoped_lock tlock(table_lock_);
 	ROS_DEBUG("Generating place poses");
-	place_poses_ = generatePlacePoses(table_array_, place_resolution_);
+	place_poses_ = generatePlacePoses(table_array_, place_resolution_, height_above_table);
       } 
       table_dirty_ = false;
     }
@@ -297,15 +305,84 @@ int main(int argc, char **argv)
   joint_values[6] = -1.16;
 
   group.setJointValueTarget(joint_values);
-
   group.move();
   pg.listen_tables_ = true;
   ros::WallDuration(3.0).sleep();  
   pg.listen_tables_ = false;
   
-  manipulation_msgs::Grasp grasp;
+  const static unsigned int START = 0;
+  const static unsigned int PICK = 1;
+  const static unsigned int PLACE = 2;
+  const static unsigned int CLEAR = 3;
+  unsigned int try_place = 0;
+  unsigned int state = START;
 
-  int counter = 1;
+  std::vector<std::string> objects;
+  while(ros::ok())
+  {    
+    if(state == START)
+    {  
+       objects = group.getRecognizedObjectsInROI(0.3,-0.5,0.6,0.7,0.5,0.9);
+      if(objects.empty())
+      {
+	  ROS_INFO("Could not find recognized object in workspace");
+	  group.setJointValueTarget(joint_values);
+	  group.move();
+	  continue;
+      }
+      else 
+      {
+	state = PICK;
+	continue;
+      }
+    }
+    else if (state == PICK)
+    {    
+      ROS_INFO("Trying to pickup object: %s", objects[0].c_str());
+      if(pg.pick(objects[0]))
+      {  
+	ROS_INFO("Done pick");
+	ros::WallDuration(1.0).sleep();  
+	state = PLACE;
+      }
+      else
+      {
+	state = START;
+	continue;
+      }
+    }
+    else if (state == PLACE)
+    {      
+      if(pg.place(objects[0], 0.04 + 0.01 * try_place))
+      {
+	try_place = 0;
+	ROS_INFO("Done place");
+	state = CLEAR;
+      }
+      else
+      {
+	try_place++;
+	ROS_INFO("Trying place: %d of %d times", try_place, 6);
+      }
+      if(try_place > 6)
+      {
+	ROS_ERROR("Could not place object: HELP");
+	break;
+      }
+    }
+    else if (state == CLEAR)
+    {
+	group.setJointValueTarget(joint_values);
+	group.move();
+	pg.clear();
+	pg.listen_tables_ = true;
+	ros::WallDuration(3.0).sleep();  
+	pg.listen_tables_ = false;
+	state = START;
+    }
+  }
+
+  /*  int counter = 1;
   while(counter < 6 && ros::ok())
   {
     std::stringstream ss;
@@ -325,7 +402,7 @@ int main(int argc, char **argv)
 	break;
     }
     counter = counter + 1;
-  }
+    }*/
 
   ROS_INFO("Waiting for Ctrl-C");
   ros::waitForShutdown();

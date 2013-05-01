@@ -77,7 +77,8 @@ private:
   image_transport::CameraSubscriber sub_depth_image_;
   image_transport::CameraPublisher pub_model_depth_image_;
   image_transport::CameraPublisher pub_filtered_depth_image_;
-  
+
+  std::string filtered_cloud_topic_;
   std::string sensor_type_;
   std::string image_topic_;
   std::size_t queue_size_;
