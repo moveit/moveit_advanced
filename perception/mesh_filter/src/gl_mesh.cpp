@@ -59,23 +59,23 @@ mesh_filter::GLMesh::GLMesh (const Mesh& mesh, unsigned int mesh_label)
         unsigned v2 = 3 * mesh.triangles [3*tIdx + 1];
         unsigned v3 = 3 * mesh.triangles [3*tIdx + 2];
         
+        glVertex3f (mesh.vertices [v1], mesh.vertices[v1 + 1], mesh.vertices[v1 + 2]);
         glNormal3f (mesh.vertex_normals[v1], mesh.vertex_normals[v1 + 1], mesh.vertex_normals[v1 + 2]);
-        glVertex3f (mesh.vertices [v1], mesh.vertices[v1 + 1], mesh.vertices[v1 + 2]);
         
+        glVertex3f (mesh.vertices[v2], mesh.vertices[v2 + 1], mesh.vertices [v2 + 2]);
         glNormal3f (mesh.vertex_normals[v2], mesh.vertex_normals[v2 + 1], mesh.vertex_normals[v2 + 2]);
-        glVertex3f (mesh.vertices[v2], mesh.vertices[v2 + 1], mesh.vertices [v2 + 2]);
         
+        glVertex3f (mesh.vertices[v3], mesh.vertices[v3 + 1], mesh.vertices[v3 + 2]);
         glNormal3f (mesh.vertex_normals[v3], mesh.vertex_normals[v3 + 1], mesh.vertex_normals[v3 + 2]);
-        glVertex3f (mesh.vertices[v3], mesh.vertices[v3 + 1], mesh.vertices[v3 + 2]);
 
-        glNormal3f (-mesh.vertex_normals[v1], -mesh.vertex_normals[v1 + 1], -mesh.vertex_normals[v1 + 2]);
         glVertex3f (mesh.vertices [v1], mesh.vertices[v1 + 1], mesh.vertices[v1 + 2]);
+        glNormal3f (-mesh.vertex_normals[v1], -mesh.vertex_normals[v1 + 1], -mesh.vertex_normals[v1 + 2]);
 
-        glNormal3f (-mesh.vertex_normals[v3], -mesh.vertex_normals[v3 + 1], -mesh.vertex_normals[v3 + 2]);
         glVertex3f (mesh.vertices[v3], mesh.vertices[v3 + 1], mesh.vertices[v3 + 2]);
+        glNormal3f (-mesh.vertex_normals[v3], -mesh.vertex_normals[v3 + 1], -mesh.vertex_normals[v3 + 2]);
 
-        glNormal3f (-mesh.vertex_normals[v2], -mesh.vertex_normals[v2 + 1], -mesh.vertex_normals[v2 + 2]);
         glVertex3f (mesh.vertices[v2], mesh.vertices[v2 + 1], mesh.vertices [v2 + 2]);
+        glNormal3f (-mesh.vertex_normals[v2], -mesh.vertex_normals[v2 + 1], -mesh.vertex_normals[v2 + 2]);
       }
     glEnd();
   glEndList();  
