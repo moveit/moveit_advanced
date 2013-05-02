@@ -42,6 +42,7 @@ from object_recognition_msgs.msg import ObjectRecognitionAction, ObjectRecogniti
 from object_recognition_msgs.srv import GetObjectInformation
 
 from moveit_msgs.msg import CollisionObject
+from shape_msgs.msg import SolidPrimitive, Mesh
 
 class ObjectDetector:
     """ Listen to recognized objects over a topic or using an action server. Trigger a callback when objects are found """
@@ -116,7 +117,7 @@ class ObjectBroadcaster:
                 co.meshes = [info.ground_truth_mesh]
             else:
                 co.meshes = [ob.bounding_mesh]
-            co.mesh_poses = [ob.pose.pose.pose]
+            co.mesh_poses = [ob.pose.pose.pose]            
         else:
             rospy.loginfo("Did not find information for object %s:" % (ob.type.key))
             co.id = ob.type.key + '_' + str(self._bump_index())
@@ -124,6 +125,34 @@ class ObjectBroadcaster:
             co.mesh_poses = [ob.pose.pose.pose]
         if len(co.meshes[0].triangles) > 0:
             rospy.loginfo("Publishing collision object %s with confidence %s" % (co.id, str(ob.confidence)))
+
+            # hack to turn the mesh into a box (aabb)
+            co.primitive_poses = co.mesh_poses
+            co.mesh_poses = []
+            min_x = 1000000
+            min_y = 1000000
+            min_z = 1000000
+            max_x = -1000000
+            max_y = -1000000
+            max_z = -1000000
+            for v in co.meshes[0].vertices:
+                if v.position.x > max_x:
+                    max_x = v.position.x
+                if v.position.y > max_y:
+                    max_y = v.position.y
+                if v.position.z > max_z:
+                    max_z = v.position.z
+                if v.position.x < min_x:
+                    min_x = v.position.x
+                if v.position.y < min_y:
+                    min_y = v.position.y
+                if v.position.z < min_z:
+                    min_z = v.position.z
+            box = SolidPrimitive()
+            box.type = SolidPrimitive.BOX
+            box.dimensions = [max_x - min_x, max_y - min_y, max_z - min_z]
+            co.primitives = [box]
+            co.meshes = []
             self._publisher.publish(co)
         
     def broadcast(self, objects):
