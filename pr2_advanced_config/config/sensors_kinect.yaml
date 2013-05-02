@@ -7,3 +7,4 @@ sensors:
     shadow_threshold: 0.8
     padding_scale: 4.0
     padding_offset: 0.03
+    filtered_cloud_topic: filtered_cloud

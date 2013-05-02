@@ -89,6 +89,8 @@ bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
     readXmlParam(params, "padding_offset", &padding_offset_);
     readXmlParam(params, "skip_vertical_pixels", &skip_vertical_pixels_);
     readXmlParam(params, "skip_horizontal_pixels", &skip_horizontal_pixels_);
+    if (params.hasMember("filtered_cloud_topic"))
+      filtered_cloud_topic_ = static_cast<const std::string&>(params["filtered_cloud_topic"]);
   }
   catch (XmlRpc::XmlRpcException &ex)
   {
@@ -112,7 +114,7 @@ bool DepthImageOctomapUpdater::initialize()
   mesh_filter_->setPaddingOffset(padding_offset_);
   mesh_filter_->setPaddingScale(padding_scale_);
   mesh_filter_->setTransformCallback(boost::bind(&DepthImageOctomapUpdater::getShapeTransform, this, _1, _2));
-  
+
   return true;
 }
 
@@ -120,7 +122,12 @@ void DepthImageOctomapUpdater::start()
 {
   image_transport::TransportHints hints("raw", ros::TransportHints(), nh_);
   pub_model_depth_image_ = model_depth_transport_.advertiseCamera("model_depth", 10);
-  pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera("filtered_depth", 10);
+
+  if(!filtered_cloud_topic_.empty())
+    pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera(filtered_cloud_topic_, 10);
+  else
+    pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera("filtered_depth", 10);
+
   sub_depth_image_ = input_depth_transport_.subscribeCamera(image_topic_, queue_size_, &DepthImageOctomapUpdater::depthImageCallback, this, hints);
 }
 
@@ -289,7 +296,7 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   
   const bool is_u_short = depth_msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1;
   if (is_u_short)
-    mesh_filter_->filter(&depth_msg->data[0], GL_UNSIGNED_SHORT);
+   mesh_filter_->filter(&depth_msg->data[0], GL_UNSIGNED_SHORT);
   else
     mesh_filter_->filter(&depth_msg->data[0], GL_FLOAT);
   
@@ -360,6 +367,28 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     pub_filtered_depth_image_.publish(debug_msg, *info_msg);
   }
   
+  if(!filtered_cloud_topic_.empty())
+  {
+    static std::vector<float> filtered_data;
+    sensor_msgs::Image filtered_msg;
+    filtered_msg.header = depth_msg->header;
+    filtered_msg.height = depth_msg->height;
+    filtered_msg.width = depth_msg->width;
+    filtered_msg.encoding = sensor_msgs::image_encodings::TYPE_16UC1;
+    filtered_msg.is_bigendian = depth_msg->is_bigendian;
+    filtered_msg.step = depth_msg->step;
+    filtered_msg.data.resize(img_size * sizeof(unsigned short));
+    if(filtered_data.size() < img_size)
+      filtered_data.resize(img_size);
+    mesh_filter_->getFilteredDepth(reinterpret_cast<float*>(&filtered_data[0]));
+    unsigned short* tmp_ptr = (unsigned short*) &filtered_msg.data[0];
+    for(std::size_t i=0; i < img_size; ++i)
+    {
+      tmp_ptr[i] = (unsigned short) (filtered_data[i] * 1000 + 0.5);
+    }
+    pub_filtered_depth_image_.publish(filtered_msg, *info_msg);
+  }
+
   // figure out occupied cells and model cells
   tree_->lockRead();
   
