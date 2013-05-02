@@ -29,10 +29,14 @@
 
 /* Author: Acorn Pooley */
 
+#include <collision_distance_field_display/collision_distance_field_display.h>
+
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
 
 #include <tf/transform_listener.h>
+
+#include <eigen_conversions/eigen_msg.h>
 
 #include <rviz/visualization_manager.h>
 #include <rviz/properties/color_property.h>
@@ -41,8 +45,6 @@
 #include <rviz/frame_manager.h>
 
 #include <moveit/rviz_plugin_render_tools/robot_state_visualization.h>
-
-#include <collision_distance_field_display/collision_distance_field_display.h>
 
 static std_msgs::ColorRGBA ColorRGBA(rviz::ColorProperty* color_prop, rviz::FloatProperty* alpha_prop = NULL)
 {
@@ -68,10 +70,15 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       SLOT( robotAppearanceChanged() ));
   show_robot_collision_property_ = new rviz::BoolProperty(
                                       "Show Robot Collision",
-                                      false,
+                                      true,
                                       "Show the robot collision geometry.",
                                       this,
                                       SLOT( robotAppearanceChanged() ));
+  publish_tf_property_ = new rviz::BoolProperty(
+                                      "Publish Robot State on TF",
+                                      true,
+                                      "Enable publishing of robot link frames on TF (useful with TF display).",
+                                      this);
   attached_object_color_property_ = new rviz::ColorProperty(
                                       "Attached Object Color",
                                       QColor( 204, 51, 204 ),
@@ -84,6 +91,10 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "0 is fully transparent, 1.0 is fully opaque.",
                                       this,
                                       SLOT( robotAppearanceChanged() ));
+
+  // turn Scene Robot visual off by default
+  if (scene_robot_enabled_property_)
+    scene_robot_enabled_property_->setValue(false);
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
@@ -118,12 +129,12 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
 {
   PlanningSceneDisplay::onRobotModelLoaded();
 
-#if 1
-boost::shared_ptr<const robot_model::RobotModel> model = getRobotModel();
-ROS_INFO("onRobotModelLoaded model=%08lx", (long)model.get());
-#endif
-
   robot_visual_->load(*getRobotModel()->getURDF());
+
+  robot_state_.reset(new robot_state::RobotState(getRobotModel()));
+  robot_state_const_ = robot_state_;
+  robot_state_->setToDefaultValues();
+
   robot_model_loaded_ = true;
   robotAppearanceChanged();
 }
@@ -131,6 +142,9 @@ ROS_INFO("onRobotModelLoaded model=%08lx", (long)model.get());
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, float ros_dt)
 {
   updateRobotVisual();
+
+  if (publish_tf_property_->getBool())
+    publishTF();
 
   PlanningSceneDisplay::update(wall_dt, ros_dt);
 }
@@ -151,36 +165,12 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
   bool vis = show_robot_visual_property_->getBool();
   bool col = show_robot_collision_property_->getBool();
 
-#if 0
-  robot_visual_->setDefaultAttachedObjectColor(ColorRGBA(attached_object_color_property_, robot_alpha_property_));
-#endif
-
-
-
-ROS_INFO("Set robot state");
-#if 0
-  boost::shared_ptr<robot_state::RobotState> state(new robot_state::RobotState(getRobotModel()));
-#else
-  boost::shared_ptr<const robot_model::RobotModel> model = getRobotModel();
-ROS_INFO("robot model=%08lx", (long)model.get());
-  if (model)
-  {
-ROS_INFO("   Update state and color");
-    boost::shared_ptr<robot_state::RobotState> state(new robot_state::RobotState(model));
-    state->setToDefaultValues();
-    robot_visual_->update(state, ColorRGBA(attached_object_color_property_, robot_alpha_property_));
-  }
-  else
-  {
-ROS_INFO("   Update color only");
-    robot_visual_->setDefaultAttachedObjectColor(ColorRGBA(attached_object_color_property_, robot_alpha_property_));
-  }
-#endif
+  robot_visual_->update(getRobotState(), ColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
   robot_visual_->setAlpha(robot_alpha_property_->getFloat());
   
-  robot_visual_->setCollisionVisible(vis);
-  robot_visual_->setVisualVisible(col);
+  robot_visual_->setCollisionVisible(col);
+  robot_visual_->setVisualVisible(vis);
   robot_visual_->setVisible(isEnabled() && (vis || col));
 
 }
@@ -192,5 +182,53 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::reset()
   robot_visual_->setVisible(false);
 
   PlanningSceneDisplay::reset();
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
+{
+  const bool PUBLISH_TF_AS_JOINT_TREE = true;
+
+  if (!robot_model_loaded_)
+    return;
+
+#if 0
+  if (!robot_state_handler_)
+    return;
+#endif
+
+  robot_state::RobotStateConstPtr state = getRobotState();
+  if (!state)
+    return;
+
+  const std::vector<robot_state::LinkState*> &ls = state->getLinkStateVector();
+  std::vector<geometry_msgs::TransformStamped> transforms(ls.size());
+  const std::string &planning_frame = planning_scene_monitor_->getPlanningScene()->getPlanningFrame();
+  std::size_t j = 0;
+  ros::Time now = ros::Time::now();
+  for (std::size_t i = 0 ; i < ls.size() ; ++i)
+  {
+    if (ls[i]->getName() == planning_frame)
+      continue;
+    const Eigen::Affine3d &t = ls[i]->getGlobalLinkTransform();
+    const robot_state::LinkState* pls = ls[i]->getParentLinkState();
+    if (PUBLISH_TF_AS_JOINT_TREE && pls)
+    {
+      const Eigen::Affine3d &pt = pls->getGlobalLinkTransform();
+      Eigen::Affine3d rel = pt.inverse() * t;
+
+      tf::transformEigenToMsg(rel, transforms[j].transform);
+      transforms[j].header.frame_id = pls->getName();
+    }
+    else
+    {
+      tf::transformEigenToMsg(t, transforms[j].transform);
+      transforms[j].header.frame_id = planning_frame;
+    }
+    transforms[j].header.stamp = now;
+    transforms[j].child_frame_id = ls[i]->getName();
+    ++j;
+  }
+  transforms.resize(j);
+  tf_broadcaster_.sendTransform(transforms);
 }
 

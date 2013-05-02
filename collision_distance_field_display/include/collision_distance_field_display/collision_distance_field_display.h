@@ -33,6 +33,7 @@
 #define ACORN_DISPLAY_H
 
 #include <moveit/planning_scene_rviz_plugin/planning_scene_display.h>
+#include <tf/transform_broadcaster.h>
 
 namespace Ogre
 {
@@ -70,6 +71,15 @@ private Q_SLOTS:
 
 private:
   void updateRobotVisual();
+  void publishTF();
+
+  const robot_state::RobotStateConstPtr& getRobotState()
+  {
+    return robot_state_const_;
+  }
+  // TODO: remove these robot_state_ vars
+  robot_state::RobotStatePtr robot_state_;
+  robot_state::RobotStateConstPtr robot_state_const_;
 
 
   // for drawing the robot
@@ -77,11 +87,14 @@ private:
   bool robot_visual_dirty_;
   bool robot_model_loaded_;
 
+  // for publishing robot state in standalone mode
+  tf::TransformBroadcaster tf_broadcaster_;
   
 
   // User-editable property variables.
   rviz::BoolProperty* show_robot_visual_property_;
   rviz::BoolProperty* show_robot_collision_property_;
+  rviz::BoolProperty* publish_tf_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
 };
