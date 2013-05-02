@@ -30,6 +30,7 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/collision_distance_field_display.h>
+#include <collision_distance_field_display/color_cast.h>
 
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
@@ -47,17 +48,6 @@
 #include <rviz/display_factory.h>
 
 #include <moveit/rviz_plugin_render_tools/robot_state_visualization.h>
-
-static std_msgs::ColorRGBA ColorRGBA(rviz::ColorProperty* color_prop, rviz::FloatProperty* alpha_prop = NULL)
-{
-  std_msgs::ColorRGBA result;
-  QColor qcolor = color_prop->getColor();
-  result.r = qcolor.redF();
-  result.g = qcolor.greenF();
-  result.b = qcolor.blueF();
-  result.a = alpha_prop ? alpha_prop->getFloat() : 1.0;
-  return result;
-}
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay()
   : PlanningSceneDisplay()
@@ -321,7 +311,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     robot_visual_->setVisualVisible(vis);
     robot_visual_->setVisible(isEnabled() && (vis || col));
 
-    robot_visual_->update(getRobotState(), ColorRGBA(attached_object_color_property_, robot_alpha_property_));
+    robot_visual_->update(getRobotState(), color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
     context_->queueRender();
   }
@@ -372,6 +362,10 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
     transforms[j].child_frame_id = ls[i]->getName();
     ++j;
   }
+
+
+
+
   transforms.resize(j);
   tf_broadcaster_.sendTransform(transforms);
 }

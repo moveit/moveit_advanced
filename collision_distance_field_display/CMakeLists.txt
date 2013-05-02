@@ -81,6 +81,7 @@ add_library(
   ${LIBNAME}
     src/collision_distance_field_display.cpp
     src/collision_distance_field_display_plugin.cpp
+    src/color_cast.cpp
     ${MOC_SOURCES})
 
 target_link_libraries(
