@@ -91,9 +91,8 @@ class ObjectBroadcaster:
         self._get_object_info = rospy.ServiceProxy('get_object_info', GetObjectInformation)
 
     def broadcast_one(self, ob):
-
         if ob.confidence < self._min_confidence:
-            rospy.loginfo("Not publishing object of type %s because confidence %s is too low" % (ob.type.key, str(ob.confidence)))
+            rospy.loginfo("Not publishing object of type %s because confidence %s < %s" % (ob.type.key, str(ob.confidence), str(self._min_confidence)))
             return
 
         info = None
