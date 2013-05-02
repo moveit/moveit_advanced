@@ -180,17 +180,10 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
   int_marker_display_->subProp("Update Topic")->setValue(QString::fromStdString(robot_interaction_->getServerTopic() + "/update"));
   robot_visual_->load(*getRobotModel()->getURDF());
 
-#if 1
   robot_state::RobotStatePtr state(new robot_state::RobotState(getRobotModel()));
   robot_state_handler_.reset(new robot_interaction::RobotInteraction::InteractionHandler("current", *state, planning_scene_monitor_->getTFClient()));
   robot_state_handler_->setUpdateCallback(boost::bind(&CollisionDistanceFieldDisplay::markersMoved, this, _1, _2));
   robot_state_handler_->setStateValidityCallback(boost::bind(&CollisionDistanceFieldDisplay::isIKSolutionCollisionFree, this, _1, _2));
-
-#else
-  robot_state_.reset(new robot_state::RobotState(getRobotModel()));
-  robot_state_const_ = robot_state_;
-  robot_state_->setToDefaultValues();
-#endif
 
   if (!active_group_property_->getStdString().empty() &&
       !getRobotModel()->hasJointModelGroup(active_group_property_->getStdString()))
@@ -283,6 +276,12 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::setRobotState(const robo
   robotMarkerPositionsChanged();
 }
 
+robot_state::RobotStateConstPtr moveit_rviz_plugin::CollisionDistanceFieldDisplay::getRobotState() const
+{
+  return robot_state_handler_->getState();
+}
+
+
 
 //===========================================================================
 // update() processing
@@ -341,11 +340,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
   if (!robot_model_loaded_)
     return;
 
-#if 0
-  if (!robot_state_handler_)
-    return;
-#endif
-
   robot_state::RobotStateConstPtr state = getRobotState();
   if (!state)
     return;
@@ -383,7 +377,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
 }
 
 //===========================================================================
-// background tasks
+// background tasks -- these run on background thread
 //===========================================================================
 
 // Update the marker visual appearance based on the robot state.

@@ -29,8 +29,8 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef ACORN_DISPLAY_H
-#define ACORN_DISPLAY_H
+#ifndef COLLISION_DISTANCE_FIELD_DISPLAY_COLLISION_DISTANCE_FIELD_DISPLAY_H
+#define COLLISION_DISTANCE_FIELD_DISPLAY_COLLISION_DISTANCE_FIELD_DISPLAY_H
 
 #include <moveit/planning_scene_rviz_plugin/planning_scene_display.h>
 
@@ -63,29 +63,9 @@ public:
   CollisionDistanceFieldDisplay();
   virtual ~CollisionDistanceFieldDisplay();
 
-#if 1
+  // access to the robot state
   void setRobotState(const robot_state::RobotState &state);
-  robot_state::RobotStateConstPtr getRobotState() const
-  {
-    return robot_state_handler_->getState();
-  }
-  const robot_interaction::RobotInteractionPtr& getRobotInteraction() const
-  {
-    return robot_interaction_;
-  }
-  const robot_interaction::RobotInteraction::InteractionHandlerPtr& getRobotStateHandler() const
-  {
-    return robot_state_handler_;
-  }
-#else
-  const robot_state::RobotStateConstPtr& getRobotState()
-  {
-    return robot_state_const_;
-  }
-  // TODO: remove these robot_state_ vars
-  robot_state::RobotStatePtr robot_state_;
-  robot_state::RobotStateConstPtr robot_state_const_;
-#endif
+  robot_state::RobotStateConstPtr getRobotState() const;
 
 protected:
   virtual void onInitialize();
