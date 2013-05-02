@@ -42,7 +42,9 @@
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/int_property.h>
+#include <rviz/properties/editable_enum_property.h>
 #include <rviz/frame_manager.h>
+#include <rviz/display_factory.h>
 
 #include <moveit/rviz_plugin_render_tools/robot_state_visualization.h>
 
@@ -61,19 +63,35 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   : PlanningSceneDisplay()
   , robot_model_loaded_(false)
   , robot_visual_dirty_(true)
+  , robot_visual_position_dirty_(true)
+  , robot_markers_dirty_(true)
+  , robot_markers_position_dirty_(true)
+  , int_marker_display_(NULL)
 {
   show_robot_visual_property_ = new rviz::BoolProperty(
                                       "Show Robot Visual",
                                       false,
                                       "Show the robot visual appearance (what it looks like).",
                                       this,
-                                      SLOT( robotAppearanceChanged() ));
+                                      SLOT( robotVisualChanged() ));
   show_robot_collision_property_ = new rviz::BoolProperty(
                                       "Show Robot Collision",
                                       true,
                                       "Show the robot collision geometry.",
                                       this,
-                                      SLOT( robotAppearanceChanged() ));
+                                      SLOT( robotVisualChanged() ));
+  active_group_property_ = new rviz::EditableEnumProperty(
+                                      "Active Group",
+                                      "",
+                                      "The name of the group of links to interact with (from the ones defined in the SRDF)",
+                                      this,
+                                      SLOT( changedActiveGroup() ),
+                                      this );
+  collision_aware_ik_property_ = new rviz::BoolProperty(
+                                      "Collision aware IK",
+                                      true,
+                                      "Check collisions when doing IK.",
+                                      this);
   publish_tf_property_ = new rviz::BoolProperty(
                                       "Publish Robot State on TF",
                                       true,
@@ -84,13 +102,13 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       QColor( 204, 51, 204 ),
                                       "Color to draw objects attached to the robot.",
                                       this,
-                                      SLOT( robotAppearanceChanged() ));
+                                      SLOT( robotVisualChanged() ));
   robot_alpha_property_ = new rviz::FloatProperty(
                                       "Robot Alpha",
                                       1.0,
                                       "0 is fully transparent, 1.0 is fully opaque.",
                                       this,
-                                      SLOT( robotAppearanceChanged() ));
+                                      SLOT( robotVisualChanged() ));
 
   // turn Scene Robot visual off by default
   if (scene_robot_enabled_property_)
@@ -103,6 +121,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDispla
   clearJobs();
 
   robot_visual_.reset();
+  delete int_marker_display_;
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
@@ -110,11 +129,18 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   PlanningSceneDisplay::onInitialize();
 
   robot_visual_.reset(new RobotStateVisualization(planning_scene_node_, context_, "Robot", NULL));
-  robotAppearanceChanged();
+  robotVisualChanged();
+
+  delete int_marker_display_;
+  int_marker_display_ = context_->getDisplayFactory()->make("rviz/InteractiveMarkers");
+  int_marker_display_->initialize(context_);
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onDisable()
 {
+  if (robot_interaction_)
+    robot_interaction_->clear();
+  int_marker_display_->setEnabled(false);
   robot_visual_->setVisible(false);
   PlanningSceneDisplay::onDisable();
 }
@@ -122,57 +148,11 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onDisable()
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onEnable()
 {
   PlanningSceneDisplay::onEnable();
-  robotAppearanceChanged();
-}
-
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
-{
-  PlanningSceneDisplay::onRobotModelLoaded();
-
-  robot_visual_->load(*getRobotModel()->getURDF());
-
-  robot_state_.reset(new robot_state::RobotState(getRobotModel()));
-  robot_state_const_ = robot_state_;
-  robot_state_->setToDefaultValues();
-
-  robot_model_loaded_ = true;
-  robotAppearanceChanged();
-}
-
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, float ros_dt)
-{
-  updateRobotVisual();
-
-  if (publish_tf_property_->getBool())
-    publishTF();
-
-  PlanningSceneDisplay::update(wall_dt, ros_dt);
-}
-
-// trigger a call to updateRobotVisual() next update().
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::robotAppearanceChanged()
-{
-  robot_visual_dirty_ = true;
-}
-
-// Update the robot visual appearance based on attributes
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
-{
-  if (!robot_model_loaded_ || !robot_visual_dirty_)
-    return;
-
-  robot_visual_dirty_ = false;
-  bool vis = show_robot_visual_property_->getBool();
-  bool col = show_robot_collision_property_->getBool();
-
-  robot_visual_->update(getRobotState(), ColorRGBA(attached_object_color_property_, robot_alpha_property_));
-
-  robot_visual_->setAlpha(robot_alpha_property_->getFloat());
-  
-  robot_visual_->setCollisionVisible(col);
-  robot_visual_->setVisualVisible(vis);
-  robot_visual_->setVisible(isEnabled() && (vis || col));
-
+  robotVisualChanged();
+  robotMarkersChanged();
+  int_marker_display_->setEnabled(true);
+  int_marker_display_->setFixedFrame(fixed_frame_);
+  changedActiveGroup();
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::reset()
@@ -182,6 +162,176 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::reset()
   robot_visual_->setVisible(false);
 
   PlanningSceneDisplay::reset();
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::fixedFrameChanged()
+{
+  PlanningSceneDisplay::fixedFrameChanged();
+  if (int_marker_display_)
+    int_marker_display_->setFixedFrame(fixed_frame_);
+  changedActiveGroup();
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
+{
+  PlanningSceneDisplay::onRobotModelLoaded();
+
+  robot_interaction_.reset(new robot_interaction::RobotInteraction(getRobotModel(), "distance_field_display"));
+  int_marker_display_->subProp("Update Topic")->setValue(QString::fromStdString(robot_interaction_->getServerTopic() + "/update"));
+  robot_visual_->load(*getRobotModel()->getURDF());
+
+#if 1
+  robot_state::RobotStatePtr state(new robot_state::RobotState(getRobotModel()));
+  robot_state_handler_.reset(new robot_interaction::RobotInteraction::InteractionHandler("current", *state, planning_scene_monitor_->getTFClient()));
+  robot_state_handler_->setUpdateCallback(boost::bind(&CollisionDistanceFieldDisplay::markersMoved, this, _1, _2));
+  robot_state_handler_->setStateValidityCallback(boost::bind(&CollisionDistanceFieldDisplay::isIKSolutionCollisionFree, this, _1, _2));
+
+#else
+  robot_state_.reset(new robot_state::RobotState(getRobotModel()));
+  robot_state_const_ = robot_state_;
+  robot_state_->setToDefaultValues();
+#endif
+
+  if (!active_group_property_->getStdString().empty() &&
+      !getRobotModel()->hasJointModelGroup(active_group_property_->getStdString()))
+  {
+    active_group_property_->setStdString("");
+  }
+
+  const std::vector<std::string> &groups = getRobotModel()->getJointModelGroupNames();
+  active_group_property_->clearOptions();
+  for (std::size_t i = 0 ; i < groups.size() ; ++i)
+    active_group_property_->addOptionStd(groups[i]);
+  active_group_property_->sortOptions();
+  if (!groups.empty() && active_group_property_->getStdString().empty())
+    active_group_property_->setStdString(groups[0]);
+
+
+  robot_model_loaded_ = true;
+  robotVisualChanged();
+  robotMarkersChanged();
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::markersMoved(robot_interaction::RobotInteraction::InteractionHandler *, bool error_state_changed)
+{
+  robotMarkerPositionsChanged();
+  robotVisualPositionChanged();
+}
+
+bool moveit_rviz_plugin::CollisionDistanceFieldDisplay::isIKSolutionCollisionFree(robot_state::JointStateGroup *group, const std::vector<double> &ik_solution) const
+{
+  if (collision_aware_ik_property_->getBool() && planning_scene_monitor_)
+  {
+    group->setVariableValues(ik_solution);
+    bool res = !getPlanningSceneRO()->isStateColliding(*group->getRobotState(), group->getName());
+    return res;
+  }
+  else
+    return true;
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedActiveGroup()
+{
+  if (!getRobotModel())
+    return;
+
+  if (active_group_property_->getStdString().empty())
+    return;
+
+  if (!getRobotModel()->hasJointModelGroup(active_group_property_->getStdString()))
+    return;
+
+  if (robot_interaction_)
+    robot_interaction_->decideActiveComponents(active_group_property_->getStdString(), robot_interaction::RobotInteraction::EEF_POSITION_AND_VIEWPLANE);
+
+  robotVisualChanged(); // TODO: is this needed?
+  robotMarkersChanged();
+}
+
+// call when the robot visual state changes to update the robot visual
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::robotVisualChanged()
+{
+  robot_visual_dirty_ = true;
+  robot_visual_position_dirty_ = true;
+}
+
+// call when the robot state changes to update the robot visual
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::robotVisualPositionChanged()
+{
+  robot_visual_position_dirty_ = true;
+}
+
+// call when the appearance and position of the markers needs to change
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::robotMarkersChanged()
+{
+  robot_markers_dirty_ = true;
+  robot_markers_position_dirty_ = true;
+  addBackgroundJob(boost::bind(&CollisionDistanceFieldDisplay::updateRobotMarkers, this), "updateRobotMarkers:all");
+}
+
+// call when only the position of the markers needs to change
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::robotMarkerPositionsChanged()
+{
+  robot_markers_position_dirty_ = true;
+  addBackgroundJob(boost::bind(&CollisionDistanceFieldDisplay::updateRobotMarkers, this), "updateRobotMarkers:position");
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::setRobotState(const robot_state::RobotState &state)
+{
+  robot_state_handler_->setState(state);
+  robotVisualPositionChanged();
+  robotMarkerPositionsChanged();
+}
+
+
+//===========================================================================
+// update() processing
+//===========================================================================
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, float ros_dt)
+{
+  if (int_marker_display_)
+    int_marker_display_->update(wall_dt, ros_dt);
+
+  updateRobotVisual();
+
+  PlanningSceneDisplay::update(wall_dt, ros_dt);
+
+  if (publish_tf_property_->getBool())
+    publishTF();
+}
+
+// Update the robot visual appearance based on attributes.
+// Should only be called from update().  To trigger this call robotVisualChanged() or robotVisualPositionChanged()
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
+{
+  if (!robot_model_loaded_)
+    return;
+  
+  if (robot_visual_dirty_)
+  {
+    robot_visual_dirty_ = false;
+    robot_visual_position_dirty_ = false;
+
+    bool vis = show_robot_visual_property_->getBool();
+    bool col = show_robot_collision_property_->getBool();
+
+    robot_visual_->setAlpha(robot_alpha_property_->getFloat());
+    
+    robot_visual_->setCollisionVisible(col);
+    robot_visual_->setVisualVisible(vis);
+    robot_visual_->setVisible(isEnabled() && (vis || col));
+
+    robot_visual_->update(getRobotState(), ColorRGBA(attached_object_color_property_, robot_alpha_property_));
+
+    context_->queueRender();
+  }
+  else if (robot_visual_position_dirty_)
+  {
+    robot_visual_position_dirty_ = false;
+    robot_visual_->update(getRobotState());
+    context_->queueRender();
+  }
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
@@ -230,5 +380,32 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
   }
   transforms.resize(j);
   tf_broadcaster_.sendTransform(transforms);
+}
+
+//===========================================================================
+// background tasks
+//===========================================================================
+
+// Update the marker visual appearance based on the robot state.
+// Do not call directly.  To trigger this call robotMarkersChanged() or robotMarkerPositionsChanged().
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotMarkers()
+{
+  if (!robot_interaction_)
+    return;
+
+  if (robot_markers_dirty_)
+  {
+    const static double DEFAULT_MARKER_SCALE = 0.0;
+    robot_markers_dirty_ = false;
+    robot_markers_position_dirty_ = false;
+    robot_interaction_->clearInteractiveMarkers();
+    robot_interaction_->addInteractiveMarkers(robot_state_handler_, DEFAULT_MARKER_SCALE);
+    robot_interaction_->publishInteractiveMarkers();
+  }
+  else if (robot_markers_position_dirty_)
+  {
+    robot_markers_position_dirty_ = false;
+    robot_interaction_->updateInteractiveMarkers(robot_state_handler_);
+  }
 }
 

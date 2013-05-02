@@ -33,7 +33,11 @@
 #define ACORN_DISPLAY_H
 
 #include <moveit/planning_scene_rviz_plugin/planning_scene_display.h>
+
+#ifndef Q_MOC_RUN
 #include <tf/transform_broadcaster.h>
+#include <moveit/robot_interaction/robot_interaction.h>
+#endif
 
 namespace Ogre
 {
@@ -45,6 +49,7 @@ namespace rviz
 class ColorProperty;
 class FloatProperty;
 class IntProperty;
+class EditableEnumProperty;
 }
 
 namespace moveit_rviz_plugin
@@ -58,21 +63,21 @@ public:
   CollisionDistanceFieldDisplay();
   virtual ~CollisionDistanceFieldDisplay();
 
-protected:
-  virtual void onInitialize();
-  virtual void onEnable();
-  virtual void onDisable();
-  virtual void onRobotModelLoaded();
-  virtual void reset();
-  virtual void update(float wall_dt, float ros_dt);
-
-private Q_SLOTS:
-  void robotAppearanceChanged();
-
-private:
-  void updateRobotVisual();
-  void publishTF();
-
+#if 1
+  void setRobotState(const robot_state::RobotState &state);
+  robot_state::RobotStateConstPtr getRobotState() const
+  {
+    return robot_state_handler_->getState();
+  }
+  const robot_interaction::RobotInteractionPtr& getRobotInteraction() const
+  {
+    return robot_interaction_;
+  }
+  const robot_interaction::RobotInteraction::InteractionHandlerPtr& getRobotStateHandler() const
+  {
+    return robot_state_handler_;
+  }
+#else
   const robot_state::RobotStateConstPtr& getRobotState()
   {
     return robot_state_const_;
@@ -80,20 +85,67 @@ private:
   // TODO: remove these robot_state_ vars
   robot_state::RobotStatePtr robot_state_;
   robot_state::RobotStateConstPtr robot_state_const_;
+#endif
+
+protected:
+  virtual void onInitialize();
+  virtual void onEnable();
+  virtual void onDisable();
+  virtual void onRobotModelLoaded();
+  virtual void reset();
+  virtual void fixedFrameChanged();
+  virtual void update(float wall_dt, float ros_dt);
+
+private Q_SLOTS:
+  void robotVisualChanged();          // call when the robot visual state changes to update the robot visual
+  void robotVisualPositionChanged();  // call when the robot state changes to update the robot visual
+  void robotMarkersChanged();         // call when the appearance and position of the markers needs to change
+  void robotMarkerPositionsChanged(); // call when only the position of the markers needs to change
+  void changedActiveGroup();
+
+private:
+
+  // callback called when interactive markers have moved
+  void markersMoved(robot_interaction::RobotInteraction::InteractionHandler *, bool error_state_changed);
+
+  // true if solution is not in collision.
+  // NOTE: this modifies the state that group is a child of.
+  bool isIKSolutionCollisionFree(robot_state::JointStateGroup *group, const std::vector<double> &ik_solution) const;
+
+  // Do not call this directly.  Instead call robotVisualChanged() which causes update() to call this.
+  // Updates the state of the robot visual and queues a render.
+  void updateRobotVisual();
+
+  // Do not call this directly.  This is called regularly by update().
+  // Publish the current robot state on TF.
+  void publishTF();
+
+  // Do not call this directly.  Instead call robotMarkersChanged() which causes this to be called in background.
+  // Creates and/or updates the robot_interaction markers.
+  void updateRobotMarkers();
 
 
   // for drawing the robot
   RobotStateVisualizationPtr robot_visual_;
   bool robot_visual_dirty_;
+  bool robot_visual_position_dirty_;
   bool robot_model_loaded_;
+
+  // for managing interactive markers to manipulate the robot state.
+  rviz::Display *int_marker_display_;
+  robot_interaction::RobotInteractionPtr robot_interaction_;
+  robot_interaction::RobotInteraction::InteractionHandlerPtr robot_state_handler_;
+  bool robot_markers_dirty_;
+  bool robot_markers_position_dirty_;
 
   // for publishing robot state in standalone mode
   tf::TransformBroadcaster tf_broadcaster_;
   
-
   // User-editable property variables.
   rviz::BoolProperty* show_robot_visual_property_;
   rviz::BoolProperty* show_robot_collision_property_;
+  rviz::EditableEnumProperty* active_group_property_;
+  rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
