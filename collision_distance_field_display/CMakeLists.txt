@@ -71,15 +71,19 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 qt4_wrap_cpp(
   MOC_SOURCES
-    include/collision_distance_field_display/collision_distance_field_display.h)
+    include/collision_distance_field_display/collision_distance_field_display.h
+    include/collision_distance_field_display/joint_tree_base.h
+)
 
 
 add_library(
   ${LIBNAME}
-    src/collision_distance_field_display.cpp
     src/collision_distance_field_display_plugin.cpp
+    src/collision_distance_field_display.cpp
+    src/joint_tree_base.cpp
     src/color_cast.cpp
-    ${MOC_SOURCES})
+    ${MOC_SOURCES}
+)
 
 target_link_libraries(
   ${LIBNAME}
@@ -88,6 +92,22 @@ target_link_libraries(
     ${QT_LIBRARIES}
     ${Boost_LIBRARIES}
 )
+
+add_executable(
+  collision_distance_field_display_linktest
+    src/collision_distance_field_display_linktest.cpp
+)
+
+target_link_libraries(
+  collision_distance_field_display_linktest
+    ${LIBNAME}
+    ${catkin_LIBRARIES}
+    ${OGRE_LIBRARIES}
+    ${QT_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
+
 
 install(
   DIRECTORY
@@ -99,7 +119,8 @@ install(
   TARGETS
     ${LIBNAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
 
 
 

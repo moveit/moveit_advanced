@@ -30,6 +30,7 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/collision_distance_field_display.h>
+#include <collision_distance_field_display/joint_tree_base.h>
 #include <collision_distance_field_display/color_cast.h>
 
 #include <OGRE/OgreSceneNode.h>
@@ -57,6 +58,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   , robot_markers_dirty_(true)
   , robot_markers_position_dirty_(true)
   , int_marker_display_(NULL)
+  , joint_tree_(NULL)
 {
   show_robot_visual_property_ = new rviz::BoolProperty(
                                       "Show Robot Visual",
@@ -103,6 +105,10 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   // turn Scene Robot visual off by default
   if (scene_robot_enabled_property_)
     scene_robot_enabled_property_->setValue(false);
+  if (robot_category_)
+    robot_category_->hide();
+
+  joint_tree_ = new joint_tree::JointTreeBase(this);
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
@@ -316,14 +322,18 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     robot_visual_->setVisualVisible(vis);
     robot_visual_->setVisible(isEnabled() && (vis || col));
 
-    robot_visual_->update(getRobotState(), color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
+    robot_state::RobotStateConstPtr state = getRobotState();
+    robot_visual_->update(state, color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
+    joint_tree_->setRobotState(state);
     context_->queueRender();
   }
   else if (robot_visual_position_dirty_)
   {
     robot_visual_position_dirty_ = false;
-    robot_visual_->update(getRobotState());
+    robot_state::RobotStateConstPtr state = getRobotState();
+    robot_visual_->update(state);
+    joint_tree_->setRobotState(state);
     context_->queueRender();
   }
 }
