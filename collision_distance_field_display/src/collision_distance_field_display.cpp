@@ -193,6 +193,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
   robot_model_loaded_ = true;
   robotVisualChanged();
   robotMarkersChanged();
+  changedActiveGroup();
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::markersMoved(robot_interaction::RobotInteraction::InteractionHandler *, bool error_state_changed)
@@ -215,19 +216,23 @@ bool moveit_rviz_plugin::CollisionDistanceFieldDisplay::isIKSolutionCollisionFre
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedActiveGroup()
 {
-  if (!getRobotModel())
+  if (!robot_model_loaded_ || !robot_interaction_)
     return;
 
   if (active_group_property_->getStdString().empty())
-    return;
-
-  if (!getRobotModel()->hasJointModelGroup(active_group_property_->getStdString()))
-    return;
-
-  if (robot_interaction_)
+  {
+    robot_interaction_->clear();
+  }
+  else if (!getRobotModel()->hasJointModelGroup(active_group_property_->getStdString()))
+  {
+    robot_interaction_->clear();
+  }
+  else
+  {
     robot_interaction_->decideActiveComponents(active_group_property_->getStdString(), robot_interaction::RobotInteraction::EEF_POSITION_AND_VIEWPLANE);
+  }
 
-  robotVisualChanged(); // TODO: is this needed?
+  robotVisualChanged();
   robotMarkersChanged();
 }
 
