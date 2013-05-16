@@ -235,7 +235,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedActiveGroup()
   }
   else
   {
-    robot_interaction_->decideActiveComponents(active_group_property_->getStdString(), robot_interaction::RobotInteraction::EEF_POSITION_AND_VIEWPLANE);
+    robot_interaction_->decideActiveComponents(active_group_property_->getStdString(), robot_interaction::RobotInteraction::EEF_6DOF_AND_VIEWPLANE);
   }
 
   robotVisualChanged();
