@@ -38,6 +38,8 @@
 
 #include <rviz/properties/bool_property.h>
 
+#include <ros/console.h>
+
 joint_tree::JointTreeBase::JointTreeBase(rviz::Property* parent)
   : Property("Joint Tree", QVariant(), "Tree of robot joints and links.", parent)
   , show_all_links_(NULL)
@@ -75,12 +77,32 @@ void joint_tree::JointTreeBase::setRobotState(const boost::shared_ptr<const robo
 
 void joint_tree::JointTreeBase::changedExpandAllJoints()
 {
+  bool expand = true;
+  if (expand_all_joints_)
+    expand = expand_all_joints_->getBool();
 
+  for (std::map<std::string, Joint*>::iterator it = joint_props_.begin() ; it != joint_props_.end() ; ++it)
+  {
+    if (expand)
+      it->second->expand();
+    else
+      it->second->collapse();
+  }
 }
 
 void joint_tree::JointTreeBase::changedExpandAllLinks()
 {
+  bool expand = true;
+  if (expand_all_links_)
+    expand = expand_all_links_->getBool();
 
+  for (std::map<std::string, Link*>::iterator it = link_props_.begin() ; it != link_props_.end() ; ++it)
+  {
+    if (expand)
+      it->second->expand();
+    else
+      it->second->collapse();
+  }
 }
 
 void joint_tree::JointTreeBase::changedShowAllLinks()
@@ -104,7 +126,7 @@ void joint_tree::JointTreeBase::addTreeProperties()
   expand_all_joints_ = new rviz::BoolProperty(
                                       "Expand all joints",
                                       false,
-                                      "Expand/contract entire joint tree.",
+                                      "Expand/collapse entire joint tree.",
                                       this,
                                       SLOT( changedExpandAllJoints() ));
   expand_all_links_ = new rviz::BoolProperty(
@@ -188,6 +210,7 @@ joint_tree::JointTreeBase::Joint *joint_tree::JointTreeBase::addJoint(
   if (show_joint_properties_->getBool())
   {
     Joint* joint = newJoint(parent, joint_model);
+    joint_props_[joint_model->getName()] = joint;
     addJointProperties(joint);
     parent = joint;
   }
@@ -201,6 +224,7 @@ joint_tree::JointTreeBase::Link *joint_tree::JointTreeBase::addLink(
   if (show_link_properties_)
   {
     Link* link = newLink(parent, link_model);
+    link_props_[link_model->getName()] = link;
     addLinkProperties(link);
     parent = link;
   }
