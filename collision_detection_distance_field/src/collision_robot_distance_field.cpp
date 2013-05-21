@@ -42,14 +42,15 @@ collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
     double scale)
   : CollisionRobot(kmodel, padding, scale)
 {
+  initSpheres();
 }
 
 collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
     const CollisionRobotDistanceField &other)
   : CollisionRobot(other)
 {
+  initSpheres();
 }
-
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const CollisionRequest &req, 
@@ -58,6 +59,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const AllowedCollisionMatrix &acm) const
 {
   logError("DistanceField collision checking not yet implemented");
+  checkSelfCollisionUsingSpheres(state);
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(

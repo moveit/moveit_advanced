@@ -38,6 +38,7 @@
 #define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIEL
 
 #include <moveit/collision_detection_distance_field/collision_common_distance_field.h>
+#include <boost/thread.hpp>
 
 namespace collision_detection
 {
@@ -49,7 +50,6 @@ class CollisionRobotDistanceField : public CollisionRobot
 public:
 
   CollisionRobotDistanceField(const robot_model::RobotModelConstPtr &kmodel, double padding = 0.0, double scale = 1.0);
-
   CollisionRobotDistanceField(const CollisionRobotDistanceField &other);
 
   virtual void checkSelfCollision(const CollisionRequest &req,
@@ -111,7 +111,62 @@ protected:
 
   virtual void updatedPaddingOrScaling(const std::vector<std::string> &links);
 
+
+  
+
 private:
+  struct WorkArea
+  {
+    // place to store transformed copy of sphere_centers_
+    EigenSTL::vector_Vector3d transformed_sphere_centers_;
+  };
+
+  // get a mutable per-thread work area to store temporary values
+  WorkArea& getWorkArea() const;
+
+  // return the LinkModel for a particular index in sphere_centers_, sphere_radii_, or sphere_link_map_
+  const robot_model::LinkModel* sphereIndexToLinkModel(int idx) const
+  {
+    return kmodel_->getLinkModels()[sphere_link_map_[idx]];
+  }
+
+  // init functions
+  void initSpheres();
+  void initSphereAcm();
+  bool avoidCheckingCollision(
+        const robot_model::LinkModel* link0,
+        size_t sphere_idx0,
+        const robot_model::LinkModel* link1,
+        size_t sphere_idx1);
+
+  // transform sphere centers to planning frame.  Results are placed into work.transformed_sphere_centers_.
+  void transformSpheres(
+        const robot_state::RobotState& state,
+        WorkArea& work) const;
+
+  // check self collision using only sphere checks
+  void checkSelfCollisionUsingSpheres(const robot_state::RobotState& state) const;
+
+  
+  // link-order is defined by the order of links in kmodel_->getLinkModels().
+
+  // for each link (in link order), how many spheres represent the link.
+  std::vector<int> spheres_per_link_;
+
+  // sphere centers for all spheres for all links in link order
+  EigenSTL::vector_Vector3d sphere_centers_;
+
+  // sphere radii for all spheres for all links in link order
+  std::vector<double> sphere_radii_;
+
+  // for each sphere, index of link the sphere is associated with
+  std::vector<uint16_t> sphere_link_map_;
+
+  // bit field representing allowed sphere collisions.  See initSphereAcm() for details.
+  std::vector<uint32_t> sphere_acm_;
+
+  // mutable thread specific work area
+  mutable boost::thread_specific_ptr<WorkArea> work_area_;
 };
 
 }
