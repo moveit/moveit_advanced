@@ -51,8 +51,16 @@
 
 #include <boost/filesystem.hpp>
 
-static std::string urdf_file("../../../src/moveit_resources/test/urdf/robot.xml");
-static std::string srdf_file("../../../src/moveit_resources/test/srdf/robot.xml");
+#include <resources/config.h>
+
+//static std::string urdf_file("test/urdf/robot.xml");
+//static std::string srdf_file("test/srdf/robot.xml");
+
+// MOVEIT_RESOURCES_DIR defined in config.h by CMakelist.txt
+static const boost::filesystem::path moveit_resources(MOVEIT_RESOURCES_DIR);
+static const boost::filesystem::path urdf_file("test/urdf/robot.xml");
+static const boost::filesystem::path srdf_file("test/srdf/robot.xml");
+
 
 class CollisionDetectionDistanceFieldTester : public testing::Test{
 
@@ -60,9 +68,12 @@ protected:
 
   virtual void SetUp() 
   {
+    boost::filesystem::path urdf_path = moveit_resources / urdf_file;
+    boost::filesystem::path srdf_path = moveit_resources / srdf_file;
+
     srdf_model_.reset(new srdf::Model());
     std::string xml_string;
-    std::fstream xml_file(urdf_file.c_str(), std::fstream::in);
+    std::fstream xml_file(urdf_path.c_str(), std::fstream::in);
 
     if (xml_file.is_open())
     {
@@ -78,10 +89,10 @@ protected:
     }
     else
     {
-      EXPECT_EQ("FAILED TO OPEN FILE", urdf_file);
+      EXPECT_EQ("FAILED TO OPEN FILE", urdf_path);
       urdf_ok_ = false;
     }
-    srdf_ok_ = srdf_model_->initFile(*urdf_model_, srdf_file);
+    srdf_ok_ = srdf_model_->initFile(*urdf_model_, srdf_path.string());
 
     kmodel_.reset(new robot_model::RobotModel(urdf_model_, srdf_model_));
 
