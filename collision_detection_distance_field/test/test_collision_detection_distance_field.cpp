@@ -94,11 +94,11 @@ protected:
     }
     srdf_ok_ = srdf_model_->initFile(*urdf_model_, srdf_path.string());
 
-    kmodel_.reset(new robot_model::RobotModel(urdf_model_, srdf_model_));
+    robot_model_.reset(new robot_model::RobotModel(urdf_model_, srdf_model_));
 
-    acm_.reset(new collision_detection::AllowedCollisionMatrix(kmodel_->getLinkModelNames(), true));
+    acm_.reset(new collision_detection::AllowedCollisionMatrix(robot_model_->getLinkModelNames(), true));
 
-    crobot_.reset(new collision_detection::CollisionRobotDistanceField(kmodel_));
+    crobot_.reset(new collision_detection::CollisionRobotDistanceField(robot_model_));
     cworld_.reset(new collision_detection::CollisionWorldDistanceField());
   }
 
@@ -115,7 +115,7 @@ protected:
   boost::shared_ptr<urdf::ModelInterface>  urdf_model_;
   boost::shared_ptr<srdf::Model>           srdf_model_;
   
-  robot_model::RobotModelPtr             kmodel_;
+  robot_model::RobotModelPtr             robot_model_;
   
   boost::shared_ptr<collision_detection::CollisionRobot>        crobot_;
   boost::shared_ptr<collision_detection::CollisionWorld>        cworld_;
@@ -133,12 +133,12 @@ TEST_F(CollisionDetectionDistanceFieldTester, InitOK)
 
 TEST_F(CollisionDetectionDistanceFieldTester, DefaultNotInCollision)
 {
-  robot_state::RobotState kstate(kmodel_);
-  kstate.setToDefaultValues();
+  robot_state::RobotState robot_state(robot_model_);
+  robot_state.setToDefaultValues();
 
   collision_detection::CollisionRequest req;
   collision_detection::CollisionResult res;
-  crobot_->checkSelfCollision(req, res, kstate, *acm_);
+  crobot_->checkSelfCollision(req, res, robot_state, *acm_);
   ASSERT_FALSE(res.collision);
 }
 
