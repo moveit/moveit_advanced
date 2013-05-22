@@ -58,7 +58,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const robot_state::RobotState &state,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionRobotDistanceField::checkSelfCollision 1 not yet implemented");
   checkSelfCollisionUsingSpheres(state);
 }
 
@@ -69,7 +69,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const robot_state::RobotState &state2, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField continuous collision checking not yet implemented");
+  logError("CollisionRobotDistanceField::checkSelfCollision 2 checking not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
@@ -80,7 +80,7 @@ void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
     const robot_state::RobotState &other_state,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionRobotDistanceField::checkSelfCollision 3 not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
@@ -93,14 +93,14 @@ void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
     const robot_state::RobotState &other_state2,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField continuous collision checking not yet implemented");
+  logError("CollisionRobotDistanceField::checkSelfCollision 4 checking not yet implemented");
 }
 
 double collision_detection::CollisionRobotDistanceField::distanceSelf(
     const robot_state::RobotState &state,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionRobotDistanceField::distanceSelf 1 not yet implemented");
 }
 
 double collision_detection::CollisionRobotDistanceField::distanceOther(
@@ -109,7 +109,7 @@ double collision_detection::CollisionRobotDistanceField::distanceOther(
     const robot_state::RobotState &other_state,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionRobotDistanceField::distanceSelf 2 not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(

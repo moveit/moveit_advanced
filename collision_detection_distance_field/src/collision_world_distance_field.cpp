@@ -74,7 +74,7 @@ void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
     const robot_state::RobotState &state, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionWorldDistanceField::checkRobotCollision 1 not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
@@ -85,7 +85,7 @@ void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
     const robot_state::RobotState &state2, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField continuous collision checking not yet implemented");
+  logError("CollisionWorldDistanceField::checkRobotCollision 2 checking not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::checkWorldCollision(
@@ -94,7 +94,7 @@ void collision_detection::CollisionWorldDistanceField::checkWorldCollision(
     const CollisionWorld &other_world, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionWorldDistanceField::checkWorldCollision 1 not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::setWorld(
@@ -124,14 +124,14 @@ double collision_detection::CollisionWorldDistanceField::distanceRobot(
     const robot_state::RobotState &state, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionWorldDistanceField::distanceRobot 1 not yet implemented");
 }
 
 double collision_detection::CollisionWorldDistanceField::distanceWorld(
     const CollisionWorld &world, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("DistanceField collision checking not yet implemented");
+  logError("CollisionWorldDistanceField::distanceWorld 2 not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
