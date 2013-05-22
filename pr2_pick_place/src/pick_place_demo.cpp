@@ -40,6 +40,7 @@
 // MoveIt!
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit/move_group_interface/move_group.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <shape_tools/solid_primitive_dims.h>
 
 #include <object_recognition_msgs/TableArray.h>
@@ -55,7 +56,7 @@ static const std::string ROBOT_DESCRIPTION="robot_description";
 class PickPlaceGroup
 {
 public:
-  PickPlaceGroup(move_group_interface::MoveGroup &group): group_(group), place_resolution_(0.1), listen_tables_(false)
+  PickPlaceGroup(moveit::planning_interface::MoveGroup &group): group_(group), place_resolution_(0.1), listen_tables_(false)
   {
     table_dirty_ = false;
     table_subscriber_ = node_handle_.subscribe("table_array", 1, &PickPlaceGroup::tableCallback, this);
@@ -268,7 +269,7 @@ public:
   tf::TransformListener tf_;
   ros::NodeHandle node_handle_;
   bool table_dirty_;
-  move_group_interface::MoveGroup& group_;
+  moveit::planning_interface::MoveGroup& group_;
   ros::Subscriber table_subscriber_;
   double place_resolution_;
   object_recognition_msgs::TableArray table_array_;
@@ -287,7 +288,8 @@ int main(int argc, char **argv)
 
   ros::WallDuration(2.0).sleep();
   
-  move_group_interface::MoveGroup group("right_arm");
+  moveit::planning_interface::PlanningSceneInterface scene_interface;
+  moveit::planning_interface::MoveGroup group("right_arm");
   group.setPlanningTime(45.0);
 
   PickPlaceGroup pg(group);
@@ -322,7 +324,7 @@ int main(int argc, char **argv)
   {    
     if(state == START)
     {  
-       objects = group.getRecognizedObjectsInROI(0.3,-0.5,0.6,0.7,0.5,0.9);
+      objects = scene_interface.getKnownObjectNamesInROI(0.3,-0.5,0.6,0.7,0.5,0.9, true);
       if(objects.empty())
       {
 	  ROS_INFO("Could not find recognized object in workspace");
