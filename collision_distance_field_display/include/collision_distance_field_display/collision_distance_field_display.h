@@ -101,6 +101,10 @@ private:
   // Updates the state of the robot visual and queues a render.
   void updateRobotVisual();
 
+  // Do not call this directly.  Instead call robotVisualChanged() which causes update() to call this.
+  // Check collisions and joint limits and update colors.
+  void updateLinkColors(const robot_state::RobotState& state);
+
   // Do not call this directly.  This is called regularly by update().
   // Publish the current robot state on TF.
   void publishTF();
@@ -132,6 +136,8 @@ private:
   rviz::EditableEnumProperty* active_group_property_;
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
+  rviz::ColorProperty* colliding_link_color_property_;
+  rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
 

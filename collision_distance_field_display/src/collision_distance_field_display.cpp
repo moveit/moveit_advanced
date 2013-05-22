@@ -89,6 +89,18 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       true,
                                       "Enable publishing of robot link frames on TF (useful with TF display).",
                                       this);
+  colliding_link_color_property_ = new rviz::ColorProperty(
+                                      "Colliding Link Color",
+                                      QColor( 255, 0, 0 ),
+                                      "Color to draw links that are colliding with something.",
+                                      this,
+                                      SLOT( robotVisualChanged() ));
+  joint_violation_link_color_property_ = new rviz::ColorProperty(
+                                      "Joint Violation Link Color",
+                                      QColor( 255, 0, 255 ),
+                                      "Color to draw links whose parent joints are out of range.",
+                                      this,
+                                      SLOT( robotVisualChanged() ));
   attached_object_color_property_ = new rviz::ColorProperty(
                                       "Attached Object Color",
                                       QColor( 204, 51, 204 ),
@@ -301,6 +313,28 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, fl
     publishTF();
 }
 
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const robot_state::RobotState& state)
+{
+  std::vector<std::string> collision_links;
+  getPlanningSceneRO()->getCollidingLinks(collision_links, state);
+
+  unsetAllColors(&robot_visual_->getRobot());
+
+  for (std::vector<std::string>::const_iterator link = collision_links.begin() ; link != collision_links.end() ; ++link)
+  {
+    setLinkColor(&robot_visual_->getRobot(), *link, colliding_link_color_property_->getColor());
+  }
+
+  for (std::vector<robot_state::JointState*>::const_iterator joint = state.getJointStateVector().begin() ; joint != state.getJointStateVector().end() ; ++joint)
+  {
+    if (!(*joint)->satisfiesBounds())
+    {
+      const std::string& link = (*joint)->getJointModel()->getChildLinkModel()->getName();
+      setLinkColor(&robot_visual_->getRobot(), link, joint_violation_link_color_property_->getColor());
+    }
+  }
+}
+
 // Update the robot visual appearance based on attributes.
 // Should only be called from update().  To trigger this call robotVisualChanged() or robotVisualPositionChanged()
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
@@ -323,6 +357,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     robot_visual_->setVisible(isEnabled() && (vis || col));
 
     robot_state::RobotStateConstPtr state = getRobotState();
+    updateLinkColors(*state);
     robot_visual_->update(state, color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
     joint_tree_->setRobotState(state);
@@ -332,6 +367,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
   {
     robot_visual_position_dirty_ = false;
     robot_state::RobotStateConstPtr state = getRobotState();
+    updateLinkColors(*state);
     robot_visual_->update(state);
     joint_tree_->setRobotState(state);
     context_->queueRender();
