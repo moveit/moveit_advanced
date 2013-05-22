@@ -145,6 +145,12 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
   sphere_acm_.reserve(acm_it - sphere_acm.begin());
   for (std::vector<uint32_t>::iterator acm_it2 = sphere_acm.begin(); acm_it2 != acm_it ; ++acm_it2)
     sphere_acm_.push_back(*acm_it2);
+
+
+#if 1
+  for (std::vector<uint32_t>::iterator acm_it2 = sphere_acm.begin(); acm_it2 != acm_it ; ++acm_it2)
+    logInform("  ACM[%d] = 0x%08x", int(acm_it2-sphere_acm.begin()), int(*acm_it2));
+#endif
 }
 
 // Check whether collision checking should be avoided for this sphere pair.
@@ -246,7 +252,7 @@ logInform("Check: %s <--> %s    acm=%08x",
 logInform("     r=%f  r*r=%f  cc=%f", r, r*r, (*acenters_it - *bcenters_it).squaredNorm());
       if ((*acenters_it - *bcenters_it).squaredNorm() <= r*r)
       {
-        logInform("Collided! %s <--> %s",
+        logInform("     COLLIDED! %s <--> %s",
           sphereIndexToLinkModel(acenters_it - work.transformed_sphere_centers_.begin())->getName().c_str(),
           sphereIndexToLinkModel(bcenters_it - work.transformed_sphere_centers_.begin())->getName().c_str());
       }
