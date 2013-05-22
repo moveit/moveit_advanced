@@ -139,7 +139,7 @@ private:
         const robot_model::LinkModel* link1,
         size_t sphere_idx1);
 
-  // transform sphere centers to planning frame.  Results are placed into work.transformed_sphere_centers_.
+  // transform sphere centers to planning frame.  Results are placed into mutable work.transformed_sphere_centers_.
   void transformSpheres(
         const robot_state::RobotState& state,
         WorkArea& work) const;
@@ -159,7 +159,8 @@ private:
   // sphere radii for all spheres for all links in link order
   std::vector<double> sphere_radii_;
 
-  // for each sphere, index of link the sphere is associated with
+  // for each sphere, index of link the sphere is associated with.
+  // This is an index into the kmodel_->getLinkModels() and state->getLinkStateVector() vectors
   std::vector<uint16_t> sphere_link_map_;
 
   // bit field representing allowed sphere collisions.  See initSphereAcm() for details.
