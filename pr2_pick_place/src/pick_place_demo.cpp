@@ -324,11 +324,7 @@ int main(int argc, char **argv)
   {    
     if(state == START)
     {  
-<<<<<<< HEAD
-       //objects = group.getRecognizedObjectsInROI(0.3,-0.5,0.6,0.7,0.5,0.9);
-=======
       objects = scene_interface.getKnownObjectNamesInROI(0.3,-0.5,0.6,0.7,0.5,0.9, true);
->>>>>>> edb01bb2e74796a1541f7ef4c5d565c5366dfd52
       if(objects.empty())
       {
 	  ROS_INFO("Could not find recognized object in workspace");
