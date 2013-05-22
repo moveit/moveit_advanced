@@ -49,6 +49,7 @@ namespace rviz
 class ColorProperty;
 class FloatProperty;
 class IntProperty;
+class EnumProperty;
 class EditableEnumProperty;
 }
 
@@ -87,6 +88,7 @@ private Q_SLOTS:
   void robotMarkersChanged();         // call when the appearance and position of the markers needs to change
   void robotMarkerPositionsChanged(); // call when only the position of the markers needs to change
   void changedActiveGroup();
+  void changedCollisionMethod();
 
 private:
 
@@ -133,6 +135,7 @@ private:
   // User-editable property variables.
   rviz::BoolProperty* show_robot_visual_property_;
   rviz::BoolProperty* show_robot_collision_property_;
+  rviz::EnumProperty* collision_method_property_;
   rviz::EditableEnumProperty* active_group_property_;
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;

@@ -44,11 +44,21 @@
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/int_property.h>
+#include <rviz/properties/enum_property.h>
 #include <rviz/properties/editable_enum_property.h>
 #include <rviz/frame_manager.h>
 #include <rviz/display_factory.h>
 
 #include <moveit/rviz_plugin_render_tools/robot_state_visualization.h>
+#include <moveit/collision_detection_distance_field/collision_detector_allocator_distance_field.h>
+#include <moveit/collision_detection_fcl/collision_detector_allocator_fcl.h>
+
+enum {
+  CD_UNKNOWN,
+  CD_FCL,
+  CD_DISTANCE_FIELD,
+  CD_CNT
+};
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay()
   : PlanningSceneDisplay()
@@ -72,6 +82,16 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "Show the robot collision geometry.",
                                       this,
                                       SLOT( robotVisualChanged() ));
+  collision_method_property_ = new rviz::EnumProperty(
+                                      "Collision Method",
+                                      "",
+                                      "How to perform collision detection.",
+                                      this,
+                                      SLOT( changedCollisionMethod() ),
+                                      this );
+  collision_method_property_->addOption("FCL", CD_FCL);
+  collision_method_property_->addOption("DistanceField", CD_DISTANCE_FIELD);
+  collision_method_property_->setValue("FCL");
   active_group_property_ = new rviz::EditableEnumProperty(
                                       "Active Group",
                                       "",
@@ -163,6 +183,18 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onEnable()
   changedActiveGroup();
 }
 
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
+{
+  if (!robot_model_loaded_)
+    return;
+
+  if (!getPlanningSceneRW()->setActiveCollisionDetector(collision_method_property_->getStdString()))
+  {
+    // failed.  Set property string to actual active detector
+    collision_method_property_->setStdString(getPlanningSceneRO()->getActiveCollisionDetectorName());
+  }
+}
+
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::reset()
 {
   robot_model_loaded_ = false;
@@ -206,6 +238,33 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
   active_group_property_->sortOptions();
   if (!groups.empty() && active_group_property_->getStdString().empty())
     active_group_property_->setStdString(groups[0]);
+
+
+  // setup collision detectors
+  std::vector<std::string> detector_names;
+  std::string active_detector_name;
+  {
+    planning_scene_monitor::LockedPlanningSceneRW ps = getPlanningSceneRW();
+
+    // add all collision detectors which should be available
+    ps->addCollisionDetector(collision_detection::CollisionDetectorAllocatorFCL::create());
+    ps->addCollisionDetector(collision_detection::CollisionDetectorAllocatorDistanceField::create());
+
+    ps->getCollisionDetectorNames(detector_names);
+    active_detector_name = ps->getActiveCollisionDetectorName();
+  }
+
+  // add collision detector names as property options
+  std::string old_detector_name = collision_method_property_->getStdString();
+  collision_method_property_->clearOptions();
+  for (std::vector<std::string>::const_iterator it = detector_names.begin() ; it != detector_names.end() ; ++it)
+    collision_method_property_->addOptionStd(*it);
+
+  // set default detector -- old value if available, or else current active.
+  if (std::find(detector_names.begin(), detector_names.end(), old_detector_name) != detector_names.end())
+    collision_method_property_->setStdString(old_detector_name);
+  else
+    collision_method_property_->setStdString(active_detector_name);
 
 
   robot_model_loaded_ = true;

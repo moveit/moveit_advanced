@@ -20,6 +20,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 
 # Find ROS packages
 find_package(catkin REQUIRED COMPONENTS
+  collision_detection_distance_field
   moveit_ros_visualization
   moveit_ros_robot_interaction
   eigen_conversions
