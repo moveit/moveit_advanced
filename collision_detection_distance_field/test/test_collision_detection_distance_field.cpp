@@ -56,10 +56,16 @@
 //static std::string urdf_file("test/urdf/robot.xml");
 //static std::string srdf_file("test/srdf/robot.xml");
 
-// MOVEIT_RESOURCES_DIR defined in config.h by CMakelist.txt
+// MOVEIT_RESOURCES_DIR and TEST_RESOURCES_DIR defined in config.h by CMakelist.txt
+#if 0
 static const boost::filesystem::path moveit_resources(MOVEIT_RESOURCES_DIR);
 static const boost::filesystem::path urdf_file("test/urdf/robot.xml");
 static const boost::filesystem::path srdf_file("test/srdf/robot.xml");
+#else
+static const boost::filesystem::path moveit_resources(TEST_RESOURCES_DIR);
+static const boost::filesystem::path urdf_file("pr2.urdf");
+static const boost::filesystem::path srdf_file("pr2.srdf");
+#endif
 
 
 class CollisionDetectionDistanceFieldTester : public testing::Test{
@@ -68,6 +74,8 @@ protected:
 
   virtual void SetUp() 
   {
+    console_bridge::setLogLevel(console_bridge::LOG_INFO);
+
     boost::filesystem::path urdf_path = moveit_resources / urdf_file;
     boost::filesystem::path srdf_path = moveit_resources / srdf_file;
 
