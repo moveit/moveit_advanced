@@ -1,0 +1,6 @@
+/wg/stor2a/gedikli/programming/moveit/src/moveit_advanced/perception/depth_image_octomap_updater/include/moveit/depth_image_octomap_updater/depth_image_octomap_updater.h
+/wg/stor2a/gedikli/programming/moveit/src/moveit_advanced/perception/depth_image_octomap_updater/include/moveit/depth_image_octomap_updater/lazy_free_space_updater.h
+/wg/stor2a/gedikli/programming/moveit/src/moveit_advanced/perception/depth_image_octomap_updater/src/depth_image_octomap_updater.cpp
+/wg/stor2a/gedikli/programming/moveit/src/moveit_advanced/perception/depth_image_octomap_updater/src/lazy_free_space_updater.cpp
+/wg/stor2a/gedikli/programming/moveit/src/moveit_advanced/perception/depth_image_octomap_updater/src/updater_plugin.cpp
+/wg/stor2a/gedikli/programming/moveit/src/moveit_advanced/perception/depth_image_octomap_updater/CMakeLists.txt

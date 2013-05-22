@@ -37,12 +37,16 @@ import actionlib
 import rospy
 import sys
 import collections
+import copy
 from threading import Lock
 from object_recognition_msgs.msg import ObjectRecognitionAction, ObjectRecognitionGoal, RecognizedObjectArray
 from object_recognition_msgs.srv import GetObjectInformation
 
 from moveit_msgs.msg import CollisionObject
-from shape_msgs.msg import SolidPrimitive, Mesh
+from shape_msgs.msg import SolidPrimitive, Mesh, MeshTriangle
+from geometry_msgs.msg import Point
+from std_msgs.msg import Bool
+
 
 class ObjectDetector:
     """ Listen to recognized objects over a topic or using an action server. Trigger a callback when objects are found """
@@ -126,8 +130,8 @@ class ObjectBroadcaster:
             rospy.loginfo("Publishing collision object %s with confidence %s" % (co.id, str(ob.confidence)))
 
             # hack to turn the mesh into a box (aabb)
-            co.primitive_poses = co.mesh_poses
-            co.mesh_poses = []
+            #co.primitive_poses = co.mesh_poses
+            #co.mesh_poses = []
             min_x = 1000000
             min_y = 1000000
             min_z = 1000000
@@ -135,24 +139,144 @@ class ObjectBroadcaster:
             max_y = -1000000
             max_z = -1000000
             for v in co.meshes[0].vertices:
-                if v.position.x > max_x:
-                    max_x = v.position.x
-                if v.position.y > max_y:
-                    max_y = v.position.y
-                if v.position.z > max_z:
-                    max_z = v.position.z
-                if v.position.x < min_x:
-                    min_x = v.position.x
-                if v.position.y < min_y:
-                    min_y = v.position.y
-                if v.position.z < min_z:
-                    min_z = v.position.z
-            box = SolidPrimitive()
-            box.type = SolidPrimitive.BOX
-            box.dimensions = [max_x - min_x, max_y - min_y, max_z - min_z]
-            co.primitives = [box]
-            co.meshes = []
-            self._publisher.publish(co)
+                if v.x > max_x:
+                    max_x = v.x
+                if v.y > max_y:
+                    max_y = v.y
+                if v.z > max_z:
+                    max_z = v.z
+                if v.x < min_x:
+                    min_x = v.x
+                if v.y < min_y:
+                    min_y = v.y
+                if v.z < min_z:
+                    min_z = v.z
+
+            box_co = copy.deepcopy(co)
+            box_co.meshes[0].vertices = []
+            box_co.meshes[0].triangles = []
+
+            p = Point ()
+            p.x = min_x;
+            p.y = min_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = min_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = min_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = min_x;
+            p.y = min_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = min_x;
+            p.y = max_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = min_x;
+            p.y = max_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = max_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = max_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 0
+            t.vertex_indices [1] = 1
+            t.vertex_indices [2] = 2
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 2
+            t.vertex_indices [1] = 3
+            t.vertex_indices [2] = 0
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 4
+            t.vertex_indices [1] = 3
+            t.vertex_indices [2] = 2
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 2
+            t.vertex_indices [1] = 6
+            t.vertex_indices [2] = 4
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 7
+            t.vertex_indices [1] = 6
+            t.vertex_indices [2] = 2
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 2
+            t.vertex_indices [1] = 1
+            t.vertex_indices [2] = 7
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 3
+            t.vertex_indices [1] = 4
+            t.vertex_indices [2] = 5
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 5
+            t.vertex_indices [1] = 0
+            t.vertex_indices [2] = 3
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 0
+            t.vertex_indices [1] = 5
+            t.vertex_indices [2] = 7
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 7
+            t.vertex_indices [1] = 1
+            t.vertex_indices [2] = 0
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 7
+            t.vertex_indices [1] = 5
+            t.vertex_indices [2] = 4
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 4
+            t.vertex_indices [1] = 6
+            t.vertex_indices [2] = 7
+            box_co.meshes[0].triangles.append(t)
+
+            self._publisher.publish(box_co)
         
     def broadcast(self, objects):
         if isinstance(objects, collections.Iterable):

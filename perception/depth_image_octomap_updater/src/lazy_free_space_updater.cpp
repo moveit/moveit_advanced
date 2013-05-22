@@ -54,9 +54,13 @@ LazyFreeSpaceUpdater::LazyFreeSpaceUpdater(const OccMapTreePtr &tree, unsigned i
 
 LazyFreeSpaceUpdater::~LazyFreeSpaceUpdater()
 {
-  running_ = false;
-  update_condition_.notify_one();
-  process_condition_.notify_one();
+  {
+    boost::unique_lock<boost::mutex> ulock1(cell_process_lock_);
+    boost::unique_lock<boost::mutex> ulock2(update_cell_sets_lock_);
+    running_ = false;
+    update_condition_.notify_one();
+    process_condition_.notify_one();
+  }
   update_thread_.join();
   process_thread_.join();
 }
@@ -118,20 +122,20 @@ void LazyFreeSpaceUpdater::processThread()
 
 #pragma omp section
       {
-	/* compute the free cells along each ray that ends at an occupied cell */
-	for (OcTreeKeyCountMap::iterator it = process_occupied_cells_set_->begin(), end = process_occupied_cells_set_->end(); it != end; ++it)
-	  if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(it->first), key_ray1))
-	    for (octomap::KeyRay::iterator jt = key_ray1.begin(), end = key_ray1.end() ; jt != end ; ++jt)
-	      free_cells1[*jt] += it->second;
+        /* compute the free cells along each ray that ends at an occupied cell */
+        for (OcTreeKeyCountMap::iterator it = process_occupied_cells_set_->begin(), end = process_occupied_cells_set_->end(); it != end; ++it)
+          if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(it->first), key_ray1))
+            for (octomap::KeyRay::iterator jt = key_ray1.begin(), end = key_ray1.end() ; jt != end ; ++jt)
+              free_cells1[*jt] += it->second;
       }
 
 #pragma omp section
       {
-	/* compute the free cells along each ray that ends at a model cell */
-	for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
-	  if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(*it), key_ray2))
-	    for (octomap::KeyRay::iterator jt = key_ray2.begin(), end = key_ray2.end() ; jt != end ; ++jt)
-	      free_cells2[*jt]++;
+        /* compute the free cells along each ray that ends at a model cell */
+        for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
+          if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(*it), key_ray2))
+            for (octomap::KeyRay::iterator jt = key_ray2.begin(), end = key_ray2.end() ; jt != end ; ++jt)
+              free_cells2[*jt]++;
       }
     }
 
@@ -140,13 +144,13 @@ void LazyFreeSpaceUpdater::processThread()
     for (OcTreeKeyCountMap::iterator it = process_occupied_cells_set_->begin(), end = process_occupied_cells_set_->end(); it != end; ++it)
     {
       free_cells1.erase(it->first);
-      free_cells2.erase(it->first);
+      //free_cells2.erase(it->first);
     }
-    for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
-    {
-      free_cells1.erase(*it);
-      free_cells2.erase(*it);
-    }
+//    for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
+//    {
+//      free_cells1.erase(*it);
+//      free_cells2.erase(*it);
+//    }
 
     tree_->lockWrite();
     try
@@ -200,7 +204,7 @@ void LazyFreeSpaceUpdater::lazyUpdateThread()
       octomap::KeySet *s = occupied_cells_sets_.front();
       occupied_cells_sets_.pop_front();
       for (octomap::KeySet::iterator it = s->begin(), end = s->end(); it != end; ++it)
-	(*occupied_cells_set)[*it]++;
+        (*occupied_cells_set)[*it]++;
       delete s;
       model_cells_set = model_cells_sets_.front();
       model_cells_sets_.pop_front();
@@ -210,10 +214,10 @@ void LazyFreeSpaceUpdater::lazyUpdateThread()
     }
     
     while (!occupied_cells_sets_.empty())
-    { 
+    {
       if ((sensor_origins_.front() - sensor_origin).norm() > max_sensor_delta_)
       {
-	ROS_DEBUG("Pushing %u sets of occupied/model cells to free cells update thread (origin changed)", batch_size);
+        ROS_DEBUG("Pushing %u sets of occupied/model cells to free cells update thread (origin changed)", batch_size);
         pushBatchToProcess(occupied_cells_set, model_cells_set, sensor_origin);
         batch_size = 0;
         break;
@@ -222,7 +226,7 @@ void LazyFreeSpaceUpdater::lazyUpdateThread()
       
       octomap::KeySet *add_occ = occupied_cells_sets_.front();
       for (octomap::KeySet::iterator it = add_occ->begin(), end = add_occ->end(); it != end; ++it)
-	(*occupied_cells_set)[*it]++;
+        (*occupied_cells_set)[*it]++;
       occupied_cells_sets_.pop_front();
       delete add_occ;
       octomap::KeySet *mod_occ = model_cells_sets_.front();

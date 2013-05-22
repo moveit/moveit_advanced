@@ -73,10 +73,12 @@ private:
   image_transport::ImageTransport input_depth_transport_;
   image_transport::ImageTransport model_depth_transport_;
   image_transport::ImageTransport filtered_depth_transport_;
+  image_transport::ImageTransport filtered_label_transport_;
   
   image_transport::CameraSubscriber sub_depth_image_;
   image_transport::CameraPublisher pub_model_depth_image_;
   image_transport::CameraPublisher pub_filtered_depth_image_;
+  image_transport::CameraPublisher pub_filtered_label_image_;
 
   std::string filtered_cloud_topic_;
   std::string sensor_type_;
@@ -100,7 +102,7 @@ private:
   
   std::vector<float> x_cache_, y_cache_;
   double inv_fx_, inv_fy_, K0_, K2_, K4_, K5_;
-  std::vector<float> filtered_data_;
+  std::vector<unsigned> filtered_labels_;
   ros::WallTime last_depth_callback_start_;
   
 };

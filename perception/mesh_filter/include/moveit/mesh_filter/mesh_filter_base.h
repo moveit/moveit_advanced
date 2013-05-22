@@ -67,7 +67,7 @@ class MeshFilterBase
     typedef boost::function<bool (MeshHandle, Eigen::Affine3d&)> TransformCallback;
   // \todo @suat: to avoid a few comparisons, it would be much nicer if background = 14 and shadow = 15 (near/far clip can be anything below that)
   // this would allow me to do a single comparison instead of 3, in the code i write
-    enum {Background = 0, Shadow = 1, FarClip = 2, NearClip = 3, FirstLabel = 16};
+    enum {Background = 0, Shadow = 1, NearClip = 2, FarClip = 3, FirstLabel = 16};
   public:
     /**
      * \brief Constructor

@@ -105,16 +105,16 @@ void mesh_filter::MeshFilterBase::initialize (const string& render_vertex_shader
 
   glColor3f (1, 1, 1);
   glTexCoord2f (0, 0);
-  glVertex3f (-1, -1, 0);
+  glVertex3f (-1, -1, 1);
 
   glTexCoord2f (1, 0);
-  glVertex3f (1, -1, 0);
+  glVertex3f (1, -1, 1);
 
   glTexCoord2f ( 1, 1);
-  glVertex3f (1, 1, 0);
+  glVertex3f (1, 1, 1);
 
   glTexCoord2f ( 0, 1);
-  glVertex3f (-1, 1, 0);
+  glVertex3f (-1, 1, 1);
 
   glEnd ();
   glEndList ();
@@ -200,7 +200,7 @@ void mesh_filter::MeshFilterBase::removeMesh (MeshHandle handle)
   mutex::scoped_lock _(meshes_mutex_);
 
   std::size_t erased = meshes_.erase (handle);
-  min_handle_ = handle;
+  min_handle_ = std::min(handle, min_handle_);
   if (erased == 0)
     throw runtime_error ("Could not remove mesh. Mesh not found!");
 }
@@ -301,9 +301,11 @@ void mesh_filter::MeshFilterBase::doFilter (const void* sensor_data, const int e
   
   glEnable (GL_TEXTURE_2D);
   glEnable (GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
   glEnable (GL_CULL_FACE);
   glCullFace (GL_FRONT);
   glDisable (GL_ALPHA_TEST);
+  glDisable (GL_BLEND);
 
   GLuint padding_coefficients_id = glGetUniformLocation (mesh_renderer_->getProgramID (), "padding_coefficients");
   Eigen::Vector3f padding_coefficients = sensor_parameters_->getPaddingCoefficients () * padding_scale_ + Eigen::Vector3f (0, 0, padding_offset_);  
@@ -323,9 +325,10 @@ void mesh_filter::MeshFilterBase::doFilter (const void* sensor_data, const int e
   sensor_parameters_->setFilterParameters (*depth_filter_);
   glEnable (GL_TEXTURE_2D);
   glEnable (GL_DEPTH_TEST);
-  glEnable (GL_CULL_FACE);
-  glCullFace (GL_BACK);
+  glDepthFunc(GL_ALWAYS);
+  glDisable (GL_CULL_FACE);
   glDisable (GL_ALPHA_TEST);
+  glDisable (GL_BLEND);
 
 //  glUniform1f (near_location_, depth_filter_.getNearClippingDistance ());
 //  glUniform1f (far_location_, depth_filter_.getFarClippingDistance ());

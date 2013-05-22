@@ -50,6 +50,7 @@ DepthImageOctomapUpdater::DepthImageOctomapUpdater() :
   input_depth_transport_(nh_),
   model_depth_transport_(nh_),
   filtered_depth_transport_(nh_),
+  filtered_label_transport_(nh_),
   image_topic_("depth"),
   queue_size_(5),
   near_clipping_plane_distance_(0.3),
@@ -111,6 +112,7 @@ bool DepthImageOctomapUpdater::initialize()
                                                                                  mesh_filter::StereoCameraModel::RegisteredPSDKParams));
   mesh_filter_->parameters().setDepthRange(near_clipping_plane_distance_, far_clipping_plane_distance_);
   mesh_filter_->setShadowThreshold(shadow_threshold_);
+  mesh_filter_->setShadowThreshold(0.1);
   mesh_filter_->setPaddingOffset(padding_offset_);
   mesh_filter_->setPaddingScale(padding_scale_);
   mesh_filter_->setTransformCallback(boost::bind(&DepthImageOctomapUpdater::getShapeTransform, this, _1, _2));
@@ -121,12 +123,14 @@ bool DepthImageOctomapUpdater::initialize()
 void DepthImageOctomapUpdater::start()
 {
   image_transport::TransportHints hints("raw", ros::TransportHints(), nh_);
-  pub_model_depth_image_ = model_depth_transport_.advertiseCamera("model_depth", 10);
+  pub_model_depth_image_ = model_depth_transport_.advertiseCamera("model_depth", 1);
 
   if(!filtered_cloud_topic_.empty())
-    pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera(filtered_cloud_topic_, 10);
+    pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera(filtered_cloud_topic_, 1);
   else
-    pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera("filtered_depth", 10);
+    pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera("filtered_depth", 1);
+
+  pub_filtered_label_image_ = filtered_label_transport_.advertiseCamera("filtered_label", 1);
 
   sub_depth_image_ = input_depth_transport_.subscribeCamera(image_topic_, queue_size_, &DepthImageOctomapUpdater::depthImageCallback, this, hints);
 }
@@ -153,10 +157,10 @@ mesh_filter::MeshHandle DepthImageOctomapUpdater::excludeShape(const shapes::Sha
       boost::scoped_ptr<shapes::Mesh> m(shapes::createMeshFromShape(shape.get()));
       if (m)
         h = mesh_filter_->addMesh(*m);
-    }  
+    }
   }
   else
-    ROS_ERROR("Mesh filter not yet initialized!");  
+    ROS_ERROR("Mesh filter not yet initialized!");
   return h;
 }
 
@@ -183,10 +187,10 @@ namespace
 bool host_is_big_endian(void)
 {
   union {
-    uint32_t i;
-    char c[sizeof(uint32_t)];
+      uint32_t i;
+      char c[sizeof(uint32_t)];
   } bint = {0x01020304};
-  return bint.c[0] == 1; 
+  return bint.c[0] == 1;
 }
 }
 
@@ -205,9 +209,9 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     {
       const double dt_start = (start - last_depth_callback_start_).toSec();
       if (image_callback_count_ < 2)
-	average_callback_dt_ = dt_start;
+        average_callback_dt_ = dt_start;
       else
-	average_callback_dt_ = ((image_callback_count_ - 1) * average_callback_dt_ + dt_start) / (double)image_callback_count_;
+        average_callback_dt_ = ((image_callback_count_ - 1) * average_callback_dt_ + dt_start) / (double)image_callback_count_;
     }
   }
   else
@@ -233,49 +237,49 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
       bool found = false;
       std::string err;
       for (int t = 0 ; t < nt ; ++t)
-	try
-	{
-	  tf_->lookupTransform(monitor_->getMapFrame(), depth_msg->header.frame_id, depth_msg->header.stamp, map_H_sensor);
-	  found = true;
-	  break;
-	}
-	catch (tf::TransformException &ex)
-	{
-	  static const ros::Duration d(TEST_DT);
-	  err = ex.what();
-	  d.sleep();
-	}
+        try
+        {
+          tf_->lookupTransform(monitor_->getMapFrame(), depth_msg->header.frame_id, depth_msg->header.stamp, map_H_sensor);
+          found = true;
+          break;
+        }
+        catch (tf::TransformException &ex)
+        {
+          static const ros::Duration d(TEST_DT);
+          err = ex.what();
+          d.sleep();
+        }
       static const unsigned int MAX_TF_COUNTER = 1000; // so we avoid int overflow
       if (found)
       {
-	good_tf_++;
-	if (good_tf_ > MAX_TF_COUNTER)
-	{
-	  const unsigned int div = MAX_TF_COUNTER/10;
-	  good_tf_ /= div;
-	  failed_tf_ /= div;
-	}
+        good_tf_++;
+        if (good_tf_ > MAX_TF_COUNTER)
+        {
+          const unsigned int div = MAX_TF_COUNTER/10;
+          good_tf_ /= div;
+          failed_tf_ /= div;
+        }
       }
       else
       {
-	failed_tf_++;
-	if (failed_tf_ > good_tf_)
-	  ROS_WARN_THROTTLE(1, "More than half of the image messages discared due to TF being unavailable (%u%%). Transform error of sensor data: %s; quitting callback.",
-			    (100 * failed_tf_) / (good_tf_ + failed_tf_), err.c_str());
-	else
-	  ROS_DEBUG_THROTTLE(1, "Transform error of sensor data: %s; quitting callback", err.c_str());
-	if (failed_tf_ > MAX_TF_COUNTER)
-	{
-	  const unsigned int div = MAX_TF_COUNTER/10;
-	  good_tf_ /= div;
-	  failed_tf_ /= div;
-	}
+        failed_tf_++;
+        if (failed_tf_ > good_tf_)
+          ROS_WARN_THROTTLE(1, "More than half of the image messages discared due to TF being unavailable (%u%%). Transform error of sensor data: %s; quitting callback.",
+                            (100 * failed_tf_) / (good_tf_ + failed_tf_), err.c_str());
+        else
+          ROS_DEBUG_THROTTLE(1, "Transform error of sensor data: %s; quitting callback", err.c_str());
+        if (failed_tf_ > MAX_TF_COUNTER)
+        {
+          const unsigned int div = MAX_TF_COUNTER/10;
+          good_tf_ /= div;
+          failed_tf_ /= div;
+        }
         return;
       }
     }
     else
       return;
-  } 
+  }
   
   if (!updateTransformCache(depth_msg->header.frame_id, depth_msg->header.stamp))
   {
@@ -296,11 +300,11 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   
   const bool is_u_short = depth_msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1;
   if (is_u_short)
-   mesh_filter_->filter(&depth_msg->data[0], GL_UNSIGNED_SHORT);
+    mesh_filter_->filter(&depth_msg->data[0], GL_UNSIGNED_SHORT);
   else
     mesh_filter_->filter(&depth_msg->data[0], GL_FLOAT);
   
-  // the mesh filter runs in background; compute extra things in the meantime 
+  // the mesh filter runs in background; compute extra things in the meantime
 
   // Use correct principal point from calibration
   const double px = info_msg->K[2];
@@ -331,7 +335,7 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
       x_cache_[x] = (x - px) * inv_fx_;
     
     for (int y = 0; y < h; ++y)
-      y_cache_[y] = (y - py) * inv_fy_;    
+      y_cache_[y] = (y - py) * inv_fy_;
   }
   
   const octomap::point3d sensor_origin(map_H_sensor.getOrigin().getX(), map_H_sensor.getOrigin().getY(), map_H_sensor.getOrigin().getZ());
@@ -343,13 +347,13 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   
   // allocate memory if needed
   std::size_t img_size = h * w;
-  if (filtered_data_.size() < img_size)
-    filtered_data_.resize(img_size);
-  
+  if (filtered_labels_.size() < img_size)
+    filtered_labels_.resize(img_size);
+
   // get the labels of the filtered data
-  const float* filtered_row = &filtered_data_[0];
-  mesh_filter_->getFilteredDepth(&filtered_data_[0]);
-  
+  const unsigned* labels_row = &filtered_labels_ [0];
+  mesh_filter_->getFilteredLabels(&filtered_labels_ [0]);
+
   // publish debug information if needed
   if (debug_info_)
   {
@@ -363,8 +367,30 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     debug_msg.data.resize(img_size * sizeof(float));
     mesh_filter_->getModelDepth(reinterpret_cast<float*>(&debug_msg.data[0]));
     pub_model_depth_image_.publish(debug_msg, *info_msg);
-    mesh_filter_->getFilteredDepth(reinterpret_cast<float*>(&debug_msg.data[0]));
-    pub_filtered_depth_image_.publish(debug_msg, *info_msg);
+
+    sensor_msgs::Image filtered_depth_msg;
+    filtered_depth_msg.header = depth_msg->header;
+    filtered_depth_msg.height = depth_msg->height;
+    filtered_depth_msg.width = depth_msg->width;
+    filtered_depth_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+    filtered_depth_msg.is_bigendian = depth_msg->is_bigendian;
+    filtered_depth_msg.step = depth_msg->step;
+    filtered_depth_msg.data.resize(img_size * sizeof(float));
+
+    mesh_filter_->getFilteredDepth(reinterpret_cast<float*>(&filtered_depth_msg.data[0]));
+    pub_filtered_depth_image_.publish(filtered_depth_msg, *info_msg);
+
+    sensor_msgs::Image label_msg;
+    label_msg.header = depth_msg->header;
+    label_msg.height = depth_msg->height;
+    label_msg.width = depth_msg->width;
+    label_msg.encoding = sensor_msgs::image_encodings::RGBA8;
+    label_msg.is_bigendian = depth_msg->is_bigendian;
+    label_msg.step = w * sizeof(unsigned);
+    label_msg.data.resize(img_size * sizeof(unsigned));
+    mesh_filter_->getFilteredLabels(reinterpret_cast<unsigned*>(&label_msg.data[0]));
+
+    pub_filtered_label_image_.publish(label_msg, *info_msg);
   }
   
   if(!filtered_cloud_topic_.empty())
@@ -401,30 +427,29 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     {
       const uint16_t *input_row = reinterpret_cast<const uint16_t*>(&depth_msg->data[0]);
       
-      for (int y = skip_vertical_pixels_ ; y < h_bound ; ++y, filtered_row += w, input_row += w)
+      for (int y = skip_vertical_pixels_ ; y < h_bound ; ++y, labels_row += w, input_row += w)
         for (int x = skip_horizontal_pixels_ ; x < w_bound ; ++x)
         {
-          float z_filtered = filtered_row[x];
-          if (z_filtered != 0.0)
+          // not filtered
+          if (labels_row [x] == mesh_filter::MeshFilterBase::Background)
           {
-            float yy = y_cache_[y] * z_filtered;
-            float xx = x_cache_[x] * z_filtered;
+            float zz = (float)input_row[x] * 1e-3; // scale from mm to m
+            float yy = y_cache_[y] * zz;
+            float xx = x_cache_[x] * zz;
             /* transform to map frame */
-            tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, z_filtered); 
+            tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, zz);
             occupied_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
           }
-          else
-          {  
-            float zz = (float)input_row[x] * 1e-3; // scale from mm to m
-            if (zz > near_clipping_plane_distance_ && zz < far_clipping_plane_distance_)
-	    {
-	      float yy = y_cache_[y] * zz;
-	      float xx = x_cache_[x] * zz;
-	      /* transform to map frame */
-	      tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, zz); 
-              // add to the list of model cells
-              model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
-	    }
+          // on far plane or a model point -> remove
+          else if (labels_row [x] >= mesh_filter::MeshFilterBase::FarClip)
+          {
+            float zz = input_row[x];
+            float yy = y_cache_[y] * zz;
+            float xx = x_cache_[x] * zz;
+            /* transform to map frame */
+            tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, zz);
+            // add to the list of model cells
+            model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
           }
         }
     }
@@ -432,40 +457,37 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     {
       const float *input_row = reinterpret_cast<const float*>(&depth_msg->data[0]);
       
-      for (int y = skip_vertical_pixels_ ; y < h_bound ; ++y, filtered_row += w, input_row += w)
+      for (int y = skip_vertical_pixels_ ; y < h_bound ; ++y, labels_row += w, input_row += w)
         for (int x = skip_horizontal_pixels_ ; x < w_bound ; ++x)
         {
-          float z_filtered = filtered_row[x];
-          if (z_filtered != 0.0)
+          if (labels_row [x] == mesh_filter::MeshFilterBase::Background)
           {
-            float yy = y_cache_[y] * z_filtered;
-            float xx = x_cache_[x] * z_filtered;
+            float zz = input_row[x];
+            float yy = y_cache_[y] * zz;
+            float xx = x_cache_[x] * zz;
             /* transform to map frame */
-            tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, z_filtered); 
+            tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, zz);
             occupied_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
           }
-          else
-          {     
-            float zz = input_row[x];  
-            if (zz > near_clipping_plane_distance_ && zz < far_clipping_plane_distance_)
-	      {
-		float yy = y_cache_[y] * zz;
-		float xx = x_cache_[x] * zz;
-		/* transform to map frame */
-		tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, zz);
-                // add to the list of model cells
-                model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
-	      }
+          else if (labels_row [x] >= mesh_filter::MeshFilterBase::FarClip)
+          {
+            float zz = input_row[x];
+            float yy = y_cache_[y] * zz;
+            float xx = x_cache_[x] * zz;
+            /* transform to map frame */
+            tf::Vector3 point_tf = map_H_sensor * tf::Vector3(xx, yy, zz);
+            // add to the list of model cells
+            model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
           }
         }
     }
     
   }
   catch (...)
-  { 
+  {
     tree_->unlockRead();
     return;
-  }  
+  }
   tree_->unlockRead();
   
   /* cells that overlap with the model are not occupied */
@@ -475,10 +497,10 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   // mark occupied cells
   tree_->lockWrite();
   try
-  {    
+  {
     /* now mark all occupied cells */
     for (octomap::KeySet::iterator it = occupied_cells.begin(), end = occupied_cells.end(); it != end; ++it)
-      tree_->updateNode(*it, true);    
+      tree_->updateNode(*it, true);
   }
   catch (...)
   {
