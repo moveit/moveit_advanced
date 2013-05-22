@@ -150,8 +150,8 @@ private:
   
   // link-order is defined by the order of links in kmodel_->getLinkModels().
 
-  // for each link (in link order), how many spheres represent the link.
-  std::vector<int> spheres_per_link_;
+  // Table of link indices and spheres. Used to transform spheres.  See initSpheres() for details.
+  std::vector<uint16_t> sphere_transform_indices_;
 
   // sphere centers for all spheres for all links in link order
   EigenSTL::vector_Vector3d sphere_centers_;
@@ -163,8 +163,8 @@ private:
   // This is an index into the kmodel_->getLinkModels() and state->getLinkStateVector() vectors
   std::vector<uint16_t> sphere_link_map_;
 
-  // bit field representing allowed sphere collisions.  See initSphereAcm() for details.
-  std::vector<uint32_t> sphere_acm_;
+  // Table of spheres to check for collisions.  See initSphereAcm() for details.
+  std::vector<uint16_t> self_collide_list_;
 
   // mutable thread specific work area
   mutable boost::thread_specific_ptr<WorkArea> work_area_;

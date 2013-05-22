@@ -37,6 +37,7 @@
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 #include <geometric_shapes/shape_operations.h>
 #include <console_bridge/console.h>
+#include <cassert>
 
 collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection::CollisionRobotDistanceField::getWorkArea() const
 {
@@ -56,11 +57,18 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
   sphere_centers_.clear();
   sphere_radii_.clear();
   sphere_link_map_.clear();
-  spheres_per_link_.clear();
+  sphere_transform_indices_.clear();
   sphere_centers_.reserve(kmodel_->getLinkModels().size());
   sphere_radii_.reserve(kmodel_->getLinkModels().size());
   sphere_link_map_.reserve(kmodel_->getLinkModels().size());
-  spheres_per_link_.reserve(kmodel_->getLinkModels().size());
+  sphere_transform_indices_.reserve(kmodel_->getLinkModels().size());
+
+  // sphere_transform_indices_ lists all spheres and how they are transformed.  Format is:
+  //    cnt=N         -- number of spheres for this link
+  //    link_index    -- index of link
+  //    ...
+  //
+  // list is terminated with cnt==0
 
   for (std::vector<const robot_model::LinkModel*>::const_iterator lm = kmodel_->getLinkModels().begin() ;
        lm != kmodel_->getLinkModels().end() ;
@@ -68,10 +76,7 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
   {
     const shapes::ShapeConstPtr& shape = (*lm)->getShape();
     if (!shape)
-    {
-      spheres_per_link_.push_back(0);
       continue;
-    }
 
     double radius;
     Eigen::Vector3d center;
@@ -81,30 +86,35 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
       sphere_centers_.push_back(center);
       sphere_radii_.push_back(radius);
       sphere_link_map_.push_back(lm - kmodel_->getLinkModels().begin());
-      spheres_per_link_.push_back(1);
-    }
-    else
-    {
-      spheres_per_link_.push_back(0);
+      sphere_transform_indices_.push_back(1);
+      sphere_transform_indices_.push_back(lm - kmodel_->getLinkModels().begin());
     }
   }
+
+  // terminate list with cnt=0
+  sphere_transform_indices_.push_back(0);
 
   initSphereAcm();
 }
 
 void collision_detection::CollisionRobotDistanceField::initSphereAcm()
 {
-  // conservative upper bound on number of bits needed
-  std::vector<uint32_t> sphere_acm;
-  sphere_acm.resize((sphere_link_map_.size() * sphere_link_map_.size() + 31) / 31);
+  std::vector<uint16_t> self_collide_list;
+  self_collide_list.resize(sphere_link_map_.size() * (3 + sphere_link_map_.size()) + 1);
+  std::vector<uint16_t>::iterator acm_it = self_collide_list.begin();
 
-  std::vector<uint32_t>::iterator acm_it = sphere_acm.begin();
-  uint32_t acm_cnt = 0;
-
-  // The sphere_acm_ stores a bitmask of sphere pairs which should not be checked for collision.
-  // Each 32 bit word stores 31 bits.  Bit 31 is always set and is used as a sentinel to identify the end of the word.
-  // The bits are stored in the order that the sphere pairs are traversed.  So the order is defined by the 
-  // following nested loops, which traverses the spheres in the same order as checkSelfCollisionUsingSpheres().
+  // The self_collide_list_ stores pairs of spheres which should be checked for collision in a
+  // format that is efficient for traversal.
+  //
+  // Each sphere that should be checked has an entry that looks like this:
+  //    cnt = N
+  //    sphere_index
+  //      other_sphere_index_1
+  //      other_sphere_index_2
+  //      ...              
+  //      other_sphere_index_N
+  //
+  // The last entry (and only the last entry) has a cnt==0
 
   std::vector<uint16_t>::const_iterator alinks_it = sphere_link_map_.begin();
   std::vector<uint16_t>::const_iterator alinks_it_base = alinks_it;         // first sphere for this link
@@ -117,40 +127,44 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
     std::vector<uint16_t>::const_iterator blinks_it = alinks_it + 1;
     std::vector<uint16_t>::const_iterator blinks_it_base = alinks_it_base;
 
+    std::vector<uint16_t>::iterator acm_it_cnt = acm_it++;
+    *acm_it++ = alinks_it - sphere_link_map_.begin();
+
+logInform("  idx=%d", acm_it_cnt - self_collide_list.begin());
+logInform("  sphere %d", alinks_it - sphere_link_map_.begin());
+
     for (; blinks_it != sphere_link_map_.end() ; ++blinks_it)
     {
       if (*blinks_it_base != *blinks_it)
         blinks_it_base = blinks_it;
 
-      uint32_t avoid_checking = avoidCheckingCollision(kmodel_->getLinkModels()[*alinks_it],
-                                                       alinks_it - alinks_it_base,
-                                                       kmodel_->getLinkModels()[*blinks_it],
-                                                       blinks_it - blinks_it_base) ? 1 : 0;
-      *acm_it |= avoid_checking << acm_cnt;
+      if (avoidCheckingCollision(kmodel_->getLinkModels()[*alinks_it],
+                                 alinks_it - alinks_it_base,
+                                 kmodel_->getLinkModels()[*blinks_it],
+                                 blinks_it - blinks_it_base))
+        continue;
 
-      // store 31 bits per word
-      if (++acm_cnt == 31)
-      {
-        *acm_it |= 0x80000000;
-        acm_it++;
-        acm_cnt = 0;
-      }
+      *acm_it++ = blinks_it - sphere_link_map_.begin();
+logInform("        check sphere %d", blinks_it - sphere_link_map_.begin());
     }
+
+    int cnt = acm_it - acm_it_cnt - 2;
+logInform("        cnt          %d", cnt);
+    if (cnt > 0)
+      *acm_it_cnt = cnt;
+    else
+      acm_it = acm_it_cnt;
   }
 
-  *acm_it |= 0x80000000;
-  acm_it++;
+  // add last entry with cnt==0
+  *acm_it++ = 0;
 
-  sphere_acm_.clear();
-  sphere_acm_.reserve(acm_it - sphere_acm.begin());
-  for (std::vector<uint32_t>::iterator acm_it2 = sphere_acm.begin(); acm_it2 != acm_it ; ++acm_it2)
-    sphere_acm_.push_back(*acm_it2);
+  assert(acm_it - self_collide_list.begin() < self_collide_list.size());
 
-
-#if 1
-  for (std::vector<uint32_t>::iterator acm_it2 = sphere_acm.begin(); acm_it2 != acm_it ; ++acm_it2)
-    logInform("  ACM[%d] = 0x%08x", int(acm_it2-sphere_acm.begin()), int(*acm_it2));
-#endif
+  self_collide_list_.clear();
+  self_collide_list_.reserve(acm_it - self_collide_list.begin());
+  for (std::vector<uint16_t>::iterator acm_it2 = self_collide_list.begin(); acm_it2 != acm_it ; ++acm_it2)
+    self_collide_list_.push_back(*acm_it2);
 }
 
 // Check whether collision checking should be avoided for this sphere pair.
@@ -186,77 +200,99 @@ bool collision_detection::CollisionRobotDistanceField::avoidCheckingCollision(
   return false;
 }
 
+static std::string poseString(const Eigen::Affine3d& pose, const std::string& pfx = "")
+{
+  std::stringstream ss;
+  ss.precision(3);
+  for (int y=0;y<4;y++)
+  {
+    ss << pfx;
+    for (int x=0;x<4;x++)
+    {
+      ss << std::setw(8) << pose(y,x) << " ";
+    }
+    ss << std::endl;
+  }
+  return ss.str();
+}
+
+
+
 // transform sphere centers to planning frame
 void collision_detection::CollisionRobotDistanceField::transformSpheres(
         const robot_state::RobotState& state,
         WorkArea& work) const
 {
-  std::vector<int>::const_iterator spheres_per_link_it = spheres_per_link_.begin();
-  std::vector<robot_state::LinkState*>::const_iterator ls_it = state.getLinkStateVector().begin();
-  std::vector<robot_state::LinkState*>::const_iterator ls_it_end = state.getLinkStateVector().end();
-
   EigenSTL::vector_Vector3d::const_iterator centers_it = sphere_centers_.begin();
-  EigenSTL::vector_Vector3d::const_iterator centers_it_end = centers_it;
-
   EigenSTL::vector_Vector3d::iterator centers_xformed_it = work.transformed_sphere_centers_.begin();
-  
-  for (; ls_it == ls_it_end ; ++ls_it, ++spheres_per_link_it)
+
+  const uint16_t *idx_it = &*sphere_transform_indices_.begin();
+
+  for (int cnt = *idx_it++ ; cnt ; cnt = *idx_it++)
   {
-    centers_it_end += *spheres_per_link_it;
-    const Eigen::Affine3d& xform = (*ls_it)->getGlobalCollisionBodyTransform();
-    
-    for (; centers_it != centers_it_end ; ++centers_xformed_it, ++centers_it)
-      *centers_xformed_it = xform * *centers_it;
+    int link_idx = *idx_it++;
+    const robot_state::LinkState* link = state.getLinkStateVector()[link_idx];
+    const Eigen::Affine3d& xform = link->getGlobalCollisionBodyTransform();
+
+    logInform("\n%s",poseString(xform, link->getName().c_str()).c_str());
+
+    do
+    {
+      *centers_xformed_it++ = xform * *centers_it++;
+logInform("BEGINX checkSelfCollisionUsingSpheres -- call transformSpheres()");
+    }
+    while (--cnt);
+logInform("BEGINY checkSelfCollisionUsingSpheres -- call transformSpheres()");
   }
+logInform("BEGINZ checkSelfCollisionUsingSpheres -- call transformSpheres()");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheres(const robot_state::RobotState& state) const
 {
   WorkArea& work = getWorkArea();
 
+logInform("BEGIN1 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN2 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN3 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN4 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN5 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN6 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN7 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN8 checkSelfCollisionUsingSpheres -- call transformSpheres()");
+logInform("BEGIN9 checkSelfCollisionUsingSpheres -- call transformSpheres()");
   transformSpheres(state, work);
+logInform("BEGIN checkSelfCollisionUsingSpheres -- post transformSpheres()");
 
-  EigenSTL::vector_Vector3d::const_iterator acenters_it = work.transformed_sphere_centers_.begin();
-  EigenSTL::vector_Vector3d::const_iterator centers_it_end = work.transformed_sphere_centers_.end();
-  std::vector<double>::const_iterator aradii_it = sphere_radii_.begin();
-
-  const uint32_t *acm_it = &*sphere_acm_.begin();
-  uint32_t acm = *acm_it++;
-
-  for (; acenters_it != centers_it_end ; ++acenters_it, ++aradii_it)
+  // walk the list of collidable spheres and check for collisions
+  const uint16_t *acm_it = &*self_collide_list_.begin();
+  for (int cnt = *acm_it++ ; cnt ; cnt = *acm_it++)
   {
-    EigenSTL::vector_Vector3d::const_iterator bcenters_it = acenters_it + 1;
-    std::vector<double>::const_iterator bradii_it = aradii_it + 1;
+logInform("--cnt=%d",cnt);
+    int a_idx = *acm_it++;
+    const Eigen::Vector3d& a_center = work.transformed_sphere_centers_[a_idx];
+    double a_radius = sphere_radii_[a_idx];
 
-    for (; bcenters_it != centers_it_end ; ++bcenters_it, ++bradii_it)
+logInform("        SPHERE %3d   (%f %f %f) %f", a_idx, a_center.x(), a_center.y(), a_center.z(), a_radius);
+    do
     {
-logInform("Check: %s <--> %s    acm=%08x",
-          sphereIndexToLinkModel(acenters_it - work.transformed_sphere_centers_.begin())->getName().c_str(),
-          sphereIndexToLinkModel(bcenters_it - work.transformed_sphere_centers_.begin())->getName().c_str(),
-          (int)acm);
+      int b_idx = *acm_it++;
+      const Eigen::Vector3d& b_center = work.transformed_sphere_centers_[b_idx];
+      double b_radius = sphere_radii_[b_idx];
+logInform("        sphere %3d   (%f %f %f) %f", b_idx, b_center.x(), b_center.y(), b_center.z(), b_radius);
 
-      // avoid the check if acm (avoid collision matrix) bit is set for this pair.
-      acm >>= 1;
-      if (acm & 1)
-      {
-        if (acm != 1)
-          continue;
-
-        // bit 31 of the acm is always 1.  So when acm==1 it is time to get the next 32 bits.
-        acm = *acm_it++;
-        if (acm & 1)
-          continue;
-      }
-      
-      double r = *aradii_it + *bradii_it;
-logInform("     r=%f  r*r=%f  cc=%f", r, r*r, (*acenters_it - *bcenters_it).squaredNorm());
-      if ((*acenters_it - *bcenters_it).squaredNorm() <= r*r)
+      double r = a_radius + b_radius;
+logInform("        check %36s %36s     r=%f  r*r=%f  cc=%f",
+  sphereIndexToLinkModel(a_idx)->getName().c_str(),
+  sphereIndexToLinkModel(b_idx)->getName().c_str(),
+  r, r*r, (a_center - b_center).squaredNorm());
+      if ((a_center - b_center).squaredNorm() <= r*r)
       {
         logInform("     COLLIDED! %s <--> %s",
-          sphereIndexToLinkModel(acenters_it - work.transformed_sphere_centers_.begin())->getName().c_str(),
-          sphereIndexToLinkModel(bcenters_it - work.transformed_sphere_centers_.begin())->getName().c_str());
+          sphereIndexToLinkModel(a_idx)->getName().c_str(),
+          sphereIndexToLinkModel(b_idx)->getName().c_str());
       }
     }
+    while (--cnt);
   }
 }
 
