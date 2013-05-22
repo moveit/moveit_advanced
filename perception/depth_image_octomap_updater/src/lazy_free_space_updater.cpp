@@ -144,13 +144,13 @@ void LazyFreeSpaceUpdater::processThread()
     for (OcTreeKeyCountMap::iterator it = process_occupied_cells_set_->begin(), end = process_occupied_cells_set_->end(); it != end; ++it)
     {
       free_cells1.erase(it->first);
-      //free_cells2.erase(it->first);
+      free_cells2.erase(it->first);
     }
-//    for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
-//    {
-//      free_cells1.erase(*it);
-//      free_cells2.erase(*it);
-//    }
+    for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
+    {
+      free_cells1.erase(*it);
+      free_cells2.erase(*it);
+    }
 
     tree_->lockWrite();
     try

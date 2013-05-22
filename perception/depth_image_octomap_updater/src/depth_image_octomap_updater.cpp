@@ -112,7 +112,6 @@ bool DepthImageOctomapUpdater::initialize()
                                                                                  mesh_filter::StereoCameraModel::RegisteredPSDKParams));
   mesh_filter_->parameters().setDepthRange(near_clipping_plane_distance_, far_clipping_plane_distance_);
   mesh_filter_->setShadowThreshold(shadow_threshold_);
-  mesh_filter_->setShadowThreshold(0.1);
   mesh_filter_->setPaddingOffset(padding_offset_);
   mesh_filter_->setPaddingScale(padding_scale_);
   mesh_filter_->setTransformCallback(boost::bind(&DepthImageOctomapUpdater::getShapeTransform, this, _1, _2));
@@ -351,7 +350,7 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     filtered_labels_.resize(img_size);
 
   // get the labels of the filtered data
-  const unsigned* labels_row = &filtered_labels_ [0];
+  const unsigned int* labels_row = &filtered_labels_ [0];
   mesh_filter_->getFilteredLabels(&filtered_labels_ [0]);
 
   // publish debug information if needed
@@ -386,9 +385,9 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     label_msg.width = depth_msg->width;
     label_msg.encoding = sensor_msgs::image_encodings::RGBA8;
     label_msg.is_bigendian = depth_msg->is_bigendian;
-    label_msg.step = w * sizeof(unsigned);
-    label_msg.data.resize(img_size * sizeof(unsigned));
-    mesh_filter_->getFilteredLabels(reinterpret_cast<unsigned*>(&label_msg.data[0]));
+    label_msg.step = w * sizeof(unsigned int);
+    label_msg.data.resize(img_size * sizeof(unsigned int));
+    mesh_filter_->getFilteredLabels(reinterpret_cast<unsigned int*>(&label_msg.data[0]));
 
     pub_filtered_label_image_.publish(label_msg, *info_msg);
   }
