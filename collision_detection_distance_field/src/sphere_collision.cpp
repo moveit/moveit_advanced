@@ -70,7 +70,7 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
     if (!shape)
     {
       spheres_per_link_.push_back(0);
-      break;
+      continue;
     }
 
     double radius;
@@ -122,9 +122,9 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
       if (*blinks_it_base != *blinks_it)
         blinks_it_base = blinks_it;
 
-      uint32_t avoid_checking = avoidCheckingCollision(sphereIndexToLinkModel(*alinks_it),
+      uint32_t avoid_checking = avoidCheckingCollision(kmodel_->getLinkModels()[*alinks_it],
                                                        alinks_it - alinks_it_base,
-                                                       sphereIndexToLinkModel(*blinks_it),
+                                                       kmodel_->getLinkModels()[*blinks_it],
                                                        blinks_it - blinks_it_base) ? 1 : 0;
       *acm_it |= avoid_checking << acm_cnt;
 
@@ -224,6 +224,11 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
 
     for (; bcenters_it != centers_it_end ; ++bcenters_it, ++bradii_it)
     {
+logInform("Check: %s <--> %s    acm=%08x",
+          sphereIndexToLinkModel(acenters_it - work.transformed_sphere_centers_.begin())->getName().c_str(),
+          sphereIndexToLinkModel(bcenters_it - work.transformed_sphere_centers_.begin())->getName().c_str(),
+          (int)acm);
+
       // avoid the check if acm (avoid collision matrix) bit is set for this pair.
       acm >>= 1;
       if (acm & 1)
@@ -238,6 +243,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
       }
       
       double r = *aradii_it + *bradii_it;
+logInform("     r=%f  r*r=%f  cc=%f", r, r*r, (*acenters_it - *bcenters_it).squaredNorm());
       if ((*acenters_it - *bcenters_it).squaredNorm() <= r*r)
       {
         logInform("Collided! %s <--> %s",
