@@ -130,9 +130,6 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
     std::vector<uint16_t>::iterator acm_it_cnt = acm_it++;
     *acm_it++ = alinks_it - sphere_link_map_.begin();
 
-logInform("  idx=%d", acm_it_cnt - self_collide_list.begin());
-logInform("  sphere %d", alinks_it - sphere_link_map_.begin());
-
     for (; blinks_it != sphere_link_map_.end() ; ++blinks_it)
     {
       if (*blinks_it_base != *blinks_it)
@@ -145,11 +142,9 @@ logInform("  sphere %d", alinks_it - sphere_link_map_.begin());
         continue;
 
       *acm_it++ = blinks_it - sphere_link_map_.begin();
-logInform("        check sphere %d", blinks_it - sphere_link_map_.begin());
     }
 
     int cnt = acm_it - acm_it_cnt - 2;
-logInform("        cnt          %d", cnt);
     if (cnt > 0)
       *acm_it_cnt = cnt;
     else
@@ -200,24 +195,6 @@ bool collision_detection::CollisionRobotDistanceField::avoidCheckingCollision(
   return false;
 }
 
-static std::string poseString(const Eigen::Affine3d& pose, const std::string& pfx = "")
-{
-  std::stringstream ss;
-  ss.precision(3);
-  for (int y=0;y<4;y++)
-  {
-    ss << pfx;
-    for (int x=0;x<4;x++)
-    {
-      ss << std::setw(8) << pose(y,x) << " ";
-    }
-    ss << std::endl;
-  }
-  return ss.str();
-}
-
-
-
 // transform sphere centers to planning frame
 void collision_detection::CollisionRobotDistanceField::transformSpheres(
         const robot_state::RobotState& state,
@@ -234,57 +211,47 @@ void collision_detection::CollisionRobotDistanceField::transformSpheres(
     const robot_state::LinkState* link = state.getLinkStateVector()[link_idx];
     const Eigen::Affine3d& xform = link->getGlobalCollisionBodyTransform();
 
-    logInform("\n%s",poseString(xform, link->getName().c_str()).c_str());
-
     do
     {
       *centers_xformed_it++ = xform * *centers_it++;
-logInform("BEGINX checkSelfCollisionUsingSpheres -- call transformSpheres()");
     }
     while (--cnt);
-logInform("BEGINY checkSelfCollisionUsingSpheres -- call transformSpheres()");
   }
-logInform("BEGINZ checkSelfCollisionUsingSpheres -- call transformSpheres()");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheres(const robot_state::RobotState& state) const
 {
   WorkArea& work = getWorkArea();
 
-logInform("BEGIN1 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN2 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN3 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN4 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN5 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN6 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN7 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN8 checkSelfCollisionUsingSpheres -- call transformSpheres()");
-logInform("BEGIN9 checkSelfCollisionUsingSpheres -- call transformSpheres()");
   transformSpheres(state, work);
-logInform("BEGIN checkSelfCollisionUsingSpheres -- post transformSpheres()");
 
   // walk the list of collidable spheres and check for collisions
   const uint16_t *acm_it = &*self_collide_list_.begin();
   for (int cnt = *acm_it++ ; cnt ; cnt = *acm_it++)
   {
-logInform("--cnt=%d",cnt);
     int a_idx = *acm_it++;
     const Eigen::Vector3d& a_center = work.transformed_sphere_centers_[a_idx];
     double a_radius = sphere_radii_[a_idx];
 
+#if 0
 logInform("        SPHERE %3d   (%f %f %f) %f", a_idx, a_center.x(), a_center.y(), a_center.z(), a_radius);
+#endif
     do
     {
       int b_idx = *acm_it++;
       const Eigen::Vector3d& b_center = work.transformed_sphere_centers_[b_idx];
       double b_radius = sphere_radii_[b_idx];
+#if 0
 logInform("        sphere %3d   (%f %f %f) %f", b_idx, b_center.x(), b_center.y(), b_center.z(), b_radius);
+#endif
 
       double r = a_radius + b_radius;
+#if 0
 logInform("        check %36s %36s     r=%f  r*r=%f  cc=%f",
   sphereIndexToLinkModel(a_idx)->getName().c_str(),
   sphereIndexToLinkModel(b_idx)->getName().c_str(),
   r, r*r, (a_center - b_center).squaredNorm());
+#endif
       if ((a_center - b_center).squaredNorm() <= r*r)
       {
         logInform("     COLLIDED! %s <--> %s",
