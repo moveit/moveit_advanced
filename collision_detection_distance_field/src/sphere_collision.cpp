@@ -276,7 +276,7 @@ public:
   }
 };
 
-// call checkAll()
+// General query.  Call checkSpherePairAll() to handle general case.
 class collision_detection::CollisionRobotDistanceField::CollisionAll
 {
 public:
@@ -300,12 +300,51 @@ bool collision_detection::CollisionRobotDistanceField::checkSpherePairAll(
     int a_idx,
     int b_idx) const
 {
+  if (work.acm_ && spherePairInAcm(work, a_idx, b_idx))
+    return false;
+
+  if (work.req_->contacts)
+    addSphereContact(work, a_idx, b_idx);
+
+  if (work.req_->cost)
+    addSphereCost(work, a_idx, b_idx);
+
   logInform("     COLLIDED! %s <--> %s   checkSpherePairAll",
     sphereIndexToLinkModel(a_idx)->getName().c_str(),
     sphereIndexToLinkModel(b_idx)->getName().c_str());
   return false;
 }
 
+// add sphere pair contact to work.req_->contacts
+// a_idx < b_idx.
+void collision_detection::CollisionRobotDistanceField::addSphereContact(
+    WorkArea& work,
+    int a_idx,
+    int b_idx) const
+{
+  // TODO
+}
+
+// add cost of sphere-pair to work.req_->cost_sources
+// a_idx < b_idx.
+void collision_detection::CollisionRobotDistanceField::addSphereCost(
+    WorkArea& work,
+    int a_idx,
+    int b_idx) const
+{
+  // TODO
+}
+
+// true if sphere pair is in ACM.
+// a_idx < b_idx.
+bool collision_detection::CollisionRobotDistanceField::spherePairInAcm(
+    WorkArea& work,
+    int a_idx,
+    int b_idx) const
+{
+  // TODO
+  return false;
+}
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheres(
     WorkArea& work) const

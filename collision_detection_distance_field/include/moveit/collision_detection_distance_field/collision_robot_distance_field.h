@@ -178,6 +178,11 @@ private:
   friend class CollisionBool;
   friend class CollisionAll;
 
+  // helpers for when a sphere collision is detected
+  bool spherePairInAcm(WorkArea& work, int a_idx, int b_idx) const;
+  void addSphereContact(WorkArea& work, int a_idx, int b_idx) const;
+  void addSphereCost(WorkArea& work, int a_idx, int b_idx) const;
+
   
   // link-order is defined by the order of links in kmodel_->getLinkModels().
 
