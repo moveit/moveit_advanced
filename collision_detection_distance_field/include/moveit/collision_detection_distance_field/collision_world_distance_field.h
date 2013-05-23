@@ -96,9 +96,6 @@ public:
 protected:
   void notifyObjectChange(const ObjectConstPtr& obj, World::Action action);
   World::ObserverHandle observer_handle_;
-
-private:
-  static const AllowedCollisionMatrix empty_acm_;
 };
   
 }

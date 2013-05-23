@@ -39,6 +39,18 @@
 #include <console_bridge/console.h>
 #include <cassert>
 
+inline void collision_detection::CollisionRobotDistanceField::WorkArea::clearQuery()
+{
+  req_ = NULL;
+  res_ = NULL;
+  state1_ = NULL;
+  state2_ = NULL;
+  other_robot_ = NULL;
+  other_state1_ = NULL;
+  other_state2_ = NULL;
+  acm_ = NULL;
+}
+
 collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection::CollisionRobotDistanceField::getWorkArea() const
 {
   if (!work_area_.get())
@@ -47,7 +59,10 @@ collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection:
     WorkArea& work = *work_area_;
     work.transformed_sphere_centers_.resize(sphere_centers_.size());
   }
-  return *work_area_;
+
+  WorkArea& work = *work_area_;
+  work.clearQuery();
+  return work;
 }
 
 void collision_detection::CollisionRobotDistanceField::initSpheres()
@@ -219,47 +234,57 @@ void collision_detection::CollisionRobotDistanceField::transformSpheres(
   }
 }
 
-void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheres(const robot_state::RobotState& state) const
+bool collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheresBool(
+    WorkArea& work,
+    const uint16_t *sphere_list) const
 {
-  WorkArea& work = getWorkArea();
-
-  transformSpheres(state, work);
-
   // walk the list of collidable spheres and check for collisions
-  const uint16_t *acm_it = &*self_collide_list_.begin();
+  const uint16_t *acm_it = sphere_list;
   for (int cnt = *acm_it++ ; cnt ; cnt = *acm_it++)
   {
     int a_idx = *acm_it++;
     const Eigen::Vector3d& a_center = work.transformed_sphere_centers_[a_idx];
     double a_radius = sphere_radii_[a_idx];
 
-#if 0
-logInform("        SPHERE %3d   (%f %f %f) %f", a_idx, a_center.x(), a_center.y(), a_center.z(), a_radius);
-#endif
     do
     {
       int b_idx = *acm_it++;
       const Eigen::Vector3d& b_center = work.transformed_sphere_centers_[b_idx];
       double b_radius = sphere_radii_[b_idx];
-#if 0
-logInform("        sphere %3d   (%f %f %f) %f", b_idx, b_center.x(), b_center.y(), b_center.z(), b_radius);
-#endif
 
       double r = a_radius + b_radius;
-#if 0
-logInform("        check %36s %36s     r=%f  r*r=%f  cc=%f",
-  sphereIndexToLinkModel(a_idx)->getName().c_str(),
-  sphereIndexToLinkModel(b_idx)->getName().c_str(),
-  r, r*r, (a_center - b_center).squaredNorm());
-#endif
       if ((a_center - b_center).squaredNorm() <= r*r)
       {
         logInform("     COLLIDED! %s <--> %s",
           sphereIndexToLinkModel(a_idx)->getName().c_str(),
           sphereIndexToLinkModel(b_idx)->getName().c_str());
+        return true;
       }
     }
     while (--cnt);
   }
+
+  return false;
+}
+
+void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheres(
+    WorkArea& work) const
+{
+  transformSpheres(*work.state1_, work);
+
+  // decide which spheres to check
+  const uint16_t *sphere_list = &*self_collide_list_.begin();
+  if (!work.req_->group_name.empty())
+  {
+    // TODO: use individual self_collide_list based on req.group_name
+  }
+
+  if (!work.acm_ && !work.req_->distance && !work.req_->cost && !work.req_->contacts)
+  {
+    work.res_->collision = checkSelfCollisionUsingSpheresBool(work, sphere_list);
+    return;
+  }
+
+  logError("CollisionRobotDistanceField unsupported operation");
 }
 

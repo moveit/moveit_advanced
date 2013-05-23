@@ -58,8 +58,27 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const robot_state::RobotState &state,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("CollisionRobotDistanceField::checkSelfCollision 1 not yet implemented");
-  checkSelfCollisionUsingSpheres(state);
+  WorkArea& work = getWorkArea();
+  work.req_ = &req;
+  work.res_ = &res;
+  work.state1_ = &state;
+  work.acm_ = &acm;
+
+  checkSelfCollisionUsingSpheres(work);
+}
+
+void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const robot_state::RobotState &state) const
+{
+  WorkArea& work = getWorkArea();
+  work.req_ = &req;
+  work.res_ = &res;
+  work.state1_ = &state;
+  work.acm_ = NULL;
+
+  checkSelfCollisionUsingSpheres(work);
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
@@ -69,7 +88,16 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const robot_state::RobotState &state2, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("CollisionRobotDistanceField::checkSelfCollision 2 checking not yet implemented");
+  logError("CollisionRobotDistanceField::checkSelfCollision 2a checking not yet implemented");
+}
+
+void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
+    const CollisionRequest &req, 
+    CollisionResult &res, 
+    const robot_state::RobotState &state1, 
+    const robot_state::RobotState &state2) const
+{
+  logError("CollisionRobotDistanceField::checkSelfCollision 2b checking not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
@@ -80,7 +108,17 @@ void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
     const robot_state::RobotState &other_state,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("CollisionRobotDistanceField::checkSelfCollision 3 not yet implemented");
+  logError("CollisionRobotDistanceField::checkSelfCollision 3a not yet implemented");
+}
+
+void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
+    const CollisionRequest &req, 
+    CollisionResult &res, 
+    const robot_state::RobotState &state,
+    const CollisionRobot &other_robot, 
+    const robot_state::RobotState &other_state) const
+{
+  logError("CollisionRobotDistanceField::checkSelfCollision 3b not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
@@ -93,55 +131,7 @@ void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
     const robot_state::RobotState &other_state2,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("CollisionRobotDistanceField::checkSelfCollision 4 checking not yet implemented");
-}
-
-double collision_detection::CollisionRobotDistanceField::distanceSelf(
-    const robot_state::RobotState &state,
-    const AllowedCollisionMatrix &acm) const
-{
-  logError("CollisionRobotDistanceField::distanceSelf 1 not yet implemented");
-}
-
-double collision_detection::CollisionRobotDistanceField::distanceOther(
-    const robot_state::RobotState &state,
-    const CollisionRobot &other_robot,
-    const robot_state::RobotState &other_state,
-    const AllowedCollisionMatrix &acm) const
-{
-  logError("CollisionRobotDistanceField::distanceSelf 2 not yet implemented");
-}
-
-void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
-    const std::vector<std::string> &links)
-{
-}
-
-void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
-    const CollisionRequest &req,
-    CollisionResult &res,
-    const robot_state::RobotState &state) const
-{
-  checkSelfCollision(req, res, state, empty_acm);
-}
-
-void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const robot_state::RobotState &state1, 
-    const robot_state::RobotState &state2) const
-{
-  checkSelfCollision(req, res, state1, state2, empty_acm);
-}
-
-void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const robot_state::RobotState &state,
-    const CollisionRobot &other_robot, 
-    const robot_state::RobotState &other_state) const
-{
-  checkOtherCollision(req, res, state, other_robot, other_state, empty_acm);
+  logError("CollisionRobotDistanceField::checkSelfCollision 4a checking not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
@@ -153,13 +143,32 @@ void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
     const robot_state::RobotState &other_state1, 
     const robot_state::RobotState &other_state2) const
 {
-  checkOtherCollision(req, res, state1, state2, other_robot, other_state1, other_state2, empty_acm);
+  logError("CollisionRobotDistanceField::checkSelfCollision 4b checking not yet implemented");
+}
+
+double collision_detection::CollisionRobotDistanceField::distanceSelf(
+    const robot_state::RobotState &state,
+    const AllowedCollisionMatrix &acm) const
+{
+  logError("CollisionRobotDistanceField::distanceSelf 1a not yet implemented");
+  return 0.0;
 }
 
 double collision_detection::CollisionRobotDistanceField::distanceSelf(
     const robot_state::RobotState &state) const
 {
-  return distanceSelf(state, empty_acm);
+  logError("CollisionRobotDistanceField::distanceSelf 1b not yet implemented");
+  return 0.0;
+}
+
+double collision_detection::CollisionRobotDistanceField::distanceOther(
+    const robot_state::RobotState &state,
+    const CollisionRobot &other_robot,
+    const robot_state::RobotState &other_state,
+    const AllowedCollisionMatrix &acm) const
+{
+  logError("CollisionRobotDistanceField::distanceSelf 2a not yet implemented");
+  return 0.0;
 }
 
 double collision_detection::CollisionRobotDistanceField::distanceOther(
@@ -167,6 +176,12 @@ double collision_detection::CollisionRobotDistanceField::distanceOther(
     const CollisionRobot &other_robot,
     const robot_state::RobotState &other_state) const
 {
-  return distanceOther(state, other_robot, other_state, empty_acm);
+  logError("CollisionRobotDistanceField::distanceSelf 2b not yet implemented");
+  return 0.0;
+}
+
+void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
+    const std::vector<std::string> &links)
+{
 }
 

@@ -117,9 +117,23 @@ protected:
 private:
   struct WorkArea
   {
+    // clear the query parameters
+    void clearQuery();
+
     // place to store transformed copy of sphere_centers_
     EigenSTL::vector_Vector3d transformed_sphere_centers_;
+
+    // copies of collision query parameters
+    const CollisionRequest *req_;
+    CollisionResult *res_;
+    const robot_state::RobotState *state1_;
+    const robot_state::RobotState *state2_;
+    const CollisionRobot *other_robot_;
+    const robot_state::RobotState *other_state1_;
+    const robot_state::RobotState *other_state2_;
+    const AllowedCollisionMatrix *acm_;
   };
+
 
   // get a mutable per-thread work area to store temporary values
   WorkArea& getWorkArea() const;
@@ -145,7 +159,10 @@ private:
         WorkArea& work) const;
 
   // check self collision using only sphere checks
-  void checkSelfCollisionUsingSpheres(const robot_state::RobotState& state) const;
+  void checkSelfCollisionUsingSpheres(WorkArea& work) const;
+
+  // helpers for checkSelfCollisionUsingSpheres()
+  bool checkSelfCollisionUsingSpheresBool(WorkArea& work, const uint16_t *sphere_list) const;
 
   
   // link-order is defined by the order of links in kmodel_->getLinkModels().
