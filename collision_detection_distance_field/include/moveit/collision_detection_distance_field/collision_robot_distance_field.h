@@ -115,6 +115,13 @@ protected:
   
 
 private:
+
+  // These types are 16 bits to minimize the size of various arrays for
+  // performance reasons.  If more than 65536 spheres or links are needed the
+  // size can be increased here.
+  typedef uint16_t SphereIndex;
+  typedef uint16_t LinkIndex;
+
   struct WorkArea
   {
     // initialize query
@@ -171,7 +178,7 @@ private:
 
   // helpers for checkSelfCollisionUsingSpheres()
   template<class Collision>
-    bool checkSelfCollisionUsingSpheresLoop(WorkArea& work, const uint16_t *sphere_list) const;
+    bool checkSelfCollisionUsingSpheresLoop(WorkArea& work, const SphereIndex *sphere_list) const;
   bool checkSpherePairAll( WorkArea& work, int a_idx, int b_idx) const;
   class CollisionBool;
   class CollisionAll;
@@ -187,7 +194,7 @@ private:
   // link-order is defined by the order of links in kmodel_->getLinkModels().
 
   // Table of link indices and spheres. Used to transform spheres.  See initSpheres() for details.
-  std::vector<uint16_t> sphere_transform_indices_;
+  std::vector<SphereIndex> sphere_transform_indices_;
 
   // sphere centers for all spheres for all links in link order
   EigenSTL::vector_Vector3d sphere_centers_;
@@ -197,10 +204,10 @@ private:
 
   // for each sphere, index of link the sphere is associated with.
   // This is an index into the kmodel_->getLinkModels() and state->getLinkStateVector() vectors
-  std::vector<uint16_t> sphere_link_map_;
+  std::vector<LinkIndex> sphere_link_map_;
 
   // Table of spheres to check for collisions.  See initSphereAcm() for details.
-  std::vector<uint16_t> self_collide_list_;
+  std::vector<SphereIndex> self_collide_list_;
 
   // mutable thread specific work area
   mutable boost::thread_specific_ptr<WorkArea> work_area_;

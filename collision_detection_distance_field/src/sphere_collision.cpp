@@ -101,9 +101,9 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
 
 void collision_detection::CollisionRobotDistanceField::initSphereAcm()
 {
-  std::vector<uint16_t> self_collide_list;
+  std::vector<SphereIndex> self_collide_list;
   self_collide_list.resize(sphere_link_map_.size() * (3 + sphere_link_map_.size()) + 1);
-  std::vector<uint16_t>::iterator acm_it = self_collide_list.begin();
+  std::vector<SphereIndex>::iterator acm_it = self_collide_list.begin();
 
   // The self_collide_list_ stores pairs of spheres which should be checked for collision in a
   // format that is efficient for traversal.
@@ -118,18 +118,18 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
   //
   // The last entry (and only the last entry) has a cnt==0
 
-  std::vector<uint16_t>::const_iterator alinks_it = sphere_link_map_.begin();
-  std::vector<uint16_t>::const_iterator alinks_it_base = alinks_it;         // first sphere for this link
+  std::vector<LinkIndex>::const_iterator alinks_it = sphere_link_map_.begin();
+  std::vector<LinkIndex>::const_iterator alinks_it_base = alinks_it;         // first sphere for this link
 
   for (; alinks_it != sphere_link_map_.end() ; ++alinks_it)
   {
     if (alinks_it_base != alinks_it && *alinks_it_base != *alinks_it)
       alinks_it_base = alinks_it;
 
-    std::vector<uint16_t>::const_iterator blinks_it = alinks_it + 1;
-    std::vector<uint16_t>::const_iterator blinks_it_base = alinks_it_base;
+    std::vector<LinkIndex>::const_iterator blinks_it = alinks_it + 1;
+    std::vector<LinkIndex>::const_iterator blinks_it_base = alinks_it_base;
 
-    std::vector<uint16_t>::iterator acm_it_cnt = acm_it++;
+    std::vector<SphereIndex>::iterator acm_it_cnt = acm_it++;
     *acm_it++ = alinks_it - sphere_link_map_.begin();
 
     for (; blinks_it != sphere_link_map_.end() ; ++blinks_it)
@@ -160,7 +160,7 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
 
   self_collide_list_.clear();
   self_collide_list_.reserve(acm_it - self_collide_list.begin());
-  for (std::vector<uint16_t>::iterator acm_it2 = self_collide_list.begin(); acm_it2 != acm_it ; ++acm_it2)
+  for (std::vector<SphereIndex>::iterator acm_it2 = self_collide_list.begin(); acm_it2 != acm_it ; ++acm_it2)
     self_collide_list_.push_back(*acm_it2);
 }
 
@@ -205,7 +205,7 @@ void collision_detection::CollisionRobotDistanceField::transformSpheres(
   EigenSTL::vector_Vector3d::const_iterator centers_it = sphere_centers_.begin();
   EigenSTL::vector_Vector3d::iterator centers_xformed_it = work.transformed_sphere_centers_.begin();
 
-  const uint16_t *idx_it = &*sphere_transform_indices_.begin();
+  const SphereIndex *idx_it = &*sphere_transform_indices_.begin();
 
   for (int cnt = *idx_it++ ; cnt ; cnt = *idx_it++)
   {
@@ -224,10 +224,10 @@ void collision_detection::CollisionRobotDistanceField::transformSpheres(
 template<class Collision>
 bool collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheresLoop(
     WorkArea& work,
-    const uint16_t *sphere_list) const
+    const SphereIndex *sphere_list) const
 {
   // walk the list of collidable spheres and check for collisions
-  const uint16_t *acm_it = sphere_list;
+  const SphereIndex *acm_it = sphere_list;
   for (int cnt = *acm_it++ ; cnt ; cnt = *acm_it++)
   {
     int a_idx = *acm_it++;
@@ -352,7 +352,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
   transformSpheres(*work.state1_, work);
 
   // decide which spheres to check
-  const uint16_t *sphere_list = &*self_collide_list_.begin();
+  const SphereIndex *sphere_list = &*self_collide_list_.begin();
   if (!work.req_->group_name.empty())
   {
     // TODO: use individual self_collide_list based on req.group_name
