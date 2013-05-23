@@ -124,6 +124,8 @@ private:
 
   struct WorkArea
   {
+    ~WorkArea();
+
     // initialize query
     void initQuery(const char* descrip,
                    const CollisionRequest *req,
@@ -147,6 +149,9 @@ private:
     const robot_state::RobotState *other_state1_;
     const robot_state::RobotState *other_state2_;
     const AllowedCollisionMatrix *acm_;
+
+    // true if any of the collisions we saw have a DecideContactFn
+    bool found_conditional_contact_;
   };
 
 
@@ -158,6 +163,20 @@ private:
   {
     return kmodel_->getLinkModels()[sphere_link_map_[idx]];
   }
+
+  // lookup name for a link
+  const std::string& linkIndexToName(int idx) const
+  {
+    return kmodel_->getLinkModels()[idx]->getName();
+  }
+
+  // number of links in robot
+  const std::size_t linkCount() const
+  {
+    return kmodel_->getLinkModels().size();
+  }
+
+
 
   // init functions
   void initSpheres();
@@ -179,16 +198,34 @@ private:
   // helpers for checkSelfCollisionUsingSpheres()
   template<class Collision>
     bool checkSelfCollisionUsingSpheresLoop(WorkArea& work, const SphereIndex *sphere_list) const;
-  bool checkSpherePairAll( WorkArea& work, int a_idx, int b_idx) const;
+  bool checkSpherePairAll(WorkArea& work,
+                          int a_idx,
+                          int b_idx,
+                          const Eigen::Vector3d& a_center,
+                          const Eigen::Vector3d& b_center,
+                          double a_radius,
+                          double b_radius,
+                          double dsq) const;
   class CollisionBool;
   class CollisionAll;
   friend class CollisionBool;
   friend class CollisionAll;
 
   // helpers for when a sphere collision is detected
-  bool spherePairInAcm(WorkArea& work, int a_idx, int b_idx) const;
-  void addSphereContact(WorkArea& work, int a_idx, int b_idx) const;
-  void addSphereCost(WorkArea& work, int a_idx, int b_idx) const;
+  AllowedCollision::Type getLinkPairAcmType(WorkArea& work,
+                                            int a_link,
+                                            int b_link) const;
+  void addSphereContact(WorkArea& work,
+                        int a_link,
+                        int b_link,
+                        const Eigen::Vector3d& a_center,
+                        const Eigen::Vector3d& b_center,
+                        double a_radius,
+                        double b_radius,
+                        double dsq) const;
+  void addSphereCost(WorkArea& work,
+                     int a_idx,
+                     int b_idx) const;
 
   
   // link-order is defined by the order of links in kmodel_->getLinkModels().

@@ -52,6 +52,10 @@ collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection:
   return work;
 }
 
+collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
+{
+}
+
 void collision_detection::CollisionRobotDistanceField::initSpheres()
 {
   // for now just use bounding sphere for each link
@@ -257,6 +261,79 @@ bool collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
   return false;
 }
 
+// add sphere pair contact to work.req_->contacts
+// a_idx < b_idx.
+void collision_detection::CollisionRobotDistanceField::addSphereContact(
+    WorkArea& work,
+    int a_link,
+    int b_link,
+    const Eigen::Vector3d& a_center,
+    const Eigen::Vector3d& b_center,
+    double a_radius,
+    double b_radius,
+    double dsq) const
+{
+  const std::string& a_name = linkIndexToName(a_link);
+  const std::string& b_name = linkIndexToName(b_link);
+
+  std::pair<std::string, std::string> names(a_name, b_name);
+  std::vector<Contact>& contacts = work.res_->contacts[names];
+  int idx = contacts.size();
+
+  if (idx >= work.req_->max_contacts_per_pair)
+    return;
+
+  contacts.resize(idx+1);
+  Contact& contact = contacts[idx];
+
+  contact.body_name_1 = a_name;
+  contact.body_name_2 = b_name;
+  contact.body_type_1 = collision_detection::BodyTypes::ROBOT_LINK;
+  contact.body_type_2 = collision_detection::BodyTypes::ROBOT_LINK;
+
+  if (dsq > std::numeric_limits<double>::epsilon())
+  {
+    double dist = std::sqrt(dsq);
+    double oodist = 1.0/dist;
+    double ratio = a_radius / (a_radius + b_radius);
+    contact.normal = (b_center - a_center) * oodist;
+    contact.pos = a_center + ratio * dist * contact.normal;
+    contact.depth = a_radius + b_radius - dist;
+  }
+  else
+  {
+    contact.normal.setZero();
+    contact.pos = a_center;
+    contact.depth = a_radius + b_radius;
+  }
+
+  work.res_->contact_count++;
+}
+
+// add cost of sphere-pair to work.req_->cost_sources
+// a_idx < b_idx.
+void collision_detection::CollisionRobotDistanceField::addSphereCost(
+    WorkArea& work,
+    int a_idx,
+    int b_idx) const
+{
+  // TODO
+}
+
+// Indicates whether the collision between 2 links should be ignored.
+// See collision_matrix.h for details.
+// a_idx < b_idx.
+collision_detection::AllowedCollision::Type collision_detection::CollisionRobotDistanceField::getLinkPairAcmType(
+    WorkArea& work,
+    int a_link,
+    int b_link) const
+{
+  AllowedCollision::Type allowed_collision;
+  if (!work.acm_->getAllowedCollision(linkIndexToName(a_link), linkIndexToName(b_link), allowed_collision))
+    allowed_collision = collision_detection::AllowedCollision::NEVER;
+  return allowed_collision;
+}
+
 // Bool is simplest query.  Return true if any collision occurs.
 class collision_detection::CollisionRobotDistanceField::CollisionBool
 {
@@ -291,58 +368,50 @@ public:
       double b_radius,
       double dsq)
   {
-    return crobot->checkSpherePairAll(work, a_idx, b_idx);
+    return crobot->checkSpherePairAll(work, a_idx, b_idx, a_center, b_center, a_radius, b_radius, dsq);
   }
 };
 
 bool collision_detection::CollisionRobotDistanceField::checkSpherePairAll(
     WorkArea& work,
     int a_idx,
-    int b_idx) const
+    int b_idx,
+    const Eigen::Vector3d& a_center,
+    const Eigen::Vector3d& b_center,
+    double a_radius,
+    double b_radius,
+    double dsq) const
 {
-  if (work.acm_ && spherePairInAcm(work, a_idx, b_idx))
-    return false;
+  int a_link = sphere_link_map_[a_idx];
+  int b_link = sphere_link_map_[b_idx];
 
-  if (work.req_->contacts)
-    addSphereContact(work, a_idx, b_idx);
+  int max_contacts = work.req_->contacts ? work.req_->max_contacts : 0;
+
+  if (work.acm_)
+  {
+    collision_detection::AllowedCollision::Type type = getLinkPairAcmType(work, a_link, b_link);
+    if (type == collision_detection::AllowedCollision::ALWAYS)
+    {
+      // TODO: skip acm_it to next link
+      return false;
+    }
+    if (type == collision_detection::AllowedCollision::CONDITIONAL)
+    {
+      max_contacts = std::numeric_limits<int>::max();
+      work.found_conditional_contact_ = true;
+    }
+  }
+
+  work.res_->collision = true;
+    
+  if (work.res_->contact_count < max_contacts)
+  {
+    addSphereContact(work, a_link, b_link, a_center, b_center, a_radius, b_radius, dsq);
+  }
 
   if (work.req_->cost)
     addSphereCost(work, a_idx, b_idx);
 
-  logInform("     COLLIDED! %s <--> %s   checkSpherePairAll",
-    sphereIndexToLinkModel(a_idx)->getName().c_str(),
-    sphereIndexToLinkModel(b_idx)->getName().c_str());
-  return false;
-}
-
-// add sphere pair contact to work.req_->contacts
-// a_idx < b_idx.
-void collision_detection::CollisionRobotDistanceField::addSphereContact(
-    WorkArea& work,
-    int a_idx,
-    int b_idx) const
-{
-  // TODO
-}
-
-// add cost of sphere-pair to work.req_->cost_sources
-// a_idx < b_idx.
-void collision_detection::CollisionRobotDistanceField::addSphereCost(
-    WorkArea& work,
-    int a_idx,
-    int b_idx) const
-{
-  // TODO
-}
-
-// true if sphere pair is in ACM.
-// a_idx < b_idx.
-bool collision_detection::CollisionRobotDistanceField::spherePairInAcm(
-    WorkArea& work,
-    int a_idx,
-    int b_idx) const
-{
-  // TODO
   return false;
 }
 
@@ -364,7 +433,14 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
     return;
   }
 
+  work.found_conditional_contact_ = false;
+
   // common case does all the bells and whistles
   work.res_->collision = checkSelfCollisionUsingSpheresLoop<CollisionAll>(work, sphere_list);
+
+  if (work.found_conditional_contact_)
+  {
+    logError("Conditional contacts not supported yet");
+  }
 }
 
