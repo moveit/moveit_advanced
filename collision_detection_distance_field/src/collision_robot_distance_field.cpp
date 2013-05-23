@@ -52,6 +52,52 @@ collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
   initSpheres();
 }
 
+inline void collision_detection::CollisionRobotDistanceField::WorkArea::initQuery(
+    const char *descrip,
+    const CollisionRequest *req,
+    CollisionResult *res,
+    const robot_state::RobotState *state1,
+    const robot_state::RobotState *state2,
+    const CollisionRobot *other_robot,
+    const robot_state::RobotState *other_state1,
+    const robot_state::RobotState *other_state2,
+    const AllowedCollisionMatrix *acm)
+{
+  req_ = req;
+  res_ = res;
+  state1_ = state1;
+  state2_ = state2;
+  other_robot_ = other_robot;
+  other_state1_ = other_state1;
+  other_state2_ = other_state2;
+  acm_ = acm;
+
+  // debug
+  if (1)
+  {
+    logInform("CollisionRobotDistanceField Query %s", descrip);
+
+    std::stringstream ss_cost;
+    ss_cost << ", cost(max=" << req->max_cost_sources << ", dens=" << req->min_cost_density << ")";
+    std::stringstream ss_contacts;
+    ss_contacts << ", contact(max=" << req->max_contacts << ", cpp=" << req->max_contacts_per_pair << ")";
+    std::stringstream ss_acm;
+    if (acm)
+    {
+      std::vector<std::string> names;
+      acm->getAllEntryNames(names);
+      ss_acm << ", acm(nnames=" << names.size() << ", sz=" << acm->getSize() << ")";
+    }
+    logInform("   request: result%s%s%s%s%s%s",
+      req->distance ? ", distance" : "",
+      req->cost ? ss_cost.str().c_str() : "",
+      req->contacts ? ss_contacts.str().c_str() : "",
+      req->is_done ? ", is_done-func" : "",
+      req->verbose ? ", VERBOSE" : "",
+      ss_acm.str().c_str());
+  }
+}
+
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const CollisionRequest &req, 
     CollisionResult &res, 
@@ -59,10 +105,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const AllowedCollisionMatrix &acm) const
 {
   WorkArea& work = getWorkArea();
-  work.req_ = &req;
-  work.res_ = &res;
-  work.state1_ = &state;
-  work.acm_ = &acm;
+  work.initQuery("checkSelfCollision1acm", &req, &res, &state, NULL, NULL, NULL, NULL, &acm);
 
   checkSelfCollisionUsingSpheres(work);
 }
@@ -73,10 +116,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const robot_state::RobotState &state) const
 {
   WorkArea& work = getWorkArea();
-  work.req_ = &req;
-  work.res_ = &res;
-  work.state1_ = &state;
-  work.acm_ = NULL;
+  work.initQuery("checkSelfCollision1", &req, &res, &state, NULL, NULL, NULL, NULL, NULL);
 
   checkSelfCollisionUsingSpheres(work);
 }

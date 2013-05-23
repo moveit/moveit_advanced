@@ -39,18 +39,6 @@
 #include <console_bridge/console.h>
 #include <cassert>
 
-inline void collision_detection::CollisionRobotDistanceField::WorkArea::clearQuery()
-{
-  req_ = NULL;
-  res_ = NULL;
-  state1_ = NULL;
-  state2_ = NULL;
-  other_robot_ = NULL;
-  other_state1_ = NULL;
-  other_state2_ = NULL;
-  acm_ = NULL;
-}
-
 collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection::CollisionRobotDistanceField::getWorkArea() const
 {
   if (!work_area_.get())
@@ -61,7 +49,6 @@ collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection:
   }
 
   WorkArea& work = *work_area_;
-  work.clearQuery();
   return work;
 }
 

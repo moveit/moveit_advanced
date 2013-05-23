@@ -117,8 +117,16 @@ protected:
 private:
   struct WorkArea
   {
-    // clear the query parameters
-    void clearQuery();
+    // initialize query
+    void initQuery(const char* descrip,
+                   const CollisionRequest *req,
+                   CollisionResult *res,
+                   const robot_state::RobotState *state1,
+                   const robot_state::RobotState *state2,
+                   const CollisionRobot *other_robot,
+                   const robot_state::RobotState *other_state1,
+                   const robot_state::RobotState *other_state2,
+                   const AllowedCollisionMatrix *acm);
 
     // place to store transformed copy of sphere_centers_
     EigenSTL::vector_Vector3d transformed_sphere_centers_;
