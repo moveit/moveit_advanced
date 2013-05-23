@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<package>
+  <name>collision_detection_distance_field</name>
+  <version>0.0.0</version>
+  <description>Collision detection using distance fields.</description>
+
+  <maintainer email="acorn@willowgarage.com">Acorn</maintainer>
+  <author email="acorn@willowgarage.com">Acorn</author>
+  <url type="website">http://moveit.ros.org</url>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>boost</build_depend>
+  <build_depend>console_bridge</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>eigen_conversions</build_depend>
+  <build_depend>eigen_stl_containers</build_depend>
+  <build_depend>geometric_shapes</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>moveit_core</build_depend>
+  <build_depend>moveit_msgs</build_depend>
+  <build_depend>octomap</build_depend>
+  <build_depend>octomap_msgs</build_depend>
+  <build_depend>rostime</build_depend>
+  <build_depend>shape_msgs</build_depend>
+  <build_depend>shape_tools</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+
+  <run_depend>boost</run_depend>
+  <run_depend>console_bridge</run_depend>
+  <run_depend>eigen</run_depend>
+  <run_depend>eigen_conversions</run_depend>
+  <run_depend>eigen_stl_containers</run_depend>
+  <run_depend>geometric_shapes</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>moveit_core</run_depend>
+  <run_depend>moveit_msgs</run_depend>
+  <run_depend>octomap</run_depend>
+  <run_depend>octomap_msgs</run_depend>
+  <run_depend>rostime</run_depend>
+  <run_depend>shape_msgs</run_depend>
+  <run_depend>shape_tools</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+
+  <test_depend>moveit_resources</test_depend>
+
+
+</package>

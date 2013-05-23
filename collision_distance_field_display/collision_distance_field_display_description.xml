@@ -1,0 +1,9 @@
+<library path="lib/libcollision_distance_field_display">
+  <class name="moveit_rviz_plugin/CollisionDistanceField"
+         type="moveit_rviz_plugin::CollisionDistanceFieldDisplay"
+         base_class_type="rviz::Display">
+    <description>
+      For visualizing collision distance field information.
+    </description>
+  </class>
+</library>
