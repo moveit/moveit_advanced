@@ -221,7 +221,8 @@ void collision_detection::CollisionRobotDistanceField::transformSpheres(
   }
 }
 
-bool collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheresBool(
+template<class Collision>
+bool collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheresLoop(
     WorkArea& work,
     const uint16_t *sphere_list) const
 {
@@ -240,12 +241,14 @@ bool collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
       double b_radius = sphere_radii_[b_idx];
 
       double r = a_radius + b_radius;
-      if ((a_center - b_center).squaredNorm() <= r*r)
+      double dsq = (a_center - b_center).squaredNorm();
+      if (dsq <= r*r)
       {
         logInform("     COLLIDED! %s <--> %s",
           sphereIndexToLinkModel(a_idx)->getName().c_str(),
           sphereIndexToLinkModel(b_idx)->getName().c_str());
-        return true;
+        if (Collision::check(this, work, a_idx, b_idx, a_center, b_center, a_radius, b_radius, dsq))
+          return true;
       }
     }
     while (--cnt);
@@ -253,6 +256,56 @@ bool collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
 
   return false;
 }
+
+// Bool is simplest query.  Return true if any collision occurs.
+class collision_detection::CollisionRobotDistanceField::CollisionBool
+{
+public:
+  static bool check(
+      const collision_detection::CollisionRobotDistanceField* crobot,
+      collision_detection::CollisionRobotDistanceField::WorkArea& work,
+      int a_idx,
+      int b_idx,
+      const Eigen::Vector3d& a_center,
+      const Eigen::Vector3d& b_center,
+      double a_radius,
+      double b_radius,
+      double dsq)
+  {
+    return true;
+  }
+};
+
+// call checkAll()
+class collision_detection::CollisionRobotDistanceField::CollisionAll
+{
+public:
+  static bool check(
+      const collision_detection::CollisionRobotDistanceField* crobot,
+      collision_detection::CollisionRobotDistanceField::WorkArea& work,
+      int a_idx,
+      int b_idx,
+      const Eigen::Vector3d& a_center,
+      const Eigen::Vector3d& b_center,
+      double a_radius,
+      double b_radius,
+      double dsq)
+  {
+    return crobot->checkSpherePairAll(work, a_idx, b_idx);
+  }
+};
+
+bool collision_detection::CollisionRobotDistanceField::checkSpherePairAll(
+    WorkArea& work,
+    int a_idx,
+    int b_idx) const
+{
+  logInform("     COLLIDED! %s <--> %s   checkSpherePairAll",
+    sphereIndexToLinkModel(a_idx)->getName().c_str(),
+    sphereIndexToLinkModel(b_idx)->getName().c_str());
+  return false;
+}
+
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSpheres(
     WorkArea& work) const
@@ -268,10 +321,11 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
 
   if (!work.acm_ && !work.req_->distance && !work.req_->cost && !work.req_->contacts)
   {
-    work.res_->collision = checkSelfCollisionUsingSpheresBool(work, sphere_list);
+    work.res_->collision = checkSelfCollisionUsingSpheresLoop<CollisionBool>(work, sphere_list);
     return;
   }
 
-  logError("CollisionRobotDistanceField unsupported operation");
+  // common case does all the bells and whistles
+  work.res_->collision = checkSelfCollisionUsingSpheresLoop<CollisionAll>(work, sphere_list);
 }
 

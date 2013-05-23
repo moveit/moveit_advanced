@@ -170,7 +170,13 @@ private:
   void checkSelfCollisionUsingSpheres(WorkArea& work) const;
 
   // helpers for checkSelfCollisionUsingSpheres()
-  bool checkSelfCollisionUsingSpheresBool(WorkArea& work, const uint16_t *sphere_list) const;
+  template<class Collision>
+    bool checkSelfCollisionUsingSpheresLoop(WorkArea& work, const uint16_t *sphere_list) const;
+  bool checkSpherePairAll( WorkArea& work, int a_idx, int b_idx) const;
+  class CollisionBool;
+  class CollisionAll;
+  friend class CollisionBool;
+  friend class CollisionAll;
 
   
   // link-order is defined by the order of links in kmodel_->getLinkModels().
