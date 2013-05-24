@@ -36,7 +36,9 @@
 #include <moveit/robot_model/link_model.h>
 #include <moveit/robot_state/robot_state.h>
 
+#include <rviz/properties/property.h>
 #include <rviz/properties/bool_property.h>
+#include <rviz/properties/int_property.h>
 
 #include <ros/console.h>
 
@@ -72,7 +74,6 @@ void joint_tree::JointTreeBase::setRobotState(const boost::shared_ptr<const robo
     model_ = state->getRobotModel();
     loadTree();
   }
-
 }
 
 void joint_tree::JointTreeBase::changedExpandAllJoints()
@@ -88,6 +89,8 @@ void joint_tree::JointTreeBase::changedExpandAllJoints()
     else
       it->second->collapse();
   }
+  if (expand)
+    tree_root_->expand();
 }
 
 void joint_tree::JointTreeBase::changedExpandAllLinks()
@@ -117,46 +120,81 @@ void joint_tree::JointTreeBase::changedTreeStructure()
 
 void joint_tree::JointTreeBase::addTreeProperties()
 {
+  tree_controls_ = new rviz::Property(
+                                      "Tree Properties",
+                                      QVariant(),
+                                      "Controls for property tree.",
+                                      this);
   show_all_links_ = new rviz::BoolProperty(
                                       "Show all links",
                                       true,
                                       "Hide/show all links.",
-                                      this,
-                                      SLOT( changedShowAllLinks() ));
+                                      tree_controls_,
+                                      SLOT( changedShowAllLinks() ),
+                                      this);
   expand_all_joints_ = new rviz::BoolProperty(
                                       "Expand all joints",
                                       false,
                                       "Expand/collapse entire joint tree.",
-                                      this,
-                                      SLOT( changedExpandAllJoints() ));
+                                      tree_controls_,
+                                      SLOT( changedExpandAllJoints() ),
+                                      this);
   expand_all_links_ = new rviz::BoolProperty(
                                       "Expand all links",
                                       false,
                                       "Expand/contract each link property.",
-                                      this,
-                                      SLOT( changedExpandAllLinks() ));
+                                      tree_controls_,
+                                      SLOT( changedExpandAllLinks() ),
+                                      this);
   show_joint_properties_ = new rviz::BoolProperty(
                                       "Show Joint Properties",
                                       true,
                                       "Show Joints in the tree.",
-                                      this,
-                                      SLOT( changedTreeStructure() ));
+                                      tree_controls_,
+                                      SLOT( changedTreeStructure() ),
+                                      this);
   show_link_properties_ = new rviz::BoolProperty(
                                       "Show Link Properties",
                                       true,
                                       "Show Links in the tree.",
-                                      this,
-                                      SLOT( changedTreeStructure() ));
+                                      tree_controls_,
+                                      SLOT( changedTreeStructure() ),
+                                      this);
+  indent_tree_ = new rviz::BoolProperty(
+                                      "Indent tree",
+                                      true,
+                                      "Indent tree to show parent-child relationships.",
+                                      tree_controls_,
+                                      SLOT( changedTreeStructure() ),
+                                      this);
 }
 
 void joint_tree::JointTreeBase::addJointProperties(Joint *joint)
 {
-
+  (void)new rviz::IntProperty(
+                                      "Dummy Joint Property 1",
+                                      1,
+                                      "Example 1.",
+                                      joint);
+  (void)new rviz::IntProperty(
+                                      "Dummy Joint Property 2",
+                                      2,
+                                      "Example 2.",
+                                      joint);
 }
 
 void joint_tree::JointTreeBase::addLinkProperties(Link *link)
 {
-
+  (void)new rviz::IntProperty(
+                                      "Dummy Link Property 1",
+                                      3,
+                                      "Example 3.",
+                                      link);
+  (void)new rviz::IntProperty(
+                                      "Dummy Link Property 2",
+                                      4,
+                                      "Example 4.",
+                                      link);
 }
 
 void joint_tree::JointTreeBase::loadTree()
@@ -188,6 +226,7 @@ void joint_tree::JointTreeBase::loadTree()
 }
 
 
+// override this to use a subclass of joint_tree::JointTreeBase::Joint
 joint_tree::JointTreeBase::Joint *joint_tree::JointTreeBase::newJoint(
                             rviz::Property *parent,
                             const robot_model::JointModel *joint_model)
@@ -195,6 +234,7 @@ joint_tree::JointTreeBase::Joint *joint_tree::JointTreeBase::newJoint(
   return new joint_tree::JointTreeBase::Joint(parent, joint_model, this);
 }
 
+// override this to use a subclass of joint_tree::JointTreeBase::Link
 joint_tree::JointTreeBase::Link *joint_tree::JointTreeBase::newLink(
                           rviz::Property *parent,
                           const robot_model::LinkModel *link_model)
@@ -203,37 +243,50 @@ joint_tree::JointTreeBase::Link *joint_tree::JointTreeBase::newLink(
 }
 
 
+// add joint property and all its children to tree
 joint_tree::JointTreeBase::Joint *joint_tree::JointTreeBase::addJoint(
                             rviz::Property *parent,
                             const robot_model::JointModel *joint_model)
 {
+  Joint* joint = NULL;
   if (show_joint_properties_->getBool())
   {
-    Joint* joint = newJoint(parent, joint_model);
+    joint = newJoint(parent, joint_model);
     joint_props_[joint_model->getName()] = joint;
     addJointProperties(joint);
-    parent = joint;
+    if (indent_tree_->getBool())
+      parent = joint;
   }
-  addLink(parent, joint_model->getChildLinkModel());
-}
 
-joint_tree::JointTreeBase::Link *joint_tree::JointTreeBase::addLink(
-                          rviz::Property *parent,
-                          const robot_model::LinkModel *link_model)
-{
-  if (show_link_properties_)
-  {
-    Link* link = newLink(parent, link_model);
-    link_props_[link_model->getName()] = link;
-    addLinkProperties(link);
-    parent = link;
-  }
+  const robot_model::LinkModel *link_model = joint_model->getChildLinkModel();
+  joint_tree::JointTreeBase::Link *link_prop = addLink(parent, link_model);
+
+  if (!show_joint_properties_->getBool() && indent_tree_->getBool() && link_prop)
+    parent = link_prop;
+
   for (std::vector<robot_model::JointModel*>::const_iterator it = link_model->getChildJointModels().begin() ;
        it != link_model->getChildJointModels().end() ;
        ++it)
   {
     addJoint(parent, *it);
   }
+
+  return joint;
+}
+
+// add link property to tree
+joint_tree::JointTreeBase::Link *joint_tree::JointTreeBase::addLink(
+                          rviz::Property *parent,
+                          const robot_model::LinkModel *link_model)
+{
+  Link* link = NULL;
+  if (show_link_properties_)
+  {
+    link = newLink(parent, link_model);
+    link_props_[link_model->getName()] = link;
+    addLinkProperties(link);
+  }
+  return link;
 }
 
 

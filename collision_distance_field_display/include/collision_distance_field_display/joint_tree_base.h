@@ -123,21 +123,23 @@ protected:
 
   // properties controlling the joint tree
   // subclasses can modify defaults or hide these by overriding addTreeProperties()
+  rviz::Property* tree_controls_;
   rviz::BoolProperty* show_all_links_;
   rviz::BoolProperty* expand_all_joints_;
   rviz::BoolProperty* expand_all_links_;
   rviz::BoolProperty* show_joint_properties_;
   rviz::BoolProperty* show_link_properties_;
+  rviz::BoolProperty* indent_tree_;
 
   // link and joint properties
   rviz::Property* tree_root_;
   std::map<std::string, Joint*> joint_props_;
   std::map<std::string, Link*> link_props_;
 
-private:
   boost::shared_ptr<const robot_model::RobotModel> model_;
   boost::shared_ptr<const robot_state::RobotState> state_;
 
+private:
   bool loading_;
 };
 
