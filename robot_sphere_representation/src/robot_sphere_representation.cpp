@@ -59,9 +59,9 @@ void collision_detection::RobotSphereRepresentation::spheresFromSrdf(const srdf:
        lm != robot_model_->getLinkModels().end() ;
        ++lm)
   {
+    const std::string& link_name = (*lm)->getName();
     for (std::vector<srdf::Model::LinkSpheres>::const_iterator lsp = srdf->getLinkSphereApproximations().begin() ;; ++lsp)
     {
-      const std::string& link_name = (*lm)->getName();
 
       // if no spheres in srdf, use a single bounding sphere
       if (lsp == srdf->getLinkSphereApproximations().end())
