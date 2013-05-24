@@ -146,6 +146,21 @@ void joint_tree::JointTreeBase::addTreeProperties()
                                       tree_controls_,
                                       SLOT( changedExpandAllLinks() ),
                                       this);
+
+
+  // These properties are hidden.  They can be modified in derived classes to adjust the structure of the tree:
+  //   show_joint show_link   DESCRIPTION
+  //   ---------- ---------   -------------
+  //        1         1       DEFAULT:  A tree of joints with link info under each joint.
+  //        1         0       Tree of joints.  No link info.
+  //        0         1       Tree of links.  No joint info.
+  //        0         0       not very useful.
+  //
+  // indent_tree_ controls whether it is a tree or just a non-hierarchical) list.
+  //
+  // These can be unhidden to allow users to set the structure they like, but
+  // that is problematic because any change to the structure deletes and
+  // recreates all the properties, so all edited values are lost.
   show_joint_properties_ = new rviz::BoolProperty(
                                       "Show Joint Properties",
                                       true,
@@ -153,6 +168,7 @@ void joint_tree::JointTreeBase::addTreeProperties()
                                       tree_controls_,
                                       SLOT( changedTreeStructure() ),
                                       this);
+  show_joint_properties_->hide();
   show_link_properties_ = new rviz::BoolProperty(
                                       "Show Link Properties",
                                       true,
@@ -160,6 +176,7 @@ void joint_tree::JointTreeBase::addTreeProperties()
                                       tree_controls_,
                                       SLOT( changedTreeStructure() ),
                                       this);
+  show_link_properties_->hide();
   indent_tree_ = new rviz::BoolProperty(
                                       "Indent tree",
                                       true,
@@ -167,6 +184,7 @@ void joint_tree::JointTreeBase::addTreeProperties()
                                       tree_controls_,
                                       SLOT( changedTreeStructure() ),
                                       this);
+  indent_tree_->hide();
 }
 
 void joint_tree::JointTreeBase::addJointProperties(Joint *joint)
@@ -254,14 +272,13 @@ joint_tree::JointTreeBase::Joint *joint_tree::JointTreeBase::addJoint(
     joint = newJoint(parent, joint_model);
     joint_props_[joint_model->getName()] = joint;
     addJointProperties(joint);
-    if (indent_tree_->getBool())
-      parent = joint;
+    parent = joint;
   }
 
   const robot_model::LinkModel *link_model = joint_model->getChildLinkModel();
   joint_tree::JointTreeBase::Link *link_prop = addLink(parent, link_model);
 
-  if (!show_joint_properties_->getBool() && indent_tree_->getBool() && link_prop)
+  if (!show_joint_properties_->getBool() && link_prop)
     parent = link_prop;
 
   for (std::vector<robot_model::JointModel*>::const_iterator it = link_model->getChildJointModels().begin() ;
