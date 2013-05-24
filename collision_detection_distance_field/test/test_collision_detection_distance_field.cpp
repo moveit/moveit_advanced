@@ -36,7 +36,6 @@
 
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_state/robot_state.h>
-#include <moveit/robot_state/transforms.h>
 #include <moveit/collision_detection_distance_field/collision_world_distance_field.h>
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 
@@ -123,7 +122,7 @@ protected:
   boost::shared_ptr<urdf::ModelInterface>  urdf_model_;
   boost::shared_ptr<srdf::Model>           srdf_model_;
   
-  robot_model::RobotModelPtr             robot_model_;
+  robot_model::RobotModelPtr               robot_model_;
   
   boost::shared_ptr<collision_detection::CollisionRobot>        crobot_;
   boost::shared_ptr<collision_detection::CollisionWorld>        cworld_;
