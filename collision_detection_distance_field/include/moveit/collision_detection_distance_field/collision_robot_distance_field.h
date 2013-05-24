@@ -122,6 +122,13 @@ private:
   typedef uint16_t SphereIndex;
   typedef uint16_t LinkIndex;
 
+  //###########################################################################
+  //############################### WORK AREA #################################
+  //###########################################################################
+
+  /// Contains temporary data used during a collision query.
+  // Instead of allocating this every query, a single instance is allocated per
+  // thread and used for all queries from that thread.
   struct WorkArea
   {
     ~WorkArea();
@@ -158,6 +165,10 @@ private:
   // get a mutable per-thread work area to store temporary values
   WorkArea& getWorkArea() const;
 
+  //###########################################################################
+  //############################### ACCESSOR CONVENIENCE FUNCTIONS ############
+  //###########################################################################
+
   // return the LinkModel for a particular index in sphere_centers_, sphere_radii_, or sphere_link_map_
   const robot_model::LinkModel* sphereIndexToLinkModel(int idx) const
   {
@@ -176,7 +187,13 @@ private:
     return kmodel_->getLinkModels().size();
   }
 
+  // find a link's collision spheres in the srdf
+  const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link);
 
+
+  //###########################################################################
+  //############################### SPHERE COLLISION ##########################
+  //###########################################################################
 
   // init functions
   void initSpheres();
@@ -186,6 +203,7 @@ private:
         size_t sphere_idx0,
         const robot_model::LinkModel* link1,
         size_t sphere_idx1);
+
 
   // transform sphere centers to planning frame.  Results are placed into mutable work.transformed_sphere_centers_.
   void transformSpheres(
@@ -226,6 +244,10 @@ private:
   void addSphereCost(WorkArea& work,
                      int a_idx,
                      int b_idx) const;
+
+  //###########################################################################
+  //############################### DATA ######################################
+  //###########################################################################
 
   
   // link-order is defined by the order of links in kmodel_->getLinkModels().

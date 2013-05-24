@@ -56,10 +56,19 @@ collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
 {
 }
 
+const srdf::Model::LinkSpheres *collision_detection::CollisionRobotDistanceField::getSrdfLinkSpheres(const std::string& link)
+{
+  for (std::vector<srdf::Model::LinkSpheres>::const_iterator lsp = kmodel_->getSRDF()->getLinkSphereApproximations().begin() ;
+       lsp != kmodel_->getSRDF()->getLinkSphereApproximations().end() ; 
+       ++lsp)
+    if (lsp->link_ == link)
+      return &*lsp;
+
+  return NULL;
+}
+
 void collision_detection::CollisionRobotDistanceField::initSpheres()
 {
-  // for now just use bounding sphere for each link
-
   sphere_centers_.clear();
   sphere_radii_.clear();
   sphere_link_map_.clear();
@@ -80,6 +89,48 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
        lm != kmodel_->getLinkModels().end() ;
        ++lm)
   {
+
+    
+    // If srdf_model has any spheres:
+    //   Use them.  Eliminate all spheres with radius<=0.  If none are left then
+    //   this link has no collidable geometry and will not be considered for
+    //   sphere-based collision detection.
+    const srdf::Model::LinkSpheres *lsp = getSrdfLinkSpheres((*lm)->getName());
+
+    if (lsp && !lsp->spheres_.empty())
+    {
+      int sphere_cnt = 0;
+      for (std::vector<srdf::Model::Sphere>::const_iterator sp = lsp->spheres_.begin() ;
+           sp != lsp->spheres_.end() ;
+           ++sp)
+      {
+        if (sp->radius_ > std::numeric_limits<double>::min())
+        {
+          Eigen::Vector3d center(sp->center_x_,
+                                 sp->center_y_,
+                                 sp->center_z_);
+          sphere_centers_.push_back(center);
+          sphere_radii_.push_back(sp->radius_);
+          sphere_link_map_.push_back(lm - kmodel_->getLinkModels().begin());
+          sphere_cnt++;
+        }
+      }
+
+      if (sphere_cnt)
+      {
+        sphere_transform_indices_.push_back(sphere_cnt);
+        sphere_transform_indices_.push_back(lm - kmodel_->getLinkModels().begin());
+      }
+
+      continue;
+    }
+
+    // If srdf_model does not have ANY spheres:
+    //   Calculate a single bounding sphere to use based on the collision
+    //   geometry (a single sphere that bounds the entire link).  If this sphere
+    //   is radius<=0 then this link has no collidable geometry and will not be
+    //   considered for sphere-based collision detection.
+
     const shapes::ShapeConstPtr& shape = (*lm)->getShape();
     if (!shape)
       continue;
