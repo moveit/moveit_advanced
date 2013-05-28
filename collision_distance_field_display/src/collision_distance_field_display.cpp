@@ -60,7 +60,7 @@ enum {
 };
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay()
-  : PlanningSceneDisplay()
+  : PlanningSceneDisplay(true, false)
   , robot_model_loaded_(false)
   , robot_visual_dirty_(true)
   , robot_visual_position_dirty_(true)
@@ -144,12 +144,6 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       this);
 
   robot_state_category_->expand();
-
-  // turn Scene Robot visual off by default
-  if (scene_robot_enabled_property_)
-    scene_robot_enabled_property_->setValue(false);
-  if (robot_category_)
-    robot_category_->hide();
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
