@@ -133,6 +133,7 @@ private:
   tf::TransformBroadcaster tf_broadcaster_;
   
   // User-editable property variables.
+  rviz::Property* robot_state_category_;
   rviz::BoolProperty* show_robot_visual_property_;
   rviz::BoolProperty* show_robot_collision_property_;
   rviz::EnumProperty* collision_method_property_;
@@ -144,8 +145,11 @@ private:
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
 
+#define USE_JOINT_TREE_BASE 0
+#if USE_JOINT_TREE_BASE
   // Joint tree
   joint_tree::JointTreeBase *joint_tree_;
+#endif
 };
 
 }

@@ -30,7 +30,9 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/collision_distance_field_display.h>
+#if USE_JOINT_TREE_BASE
 #include <collision_distance_field_display/joint_tree_base.h>
+#endif
 #include <collision_distance_field_display/color_cast.h>
 
 #include <OGRE/OgreSceneNode.h>
@@ -68,25 +70,34 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   , robot_markers_dirty_(true)
   , robot_markers_position_dirty_(true)
   , int_marker_display_(NULL)
+#if USE_JOINT_TREE_BASE
   , joint_tree_(NULL)
+#endif
 {
+  robot_state_category_ = new rviz::Property(
+                                      "Robot State",
+                                      QVariant(),
+                                      "Show the robot in a user-draggable state.",
+                                      this);
   show_robot_visual_property_ = new rviz::BoolProperty(
                                       "Show Robot Visual",
                                       false,
                                       "Show the robot visual appearance (what it looks like).",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   show_robot_collision_property_ = new rviz::BoolProperty(
                                       "Show Robot Collision",
                                       true,
                                       "Show the robot collision geometry.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   collision_method_property_ = new rviz::EnumProperty(
                                       "Collision Method",
                                       "",
                                       "How to perform collision detection.",
-                                      this,
+                                      robot_state_category_,
                                       SLOT( changedCollisionMethod() ),
                                       this );
   collision_method_property_->addOption("FCL", CD_FCL);
@@ -96,43 +107,49 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "Active Group",
                                       "",
                                       "The name of the group of links to interact with (from the ones defined in the SRDF)",
-                                      this,
+                                      robot_state_category_,
                                       SLOT( changedActiveGroup() ),
                                       this );
   collision_aware_ik_property_ = new rviz::BoolProperty(
                                       "Collision aware IK",
                                       true,
                                       "Check collisions when doing IK.",
-                                      this);
+                                      robot_state_category_);
   publish_tf_property_ = new rviz::BoolProperty(
                                       "Publish Robot State on TF",
                                       true,
                                       "Enable publishing of robot link frames on TF (useful with TF display).",
-                                      this);
+                                      robot_state_category_);
   colliding_link_color_property_ = new rviz::ColorProperty(
                                       "Colliding Link Color",
                                       QColor( 255, 0, 0 ),
                                       "Color to draw links that are colliding with something.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   joint_violation_link_color_property_ = new rviz::ColorProperty(
                                       "Joint Violation Link Color",
                                       QColor( 255, 0, 255 ),
                                       "Color to draw links whose parent joints are out of range.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   attached_object_color_property_ = new rviz::ColorProperty(
                                       "Attached Object Color",
                                       QColor( 204, 51, 204 ),
                                       "Color to draw objects attached to the robot.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   robot_alpha_property_ = new rviz::FloatProperty(
                                       "Robot Alpha",
                                       1.0,
                                       "0 is fully transparent, 1.0 is fully opaque.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
+
+  robot_state_category_->expand();
 
   // turn Scene Robot visual off by default
   if (scene_robot_enabled_property_)
@@ -140,7 +157,9 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   if (robot_category_)
     robot_category_->hide();
 
+#if USE_JOINT_TREE_BASE
   joint_tree_ = new joint_tree::JointTreeBase(this);
+#endif
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
@@ -156,7 +175,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
 {
   PlanningSceneDisplay::onInitialize();
 
-  robot_visual_.reset(new RobotStateVisualization(planning_scene_node_, context_, "Robot", NULL));
+  robot_visual_.reset(new RobotStateVisualization(planning_scene_node_, context_, "Robot", robot_state_category_));
   robotVisualChanged();
 
   delete int_marker_display_;
@@ -419,7 +438,9 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     updateLinkColors(*state);
     robot_visual_->update(state, color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
+#if USE_JOINT_TREE_BASE
     joint_tree_->setRobotState(state);
+#endif
     context_->queueRender();
   }
   else if (robot_visual_position_dirty_)
@@ -428,7 +449,9 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     robot_state::RobotStateConstPtr state = getRobotState();
     updateLinkColors(*state);
     robot_visual_->update(state);
+#if USE_JOINT_TREE_BASE
     joint_tree_->setRobotState(state);
+#endif
     context_->queueRender();
   }
 }
