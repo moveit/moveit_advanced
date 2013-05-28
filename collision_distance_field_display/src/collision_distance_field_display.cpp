@@ -30,6 +30,7 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/collision_distance_field_display.h>
+#include <collision_distance_field_display/df_link.h>
 #include <collision_distance_field_display/color_cast.h>
 
 #include <OGRE/OgreSceneNode.h>
@@ -160,6 +161,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   PlanningSceneDisplay::onInitialize();
 
   robot_visual_.reset(new RobotStateVisualization(planning_scene_node_, context_, "Robot", robot_state_category_));
+  robot_visual_->getRobot().setLinkFactory(new DFLinkFactory());
   robotVisualChanged();
 
   delete int_marker_display_;

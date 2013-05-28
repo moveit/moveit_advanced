@@ -73,6 +73,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 qt4_wrap_cpp(
   MOC_SOURCES
     include/collision_distance_field_display/collision_distance_field_display.h
+    include/collision_distance_field_display/df_link.h
 )
 
 
@@ -80,6 +81,7 @@ add_library(
   ${LIBNAME}
     src/collision_distance_field_display_plugin.cpp
     src/collision_distance_field_display.cpp
+    src/df_link.cpp
     src/color_cast.cpp
     ${MOC_SOURCES}
 )
