@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
   ros::NodeHandle n;
 
 
-  joint_tree::JointTreeBase *joint_tree_ = 0;
   ROS_INFO("HELLO!");
 
   ros::spin();

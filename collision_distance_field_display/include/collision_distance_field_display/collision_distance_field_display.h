@@ -53,11 +53,6 @@ class EnumProperty;
 class EditableEnumProperty;
 }
 
-namespace joint_tree
-{
-class JointTreeBase;
-}
-
 namespace moveit_rviz_plugin
 {
 
@@ -144,12 +139,6 @@ private:
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
-
-#define USE_JOINT_TREE_BASE 0
-#if USE_JOINT_TREE_BASE
-  // Joint tree
-  joint_tree::JointTreeBase *joint_tree_;
-#endif
 };
 
 }

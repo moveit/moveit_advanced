@@ -30,9 +30,6 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/collision_distance_field_display.h>
-#if USE_JOINT_TREE_BASE
-#include <collision_distance_field_display/joint_tree_base.h>
-#endif
 #include <collision_distance_field_display/color_cast.h>
 
 #include <OGRE/OgreSceneNode.h>
@@ -70,9 +67,6 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   , robot_markers_dirty_(true)
   , robot_markers_position_dirty_(true)
   , int_marker_display_(NULL)
-#if USE_JOINT_TREE_BASE
-  , joint_tree_(NULL)
-#endif
 {
   robot_state_category_ = new rviz::Property(
                                       "Robot State",
@@ -156,10 +150,6 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
     scene_robot_enabled_property_->setValue(false);
   if (robot_category_)
     robot_category_->hide();
-
-#if USE_JOINT_TREE_BASE
-  joint_tree_ = new joint_tree::JointTreeBase(this);
-#endif
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
@@ -438,9 +428,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     updateLinkColors(*state);
     robot_visual_->update(state, color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
-#if USE_JOINT_TREE_BASE
-    joint_tree_->setRobotState(state);
-#endif
     context_->queueRender();
   }
   else if (robot_visual_position_dirty_)
@@ -449,9 +436,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     robot_state::RobotStateConstPtr state = getRobotState();
     updateLinkColors(*state);
     robot_visual_->update(state);
-#if USE_JOINT_TREE_BASE
-    joint_tree_->setRobotState(state);
-#endif
     context_->queueRender();
   }
 }
