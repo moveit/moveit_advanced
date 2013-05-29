@@ -69,6 +69,7 @@ LazyFreeSpaceUpdater::~LazyFreeSpaceUpdater()
 
 void LazyFreeSpaceUpdater::pushLazyUpdate(octomap::KeySet *occupied_cells, octomap::KeySet *model_cells, const octomap::point3d &sensor_origin)
 {
+  ROS_DEBUG("Pushing %lu occupied cells and %lu model cells for lazy updating...", (long unsigned int)occupied_cells->size(), (long unsigned int)model_cells->size());
   boost::mutex::scoped_lock _(update_cell_sets_lock_);
   occupied_cells_sets_.push_back(occupied_cells);
   model_cells_sets_.push_back(model_cells);
@@ -116,11 +117,14 @@ void LazyFreeSpaceUpdater::processThread()
 
     if (!running_)
       break;
-    
+
+    ROS_DEBUG("Begin processing batched update: marking free cells due to %lu occupied cells and %lu model cells", (long unsigned int)process_occupied_cells_set_->size(), (long unsigned int)process_model_cells_set_->size());
+
     ros::WallTime start = ros::WallTime::now();
     tree_->lockRead();
+
 #pragma omp sections
-    {
+        {
 
 #pragma omp section
       {
