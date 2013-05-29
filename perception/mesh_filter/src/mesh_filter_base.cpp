@@ -149,8 +149,6 @@ void mesh_filter::MeshFilterBase::deInitialize ()
   glDeleteLists (1, canvas_);
   glDeleteTextures (1, &sensor_depth_texture_);
 
-//  for (map<MeshHandle, GLMesh*>::iterator meshIt = meshes_.begin (); meshIt != meshes_.end (); ++meshIt)
-//    delete (meshIt->second);
   meshes_.clear ();
   mesh_renderer_.reset();
   depth_filter_.reset();
