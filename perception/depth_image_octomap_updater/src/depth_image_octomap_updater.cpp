@@ -449,7 +449,7 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
           // on far plane or a model point -> remove
           else if (labels_row [x] >= mesh_filter::MeshFilterBase::FarClip)
           {
-            float zz = input_row[x];
+            float zz = input_row[x] * 1e-3;
             float yy = y_cache_[y] * zz;
             float xx = x_cache_[x] * zz;
             /* transform to map frame */
