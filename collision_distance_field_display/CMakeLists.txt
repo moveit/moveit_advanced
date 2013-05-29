@@ -74,6 +74,7 @@ qt4_wrap_cpp(
   MOC_SOURCES
     include/collision_distance_field_display/collision_distance_field_display.h
     include/collision_distance_field_display/df_link.h
+    include/collision_distance_field_display/per_link_object.h
 )
 
 
@@ -82,6 +83,10 @@ add_library(
     src/collision_distance_field_display_plugin.cpp
     src/collision_distance_field_display.cpp
     src/df_link.cpp
+    src/per_link_object.cpp
+    src/cylinders_display.cpp
+    src/spheres_display.cpp
+    src/points_display.cpp
     src/color_cast.cpp
     ${MOC_SOURCES}
 )
