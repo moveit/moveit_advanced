@@ -99,20 +99,6 @@ target_link_libraries(
     ${Boost_LIBRARIES}
 )
 
-add_executable(
-  collision_distance_field_display_linktest
-    src/collision_distance_field_display_linktest.cpp
-)
-
-target_link_libraries(
-  collision_distance_field_display_linktest
-    ${LIBNAME}
-    ${catkin_LIBRARIES}
-    ${OGRE_LIBRARIES}
-    ${QT_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
 
 
 install(
