@@ -149,8 +149,8 @@ void mesh_filter::MeshFilterBase::deInitialize ()
   glDeleteLists (1, canvas_);
   glDeleteTextures (1, &sensor_depth_texture_);
 
-  for (map<MeshHandle, GLMesh*>::iterator meshIt = meshes_.begin (); meshIt != meshes_.end (); ++meshIt)
-    delete (meshIt->second);
+//  for (map<MeshHandle, GLMesh*>::iterator meshIt = meshes_.begin (); meshIt != meshes_.end (); ++meshIt)
+//    delete (meshIt->second);
   meshes_.clear ();
   mesh_renderer_.reset();
   depth_filter_.reset();
@@ -192,7 +192,7 @@ mesh_filter::MeshHandle mesh_filter::MeshFilterBase::addMesh (const Mesh& mesh)
 
 void mesh_filter::MeshFilterBase::addMeshHelper (MeshHandle handle, const Mesh *cmesh)
 { 
-  meshes_[handle] = new GLMesh (*cmesh, handle);
+  meshes_[handle] = shared_ptr<GLMesh> (new GLMesh (*cmesh, handle));
 }
 
 void mesh_filter::MeshFilterBase::removeMesh (MeshHandle handle)
@@ -312,7 +312,7 @@ void mesh_filter::MeshFilterBase::doFilter (const void* sensor_data, const int e
   glUniform3f (padding_coefficients_id, padding_coefficients [0], padding_coefficients [1], padding_coefficients [2]);
 
   Affine3d transform;
-  for (map<MeshHandle, GLMesh*>::const_iterator meshIt = meshes_.begin (); meshIt != meshes_.end (); ++meshIt)
+  for (map<MeshHandle, shared_ptr<GLMesh> >::const_iterator meshIt = meshes_.begin (); meshIt != meshes_.end (); ++meshIt)
     if (transform_callback_ (meshIt->first, transform))
       meshIt->second->render (transform);
 

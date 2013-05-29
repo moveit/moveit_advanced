@@ -215,7 +215,7 @@ class MeshFilterBase
     void setSize (unsigned int width, unsigned int height);
     
     /** \brief storage for meshed to be filtered */
-    std::map<MeshHandle, GLMesh*> meshes_;    
+    std::map<MeshHandle, boost::shared_ptr<GLMesh> > meshes_;
 
     /** \brief the parameters of the used sensor model*/
     boost::shared_ptr<SensorModel::Parameters> sensor_parameters_;
