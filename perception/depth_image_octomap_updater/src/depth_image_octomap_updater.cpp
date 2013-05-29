@@ -197,7 +197,7 @@ static const bool HOST_IS_BIG_ENDIAN = host_is_big_endian();
 
 void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
-  ROS_DEBUG("Received a new depth image message");
+  ROS_DEBUG("Received a new depth image message (frame = '%s', encoding='%s')", depth_msg->header.frame_id.c_str(), depth_msg->encoding.c_str());
 
   ros::WallTime start = ros::WallTime::now();
   
@@ -301,7 +301,14 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   if (is_u_short)
     mesh_filter_->filter(&depth_msg->data[0], GL_UNSIGNED_SHORT);
   else
+  {
+    if (depth_msg->encoding != sensor_msgs::image_encodings::TYPE_32FC1)
+    {
+      ROS_ERROR_THROTTLE(1, "Unexpected encoding type: '%s'. Ignoring input.", depth_msg->encoding.c_str());
+      return;
+    }
     mesh_filter_->filter(&depth_msg->data[0], GL_FLOAT);
+  }
   
   // the mesh filter runs in background; compute extra things in the meantime
 
@@ -510,6 +517,7 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
 
   // at this point we still have not freed the space
   free_space_updater_->pushLazyUpdate(occupied_cells_ptr, model_cells_ptr, sensor_origin);
+  
   ROS_DEBUG("Processed depth image in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
 }
 
