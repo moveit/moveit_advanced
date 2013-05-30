@@ -46,6 +46,7 @@ moveit_rviz_plugin::DFLink::DFLink(
   , sample_prop_(NULL)
   , display_(display)
 {
+  // An example of how to add a property.  Can be removed along with sample_prop_ and updateSampleProp().
   sample_prop_ = new rviz::BoolProperty(
                             "Dummy example property",
                             false,
