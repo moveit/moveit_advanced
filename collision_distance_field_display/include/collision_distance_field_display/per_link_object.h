@@ -55,16 +55,15 @@ class DFLink;
 class PointsDisplay;
 class SpheresDisplay;
 class CylinderDisplay;
-class PerPartObjBase;
-class PerPartSubObj;
+class PerLinkObjBase;
+class PerLinkSubObjBase;
 
 
 /// Represents a set of objects that may be drawn for any link(s).
-// Per-joint is not currently implemented, but could be added if needed.
-class PerPartObjList
+class PerLinkObjList
 {
 public:
-  void addVisObject(PerPartObjBase* obj);
+  void addVisObject(PerLinkObjBase* obj);
   void addLink(DFLink *link);
   //void addJoint(DFJoint *link);
   void update();
@@ -72,13 +71,13 @@ public:
   void disableAll();
 
 private:
-  std::vector<PerPartObjBase*> objs_;
+  std::vector<PerLinkObjBase*> objs_;
 };
 
 
 
-/// Represents one piece of data from each link or joint.
-class PerPartObjBase : public rviz::BoolProperty
+/// Represents one piece of data from each link.
+class PerLinkObjBase : public rviz::BoolProperty
 {
 Q_OBJECT;
 public:
@@ -98,7 +97,7 @@ public:
   void subObjEnabled();
 
 protected:
-  PerPartObjBase(rviz::Property *parent,
+  PerLinkObjBase(rviz::Property *parent,
                 const std::string& name,
                 const std::string& descrip,
                 const QColor& default_color,
@@ -106,7 +105,7 @@ protected:
                 Style style,
                 double size);
 
-  void addSubObject(PerPartSubObj*);
+  void addSubObject(PerLinkSubObjBase*);
 
 private Q_SLOTS:
   void changedSlot();
@@ -117,7 +116,7 @@ private:
   rviz::FloatProperty* alpha_;
   rviz::FloatProperty* size_;
   Style style_;
-  std::vector<PerPartSubObj*> sub_objs_;
+  std::vector<PerLinkSubObjBase*> sub_objs_;
   bool avoid_enable_update_;
 };
 
@@ -125,7 +124,7 @@ private:
 
 /// Represents one piece of data from each link.
 template<class VSO>
-class PerLinkObj : public PerPartObjBase
+class PerLinkObj : public PerLinkObjBase
 {
 public:
   PerLinkObj(rviz::Property *parent,
@@ -135,7 +134,7 @@ public:
             double default_alpha = 1.0,
             Style style = SPHERES,
             double size = 0.005) :
-    PerPartObjBase(parent, name, descrip, default_color, default_alpha, style, size)
+    PerLinkObjBase(parent, name, descrip, default_color, default_alpha, style, size)
   {}
 
 protected:
@@ -151,7 +150,7 @@ protected:
 
 /// Represents one piece of data in a particular link or joint.
 // The piece of data is drawn as a set of points, spheres, or cylinders.
-class PerPartSubObj : public rviz::BoolProperty
+class PerLinkSubObjBase : public rviz::BoolProperty
 {
 Q_OBJECT;
 public:
@@ -159,7 +158,7 @@ public:
   virtual void changed();
 
 protected:
-  PerPartSubObj(PerPartObjBase *base, rviz::Property *parent);
+  PerLinkSubObjBase(PerLinkObjBase *base, rviz::Property *parent);
 
   // Override this.  It should calculate the geometry of the shapes to display.
   // If getGeom() is not flexible enough to draw what you need, you can instead
@@ -183,7 +182,7 @@ protected:
 
   EigenSTL::vector_Vector3d centers_;
   std::vector<double> radii_;
-  PerPartObjBase *base_;
+  PerLinkObjBase *base_;
   bool robot_relative_;
 
   // Display a set of shapes.  Only one of these gets used, depending on what
@@ -200,10 +199,10 @@ private Q_SLOTS:
 
 
 /// Represents one piece of data in a particular link.
-class PerLinkSubObj : public PerPartSubObj
+class PerLinkSubObj : public PerLinkSubObjBase
 {
 protected:
-  PerLinkSubObj(PerPartObjBase *base,
+  PerLinkSubObj(PerLinkObjBase *base,
                 DFLink *link);
   virtual Ogre::SceneNode *getSceneNode();
 

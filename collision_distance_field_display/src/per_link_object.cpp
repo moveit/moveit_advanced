@@ -40,38 +40,38 @@
 #include <rviz/properties/float_property.h>
 
 
-void moveit_rviz_plugin::PerPartObjList::addVisObject(PerPartObjBase* obj)
+void moveit_rviz_plugin::PerLinkObjList::addVisObject(PerLinkObjBase* obj)
 {
   objs_.push_back(obj);
 }
 
-void moveit_rviz_plugin::PerPartObjList::clear()
+void moveit_rviz_plugin::PerLinkObjList::clear()
 {
-  for (std::vector<PerPartObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
+  for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
     (*it)->clear();
 }
 
-void moveit_rviz_plugin::PerPartObjList::update()
+void moveit_rviz_plugin::PerLinkObjList::update()
 {
-  for (std::vector<PerPartObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
+  for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
     (*it)->changed();
 }
 
-void moveit_rviz_plugin::PerPartObjList::disableAll()
+void moveit_rviz_plugin::PerLinkObjList::disableAll()
 {
-  for (std::vector<PerPartObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
+  for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
     (*it)->setValue(false);
 }
 
-void moveit_rviz_plugin::PerPartObjList::addLink(DFLink *link)
+void moveit_rviz_plugin::PerLinkObjList::addLink(DFLink *link)
 {
-  for (std::vector<PerPartObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
+  for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
     (*it)->createLinkObject(link);
 }
 
 
 
-moveit_rviz_plugin::PerPartObjBase::PerPartObjBase(
+moveit_rviz_plugin::PerLinkObjBase::PerLinkObjBase(
                 rviz::Property *parent,
                 const std::string& name,
                 const std::string& descrip,
@@ -111,7 +111,7 @@ moveit_rviz_plugin::PerPartObjBase::PerPartObjBase(
   setStyle(style_);
 }
 
-void moveit_rviz_plugin::PerPartObjBase::setStyle(Style style)
+void moveit_rviz_plugin::PerLinkObjBase::setStyle(Style style)
 {
   style_ = style;
   if (style_ != POINTS)
@@ -120,7 +120,7 @@ void moveit_rviz_plugin::PerPartObjBase::setStyle(Style style)
     size_->show();
 }
 
-void moveit_rviz_plugin::PerPartObjBase::subObjEnabled()
+void moveit_rviz_plugin::PerLinkObjBase::subObjEnabled()
 {
   if (!getBool())
   {
@@ -130,43 +130,43 @@ void moveit_rviz_plugin::PerPartObjBase::subObjEnabled()
   }
 }
 
-void moveit_rviz_plugin::PerPartObjBase::changedEnableSlot()
+void moveit_rviz_plugin::PerLinkObjBase::changedEnableSlot()
 {
   if (avoid_enable_update_)
     return;
 
   bool enabled = getBool();
-  for (std::vector<PerPartSubObj*>::iterator it = sub_objs_.begin() ; it != sub_objs_.end() ; ++it)
+  for (std::vector<PerLinkSubObjBase*>::iterator it = sub_objs_.begin() ; it != sub_objs_.end() ; ++it)
     (*it)->setValue(enabled);
 }
 
-void moveit_rviz_plugin::PerPartObjBase::changedSlot()
+void moveit_rviz_plugin::PerLinkObjBase::changedSlot()
 {
   changed();
 }
 
-void moveit_rviz_plugin::PerPartObjBase::clear()
+void moveit_rviz_plugin::PerLinkObjBase::clear()
 {
   sub_objs_.clear();
 }
 
-void moveit_rviz_plugin::PerPartObjBase::changed()
+void moveit_rviz_plugin::PerLinkObjBase::changed()
 {
-  for (std::vector<PerPartSubObj*>::iterator it = sub_objs_.begin() ; it != sub_objs_.end() ; ++it)
+  for (std::vector<PerLinkSubObjBase*>::iterator it = sub_objs_.begin() ; it != sub_objs_.end() ; ++it)
     (*it)->changed();
 }
 
-Eigen::Vector4f moveit_rviz_plugin::PerPartObjBase::getColor()
+Eigen::Vector4f moveit_rviz_plugin::PerLinkObjBase::getColor()
 {
   return color_cast::getColorf(color_, alpha_);
 }
 
-double moveit_rviz_plugin::PerPartObjBase::getSize()
+double moveit_rviz_plugin::PerLinkObjBase::getSize()
 {
   return size_->getFloat();
 }
 
-void moveit_rviz_plugin::PerPartObjBase::addSubObject(PerPartSubObj* vso)
+void moveit_rviz_plugin::PerLinkObjBase::addSubObject(PerLinkSubObjBase* vso)
 {
   if (vso)
     sub_objs_.push_back(vso);
@@ -174,7 +174,7 @@ void moveit_rviz_plugin::PerPartObjBase::addSubObject(PerPartSubObj* vso)
 
 
 
-moveit_rviz_plugin::PerPartSubObj::PerPartSubObj(PerPartObjBase *base, rviz::Property *parent)
+moveit_rviz_plugin::PerLinkSubObjBase::PerLinkSubObjBase(PerLinkObjBase *base, rviz::Property *parent)
   : BoolProperty(base->getName(), false, base->getDescription(), parent)
   , base_(base)
   , robot_relative_(true)
@@ -182,7 +182,7 @@ moveit_rviz_plugin::PerPartSubObj::PerPartSubObj(PerPartObjBase *base, rviz::Pro
   connect(this, SIGNAL( changed() ), this, SLOT( changedEnableSlot() ) );
 }
 
-void moveit_rviz_plugin::PerPartSubObj::changed()
+void moveit_rviz_plugin::PerLinkSubObjBase::changed()
 {
   points_.reset();
   spheres_.reset();
@@ -205,7 +205,7 @@ void moveit_rviz_plugin::PerPartSubObj::changed()
     spheres_.reset(new SpheresDisplay(getSceneNode()));
     for (size_t i = 0 ; i < centers_.size() ; i++)
       spheres_->addSphere(centers_[i], radii_[i], color);
-    base_->setStyle(PerPartObjBase::SPHERES);
+    base_->setStyle(PerLinkObjBase::SPHERES);
 
   }
   else if (radii_.size() == 1)
@@ -213,10 +213,10 @@ void moveit_rviz_plugin::PerPartSubObj::changed()
     spheres_.reset(new SpheresDisplay(getSceneNode()));
     for (size_t i = 0 ; i < centers_.size() ; i++)
       spheres_->addSphere(centers_[i], radii_[0], color);
-    base_->setStyle(PerPartObjBase::SPHERES);
+    base_->setStyle(PerLinkObjBase::SPHERES);
 
   }
-  else if (base_->getStyle() == PerPartObjBase::SPHERES)
+  else if (base_->getStyle() == PerLinkObjBase::SPHERES)
   {
     double size = base_->getSize();
     spheres_.reset(new SpheresDisplay(getSceneNode()));
@@ -233,20 +233,20 @@ void moveit_rviz_plugin::PerPartSubObj::changed()
   }
 }
 
-void moveit_rviz_plugin::PerPartSubObj::changedSlot()
+void moveit_rviz_plugin::PerLinkSubObjBase::changedSlot()
 {
   changed();
 }
 
-void moveit_rviz_plugin::PerPartSubObj::changedEnableSlot()
+void moveit_rviz_plugin::PerLinkSubObjBase::changedEnableSlot()
 {
   if (getBool())
     base_->subObjEnabled();
   changed();
 }
 
-// helper to get points from a marker.  Can be used by PerPartSubObj subclass implementations of getGeom()
-void moveit_rviz_plugin::PerPartSubObj::pointsFromMarker(const visualization_msgs::Marker& marker)
+// helper to get points from a marker.  Can be used by PerLinkSubObjBase subclass implementations of getGeom()
+void moveit_rviz_plugin::PerLinkSubObjBase::pointsFromMarker(const visualization_msgs::Marker& marker)
 {
   radii_.clear();
   for (visualization_msgs::Marker::_points_type::const_iterator it = marker.points.begin() ;
@@ -258,9 +258,9 @@ void moveit_rviz_plugin::PerPartSubObj::pointsFromMarker(const visualization_msg
 }
 
 moveit_rviz_plugin::PerLinkSubObj::PerLinkSubObj(
-      PerPartObjBase *base,
+      PerLinkObjBase *base,
       DFLink *link)
-  : PerPartSubObj(base, link->getLinkProperty())
+  : PerLinkSubObjBase(base, link->getLinkProperty())
   , link_(link)
 {
 }

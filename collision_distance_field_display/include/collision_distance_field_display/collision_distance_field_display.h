@@ -62,7 +62,7 @@ class CollisionWorldDistanceField;
 namespace moveit_rviz_plugin
 {
 
-class PerPartObjList;
+class PerLinkObjList;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -76,7 +76,7 @@ public:
   void setRobotState(const robot_state::RobotState &state);
   robot_state::RobotStateConstPtr getRobotState() const;
 
-  const boost::shared_ptr<PerPartObjList>& getLinkObjects() { return per_link_objects_; }
+  const boost::shared_ptr<PerLinkObjList>& getLinkObjects() { return per_link_objects_; }
 
   const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
   const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
@@ -158,7 +158,7 @@ private:
   rviz::FloatProperty* robot_alpha_property_;
 
   // per link visible objects to display
-  boost::shared_ptr<PerPartObjList> per_link_objects_;
+  boost::shared_ptr<PerLinkObjList> per_link_objects_;
 };
 
 }

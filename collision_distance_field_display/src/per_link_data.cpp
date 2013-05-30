@@ -47,11 +47,11 @@ namespace moveit_rviz_plugin
 class LinkObj_LinkSpheres : public PerLinkSubObj
 {
 public:
-  LinkObj_LinkSpheres(PerPartObjBase *base, DFLink *link) :
+  LinkObj_LinkSpheres(PerLinkObjBase *base, DFLink *link) :
     PerLinkSubObj(base, link)
   {}
 
-  static void addSelf(rviz::Property *parent, PerPartObjList& per_link_objects)
+  static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
   {
     per_link_objects.addVisObject(new PerLinkObj<LinkObj_LinkSpheres>(
                                 parent,
@@ -59,7 +59,7 @@ public:
                                 "Show spheres used for DistanceField collision detection.",
                                 QColor(0, 0, 255),
                                 0.5,
-                                PerPartObjBase::SPHERES));
+                                PerLinkObjBase::SPHERES));
   }
 
   virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
@@ -74,7 +74,7 @@ public:
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::add_per_link_data(rviz::Property* parent_property)
 {
-  per_link_objects_.reset(new PerPartObjList());
+  per_link_objects_.reset(new PerLinkObjList());
 
   LinkObj_LinkSpheres::addSelf(parent_property, *per_link_objects_);
 }
