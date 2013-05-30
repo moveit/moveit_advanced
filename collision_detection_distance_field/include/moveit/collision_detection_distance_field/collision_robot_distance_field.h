@@ -188,6 +188,9 @@ private:
     return kmodel_->getLinkModels()[idx]->getName();
   }
 
+  // lookup index for a link.  -1 on failure.
+  const int linkNameToIndex(const std::string& link_name) const;
+
   // number of links in robot
   const std::size_t linkCount() const
   {
@@ -199,10 +202,20 @@ private:
 
 
   //###########################################################################
+  //############################### INITIALIZATION ############################
+  //###########################################################################
+
+  // initialize everything.  Called from constructors.
+  void initialize();
+
+  // initialize link_name_to_index_map_
+  void initLinkNames();
+
+  //###########################################################################
   //############################### SPHERE COLLISION ##########################
   //###########################################################################
 
-  // init functions
+  // sphere init functions
   void initSpheres();
   void initSphereAcm();
   bool avoidCheckingCollision(
@@ -257,7 +270,9 @@ private:
   //###########################################################################
 
   
+  // This map allows looking up a link index from a link name.
   // link-order is defined by the order of links in kmodel_->getLinkModels().
+  std::map<std::string,LinkIndex> link_name_to_index_map_;
 
   // Table of link indices and spheres. Used to transform spheres.  See initSpheres() for details.
   std::vector<SphereIndex> sphere_transform_indices_;
