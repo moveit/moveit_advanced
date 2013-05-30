@@ -88,24 +88,9 @@ private:
   // generate a single sphere for each link that bounds the entire link.
   void genBoundingSpheres();
 
-#if 0
-  // Use a single sphere for a link that bounds the entire link.
-  // If there is no collision geometry this creates an empty entry for this
-  // link.
-  void useBoundingSphereForLink(const robot_model::LinkModel& lm);
-#endif
-
   boost::shared_ptr<const robot_model::RobotModel> robot_model_;
 
-#if 1
   std::map<std::string, LinkSphereRepresentation*> links_;
-#else
-  // Map from link to spheres.
-  // Each link should have an entry.
-  // If entry is empty the link has no collision geometry.
-  std::map<std::string, EigenSTL::vector_Vector3d> centers_;
-  std::map<std::string, std::vector<double> > radii_;
-#endif
 };
 
 }
