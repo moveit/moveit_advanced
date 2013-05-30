@@ -156,6 +156,7 @@ private:
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
+  rviz::Property* per_link_properties_;
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;
