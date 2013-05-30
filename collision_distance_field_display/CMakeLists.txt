@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   class_loader
   rviz
   tf
+  robot_sphere_representation
   roscpp
   rosconsole
 )
