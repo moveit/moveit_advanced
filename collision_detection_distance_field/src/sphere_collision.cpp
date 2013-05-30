@@ -73,7 +73,14 @@ void collision_detection::CollisionRobotDistanceField::getLinkSpheres(
       EigenSTL::vector_Vector3d& centers,
       std::vector<double>& radii) const
 {
+#if 1
   const srdf::Model::LinkSpheres *spheres = getSrdfLinkSpheres(link_name);
+  if (!spheres)
+  {
+    centers.clear();
+    radii.clear();
+    return;
+  }
 
   centers.resize(spheres->spheres_.size());
   radii.resize(spheres->spheres_.size());
@@ -87,6 +94,17 @@ void collision_detection::CollisionRobotDistanceField::getLinkSpheres(
     centers[i].z() = sphere_it->center_z_;
     radii[i] = sphere_it->radius_;
   }
+#else
+
+  centers.clear();
+  radii.clear();
+  for (std::size_t i = 0 ; i < sphere_link_map_.size() ; ++i)
+  {
+    if (sphere_link_map_[
+  }
+
+
+#endif
 }
 
 void collision_detection::CollisionRobotDistanceField::initSpheres()
