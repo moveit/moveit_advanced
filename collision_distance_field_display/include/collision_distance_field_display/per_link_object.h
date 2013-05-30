@@ -63,12 +63,23 @@ class PerLinkSubObjBase;
 class PerLinkObjList
 {
 public:
-  void addVisObject(PerLinkObjBase* obj);
-  void addLink(DFLink *link);
-  //void addJoint(DFJoint *link);
+
+  // call the update functions for all objects in all links.
   void update();
-  void clear();
+
+  // turn off all objects for all links
   void disableAll();
+
+
+  // add a new object which will be available to be added to any link.
+  // Generally this is called by a PerLinkSubObj subclass' addSelf() method.
+  void addVisObject(PerLinkObjBase* obj);
+
+  // Add all per-link objects to a link.  Called by link constructor.
+  void addLink(DFLink *link, std::vector<PerLinkSubObjBase*>& added_objects);
+
+  // This would be used if we had any per-joint objects
+  //void addJoint(DFJoint *link);
 
 private:
   std::vector<PerLinkObjBase*> objs_;
@@ -91,7 +102,7 @@ public:
   void clear();
   void disableAll();
 
-  virtual void createLinkObject(DFLink *link) = 0;
+  virtual PerLinkSubObjBase* createLinkObject(DFLink *link) = 0;
   //virtual void createJointObject(DFJoint *joint) = 0;
 
   void subObjEnabled();
@@ -138,9 +149,11 @@ public:
   {}
 
 protected:
-  virtual void createLinkObject(DFLink *link)
+  virtual PerLinkSubObjBase* createLinkObject(DFLink *link)
   {
-    addSubObject(new VSO(this, link));
+    PerLinkSubObjBase *vso = new VSO(this, link);
+    addSubObject(vso);
+    return vso;
   }
   //virtual void createJointObject(DFJoint *joint) {}
 };

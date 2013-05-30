@@ -45,12 +45,6 @@ void moveit_rviz_plugin::PerLinkObjList::addVisObject(PerLinkObjBase* obj)
   objs_.push_back(obj);
 }
 
-void moveit_rviz_plugin::PerLinkObjList::clear()
-{
-  for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
-    (*it)->clear();
-}
-
 void moveit_rviz_plugin::PerLinkObjList::update()
 {
   for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
@@ -63,10 +57,14 @@ void moveit_rviz_plugin::PerLinkObjList::disableAll()
     (*it)->setValue(false);
 }
 
-void moveit_rviz_plugin::PerLinkObjList::addLink(DFLink *link)
+void moveit_rviz_plugin::PerLinkObjList::addLink(DFLink *link, std::vector<PerLinkSubObjBase*>& added_objects)
 {
   for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
-    (*it)->createLinkObject(link);
+  {
+    PerLinkSubObjBase *vso = (*it)->createLinkObject(link);
+    if (vso)
+      added_objects.push_back(vso);
+  }
 }
 
 

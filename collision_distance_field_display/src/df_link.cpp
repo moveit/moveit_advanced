@@ -55,7 +55,7 @@ moveit_rviz_plugin::DFLink::DFLink(
                             SLOT( updateSampleProp() ),
                             this );
 
-  display_->getLinkObjects()->addLink(this);
+  display_->getLinkObjects()->addLink(this, per_link_objects_);
 }
 
 moveit_rviz_plugin::DFLink::~DFLink()
@@ -71,6 +71,11 @@ void moveit_rviz_plugin::DFLink::hideSubProperties(bool hide)
 {
   RobotLink::hideSubProperties(hide);
   sample_prop_->setHidden(hide);
+
+  std::vector<PerLinkSubObjBase*>::iterator objs = per_link_objects_.begin();
+  std::vector<PerLinkSubObjBase*>::iterator objs_end = per_link_objects_.end();
+  for ( ; objs != objs_end ; ++objs )
+    (*objs)->setHidden(hide);
 }
 
 void moveit_rviz_plugin::DFLink::getLinkSpheres(

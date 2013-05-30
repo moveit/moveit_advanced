@@ -48,6 +48,7 @@ class EditableEnumProperty;
 namespace moveit_rviz_plugin
 {
 class CollisionDistanceFieldDisplay;
+class PerLinkSubObjBase;
 
 // extra per-link properties to display
 class DFLink : public rviz::RobotLink
@@ -76,6 +77,7 @@ protected:
   // sample property
   rviz::BoolProperty* sample_prop_;
   CollisionDistanceFieldDisplay *display_;
+  std::vector<PerLinkSubObjBase*> per_link_objects_;
 };
 
 
