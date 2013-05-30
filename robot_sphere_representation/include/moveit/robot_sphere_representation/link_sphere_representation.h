@@ -34,12 +34,15 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_ROBOT_SPHERE_REPRESENTATION_
-#define MOVEIT_ROBOT_SPHERE_REPRESENTATION_ROBOT_SPHERE_REPRESENTATION_
+#ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_LINK_SPHERE_REPRESENTATION_
+#define MOVEIT_ROBOT_SPHERE_REPRESENTATION_LINK_SPHERE_REPRESENTATION_
 
-//#include <eigen_stl_containers/eigen_stl_containers.h>
+#include <eigen_stl_containers/eigen_stl_containers.h>
 #include <boost/shared_ptr.hpp>
 #include <map>
+#include <vector>
+
+#include <moveit/robot_model/link_model.h>
 
 namespace robot_model
 {
@@ -54,58 +57,31 @@ class Model;
 
 namespace collision_detection
 {
-class LinkSphereRepresentation;
+class RobotSphereRepresentation;
 
-class RobotSphereRepresentation
+class LinkSphereRepresentation
 {
 public:
-  RobotSphereRepresentation(boost::shared_ptr<const robot_model::RobotModel> robot_model);
-  ~RobotSphereRepresentation();
+  LinkSphereRepresentation(RobotSphereRepresentation *parent, const robot_model::LinkModel *link_model);
+  ~LinkSphereRepresentation();
 
-  // generate spheres for each link. 
-  // Discards old spheres (if any).
-  // An entry will be added to centers_ and radii_ for every link in the model.
-  // Links with no The entry will be empty for links with no collision geometry.
-  void genSpheres();
+  const std::string& getName() { return link_model_->getName(); }
 
-  // read spheres from the srdf
-  // (by default the one associated with RobotModel)
+  // copy spheres from srdf.
   void useSrdfSpheres(const srdf::Model *srdf = NULL);
 
-  // use one bounding sphere per link.
-  void useBoundingSpheres();
-
-  const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
-
-  // access the links
-  const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
-
-  // Get link info given link name
-  LinkSphereRepresentation* getLink(const std::string& link_name) const;
-
-
-private:
-  // generate a single sphere for each link that bounds the entire link.
-  void genBoundingSpheres();
-
-#if 0
   // Use a single sphere for a link that bounds the entire link.
   // If there is no collision geometry this creates an empty entry for this
   // link.
-  void useBoundingSphereForLink(const robot_model::LinkModel& lm);
-#endif
+  void useBoundingSphere();
 
-  boost::shared_ptr<const robot_model::RobotModel> robot_model_;
+private:
+  RobotSphereRepresentation *parent_;
+  const robot_model::LinkModel *link_model_;
 
-#if 1
-  std::map<std::string, LinkSphereRepresentation*> links_;
-#else
-  // Map from link to spheres.
-  // Each link should have an entry.
-  // If entry is empty the link has no collision geometry.
-  std::map<std::string, EigenSTL::vector_Vector3d> centers_;
-  std::map<std::string, std::vector<double> > radii_;
-#endif
+  // the spheres that bound this link.
+  EigenSTL::vector_Vector3d centers_;
+  std::vector<double> radii_;
 };
 
 }
