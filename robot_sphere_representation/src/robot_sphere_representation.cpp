@@ -82,7 +82,7 @@ void collision_detection::RobotSphereRepresentation::useBoundingSpheres()
 
 void collision_detection::RobotSphereRepresentation::genSpheres()
 {
-  genBoundingSpheres();
+  useBoundingSpheres();
 }
 
 collision_detection::LinkSphereRepresentation* collision_detection::RobotSphereRepresentation::getLink(

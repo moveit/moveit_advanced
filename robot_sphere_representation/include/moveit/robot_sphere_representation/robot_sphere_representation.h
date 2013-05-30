@@ -85,9 +85,6 @@ public:
 
 
 private:
-  // generate a single sphere for each link that bounds the entire link.
-  void genBoundingSpheres();
-
   boost::shared_ptr<const robot_model::RobotModel> robot_model_;
 
   std::map<std::string, LinkSphereRepresentation*> links_;
