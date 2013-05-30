@@ -64,7 +64,7 @@ public:
 
   virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
   {
-    robot_relative = true;
+    robot_relative = false;
     link_->getLinkSpheres(centers, radii);
   }
 };

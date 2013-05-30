@@ -164,6 +164,10 @@ protected:
   // Override this.  It should calculate the geometry of the shapes to display.
   // If getGeom() is not flexible enough to draw what you need, you can instead
   // override changed() and do all the work yourself.
+  //   robot_relative - Set to false if coordinates are relative to link, true if relative to robot.
+  //   centers - Fill in with centers of the spheres/points to draw.
+  //   radii - Fill in with radii of spheres.  If all spheres are same size
+  //            this can be a single entry.  Leave empty for points.
   virtual void getGeom(bool& robot_relative,
                        EigenSTL::vector_Vector3d& centers,
                        std::vector<double>& radii) {}
