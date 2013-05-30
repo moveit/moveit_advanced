@@ -53,6 +53,26 @@ collision_detection::LinkSphereRepresentation::~LinkSphereRepresentation()
 
 
 
+void collision_detection::LinkSphereRepresentation::genSpheres(const std::string& method)
+{
+  genSpheres(parent_->getMethod(method));
+}
+
+void collision_detection::LinkSphereRepresentation::genSpheres(RobotSphereRepresentation::GenMethods method)
+{
+  switch(method)
+  {
+    #define x(e,f,n) \
+      case RobotSphereRepresentation::e: f(); break;
+    collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
+    #undef x
+    case RobotSphereRepresentation::GM_DEFAULT:
+    default:
+      useSrdfSpheres();
+      break;
+  }
+}
+
 void collision_detection::LinkSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf)
 {
   if (!srdf)
@@ -71,7 +91,7 @@ void collision_detection::LinkSphereRepresentation::useSrdfSpheres(const srdf::M
     // if no spheres in srdf, use a single bounding sphere
     if (lsp == lsp_end)
     {
-      useBoundingSphere();
+      useBoundingSpheres();
       break;
     }
 
@@ -96,7 +116,7 @@ void collision_detection::LinkSphereRepresentation::useSrdfSpheres(const srdf::M
   }
 }
 
-void collision_detection::LinkSphereRepresentation::useBoundingSphere()
+void collision_detection::LinkSphereRepresentation::useBoundingSpheres()
 {
   centers_.clear();
   radii_.clear();

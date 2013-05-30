@@ -37,6 +37,7 @@
 #ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_LINK_SPHERE_REPRESENTATION_
 #define MOVEIT_ROBOT_SPHERE_REPRESENTATION_LINK_SPHERE_REPRESENTATION_
 
+#include <moveit/robot_sphere_representation/robot_sphere_representation.h>
 #include <eigen_stl_containers/eigen_stl_containers.h>
 #include <boost/shared_ptr.hpp>
 #include <map>
@@ -57,8 +58,6 @@ class Model;
 
 namespace collision_detection
 {
-class RobotSphereRepresentation;
-
 class LinkSphereRepresentation
 {
 public:
@@ -67,15 +66,21 @@ public:
 
   const std::string& getName() { return link_model_->getName(); }
 
+  // generate spheres by various methods
+  // Method names available from RobotSphereRepresentation::getGenMethods()
+  void genSpheres(const std::string& method);
+  void genSpheres(RobotSphereRepresentation::GenMethods method = RobotSphereRepresentation::GM_DEFAULT);
+
   // copy spheres from srdf.
   void useSrdfSpheres(const srdf::Model *srdf = NULL);
+
+private:
 
   // Use a single sphere for a link that bounds the entire link.
   // If there is no collision geometry this creates an empty entry for this
   // link.
-  void useBoundingSphere();
+  void useBoundingSpheres();
 
-private:
   RobotSphereRepresentation *parent_;
   const robot_model::LinkModel *link_model_;
 

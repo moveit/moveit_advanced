@@ -49,6 +49,13 @@ collision_detection::RobotSphereRepresentation::RobotSphereRepresentation(
     LinkSphereRepresentation *lsr = new LinkSphereRepresentation(this, *lm);
     links_.insert( std::pair<std::string, LinkSphereRepresentation*>( lsr->getName(), lsr ) );
   }
+
+  // initialize method_names_ and method_map_
+  #define x(e,f,n) \
+    method_names_.push_back(n); \
+    method_map_.insert( std::pair<std::string, GenMethods>( n, e ) );
+  collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
+  #undef x
 }
 
 collision_detection::RobotSphereRepresentation::~RobotSphereRepresentation()
@@ -72,19 +79,6 @@ void collision_detection::RobotSphereRepresentation::useSrdfSpheres(const srdf::
     lsr->second->useSrdfSpheres(srdf);
 }
 
-void collision_detection::RobotSphereRepresentation::useBoundingSpheres()
-{
-  std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
-  std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();
-  for ( ; lsr != lsr_end ; ++lsr )
-    lsr->second->useBoundingSphere();
-}
-
-void collision_detection::RobotSphereRepresentation::genSpheres()
-{
-  useBoundingSpheres();
-}
-
 collision_detection::LinkSphereRepresentation* collision_detection::RobotSphereRepresentation::getLink(
       const std::string& link_name) const
 {
@@ -95,5 +89,25 @@ collision_detection::LinkSphereRepresentation* collision_detection::RobotSphereR
     return NULL;
 }
 
+collision_detection::RobotSphereRepresentation::GenMethods collision_detection::RobotSphereRepresentation::getMethod(const std::string& method) const
+{
+  std::map<std::string, GenMethods>::const_iterator it = method_map_.find(method);
+  if (it != method_map_.end())
+    return it->second;
+  else
+    return GM_DEFAULT;
+}
 
+void collision_detection::RobotSphereRepresentation::genSpheres(const std::string& method)
+{
+  genSpheres(getMethod(method));
+}
+
+void collision_detection::RobotSphereRepresentation::genSpheres(GenMethods method)
+{
+  std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+    lsr->second->genSpheres(method);
+}
 

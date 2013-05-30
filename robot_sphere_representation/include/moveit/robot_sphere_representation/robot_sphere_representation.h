@@ -37,9 +37,9 @@
 #ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_ROBOT_SPHERE_REPRESENTATION_
 #define MOVEIT_ROBOT_SPHERE_REPRESENTATION_ROBOT_SPHERE_REPRESENTATION_
 
-//#include <eigen_stl_containers/eigen_stl_containers.h>
 #include <boost/shared_ptr.hpp>
 #include <map>
+#include <vector>
 
 namespace robot_model
 {
@@ -62,32 +62,49 @@ public:
   RobotSphereRepresentation(boost::shared_ptr<const robot_model::RobotModel> robot_model);
   ~RobotSphereRepresentation();
 
+  // Different methods for generating spheres.
+  // 
+  // Each method has an enum, a method, and a string.
+  // The method is a method in the LinkSphereRepresentation class.
+  //
+  enum GenMethods {
+    GM_DEFAULT,
+    #define collision_detection__RobotSphereRepresentation__GenMethods__strings(X) \
+      X(GM_SRDF,             useSrdfSpheres,     "From SRDF") \
+      X(GM_BOUNDING_SPHERES, useBoundingSpheres, "Use bounding sphere")
+    #define x(e,f,n) e,
+    collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
+    #undef x
+  };
+
+  // Return the list of available sphere generation methods.
+  const std::vector<std::string>& getGenMethods() const { return method_names_; }
+
   // generate spheres for each link. 
   // Discards old spheres (if any).
   // An entry will be added to centers_ and radii_ for every link in the model.
   // Links with no The entry will be empty for links with no collision geometry.
-  void genSpheres();
+  void genSpheres(const std::string& method);
+  void genSpheres(GenMethods method = GM_DEFAULT);
 
   // read spheres from the srdf
   // (by default the one associated with RobotModel)
   void useSrdfSpheres(const srdf::Model *srdf = NULL);
 
-  // use one bounding sphere per link.
-  void useBoundingSpheres();
-
+  // access
   const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
-
-  // access the links
   const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
-
-  // Get link info given link name
   LinkSphereRepresentation* getLink(const std::string& link_name) const;
-
+  GenMethods getMethod(const std::string& method) const;
 
 private:
   boost::shared_ptr<const robot_model::RobotModel> robot_model_;
 
   std::map<std::string, LinkSphereRepresentation*> links_;
+
+  // names of methods for generating spheres
+  std::vector<std::string> method_names_;
+  std::map<std::string, GenMethods> method_map_;
 };
 
 }
