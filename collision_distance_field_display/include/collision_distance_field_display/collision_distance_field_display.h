@@ -53,8 +53,16 @@ class EnumProperty;
 class EditableEnumProperty;
 }
 
+namespace collision_detection
+{
+class CollisionRobotDistanceField;
+class CollisionWorldDistanceField;
+}
+
 namespace moveit_rviz_plugin
 {
+
+class PerPartObjList;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -67,6 +75,11 @@ public:
   // access to the robot state
   void setRobotState(const robot_state::RobotState &state);
   robot_state::RobotStateConstPtr getRobotState() const;
+
+  const boost::shared_ptr<PerPartObjList>& getLinkObjects() { return per_link_objects_; }
+
+  const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
+  const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
 
 protected:
   virtual void onInitialize();
@@ -110,6 +123,9 @@ private:
   // Creates and/or updates the robot_interaction markers.
   void updateRobotMarkers();
 
+  // Add per link data displays.
+  void add_per_link_data(rviz::Property* parent_property);
+
 
   // for drawing the robot
   RobotStateVisualizationPtr robot_visual_;
@@ -126,6 +142,7 @@ private:
 
   // for publishing robot state in standalone mode
   tf::TransformBroadcaster tf_broadcaster_;
+
   
   // User-editable property variables.
   rviz::Property* robot_state_category_;
@@ -139,6 +156,9 @@ private:
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
+
+  // per link visible objects to display
+  boost::shared_ptr<PerPartObjList> per_link_objects_;
 };
 
 }

@@ -82,6 +82,7 @@ add_library(
   ${LIBNAME}
     src/collision_distance_field_display_plugin.cpp
     src/collision_distance_field_display.cpp
+    src/per_link_data.cpp
     src/df_link.cpp
     src/per_link_object.cpp
     src/cylinders_display.cpp

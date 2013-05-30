@@ -29,71 +29,53 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef COLLISION_DISTANCE_FIELD_DISPLAY_DF_LINK_H
-#define COLLISION_DISTANCE_FIELD_DISPLAY_DF_LINK_H
+#include <collision_distance_field_display/collision_distance_field_display.h>
+#include <collision_distance_field_display/per_link_object.h>
+#include <collision_distance_field_display/df_link.h>
+#include <collision_distance_field_display/points_display.h>
+#include <collision_distance_field_display/spheres_display.h>
+#include <collision_distance_field_display/cylinders_display.h>
+#include <collision_distance_field_display/color_cast.h>
 
-#include <rviz/robot/robot.h>
-#include <rviz/robot/robot_link.h>
-#include <eigen_stl_containers/eigen_stl_containers.h>
+#include <rviz/properties/color_property.h>
+#include <rviz/properties/float_property.h>
 
-namespace rviz
-{
-class ColorProperty;
-class FloatProperty;
-class IntProperty;
-class EnumProperty;
-class EditableEnumProperty;
-}
 
 namespace moveit_rviz_plugin
 {
-class CollisionDistanceFieldDisplay;
-
-// extra per-link properties to display
-class DFLink : public rviz::RobotLink
-{
-Q_OBJECT
-public:
-  DFLink( rviz::Robot* robot,
-          const urdf::LinkConstPtr& link,
-          const std::string& parent_joint_name,
-          bool visual,
-          bool collision,
-          CollisionDistanceFieldDisplay *display);
-  virtual ~DFLink();
-
-  virtual void hideSubProperties(bool hide);
-
-  CollisionDistanceFieldDisplay *getDisplay() const { return display_; }
-
-  void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
-
-
-public Q_SLOTS:
-  void updateSampleProp();
-
-protected:
-  // sample property
-  rviz::BoolProperty* sample_prop_;
-  CollisionDistanceFieldDisplay *display_;
-};
-
-
-class DFLinkFactory : public rviz::Robot::LinkFactory
+// Draw Link Spheres (spheres used for collision)
+class LinkObj_LinkSpheres : public PerLinkSubObj
 {
 public:
-  DFLinkFactory(CollisionDistanceFieldDisplay *display);
+  LinkObj_LinkSpheres(PerPartObjBase *base, DFLink *link) :
+    PerLinkSubObj(base, link)
+  {}
 
-  virtual rviz::RobotLink* createLink( rviz::Robot* robot,
-                                 const boost::shared_ptr<const urdf::Link>& link,
-                                 const std::string& parent_joint_name,
-                                 bool visual,
-                                 bool collision);
-private:
-  CollisionDistanceFieldDisplay *display_;
+  static void addSelf(rviz::Property *parent, PerPartObjList& per_link_objects)
+  {
+    per_link_objects.addVisObject(new PerLinkObj<LinkObj_LinkSpheres>(
+                                parent,
+                                "Show Link Collision spheres",
+                                "Show spheres used for DistanceField collision detection.",
+                                QColor(0, 0, 255),
+                                0.5,
+                                PerPartObjBase::SPHERES));
+  }
+
+  virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+  {
+    robot_relative = true;
+    link_->getLinkSpheres(centers, radii);
+  }
 };
-
-
 }
 
-#endif
+
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::add_per_link_data(rviz::Property* parent_property)
+{
+  per_link_objects_.reset(new PerPartObjList());
+
+  LinkObj_LinkSpheres::addSelf(parent_property, *per_link_objects_);
+}
+

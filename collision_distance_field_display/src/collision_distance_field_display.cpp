@@ -160,10 +160,15 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
 {
   PlanningSceneDisplay::onInitialize();
 
+  // create the robot visualization -- this displays the robot in rviz.
   robot_visual_.reset(new RobotStateVisualization(planning_scene_node_, context_, "Robot", robot_state_category_));
-  robot_visual_->getRobot().setLinkFactory(new DFLinkFactory());
+  robot_visual_->getRobot().setLinkFactory(new DFLinkFactory(this));
   robotVisualChanged();
 
+  // add per-link data displays to show aspects of distance field
+  add_per_link_data(robot_visual_->getRobot().getLinkTreeProperty());
+
+  // create an interactive marker display used to display markers for interacting with the robot.
   delete int_marker_display_;
   int_marker_display_ = context_->getDisplayFactory()->make("rviz/InteractiveMarkers");
   int_marker_display_->initialize(context_);
@@ -353,16 +358,48 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::setRobotState(const robo
   robotMarkerPositionsChanged();
 }
 
+//###########################################################################
+//############################### access functions ##########################
+//###########################################################################
+
 robot_state::RobotStateConstPtr moveit_rviz_plugin::CollisionDistanceFieldDisplay::getRobotState() const
 {
   return robot_state_handler_->getState();
 }
 
+const collision_detection::CollisionRobotDistanceField *moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollisionRobotDistanceField() const
+{
+  planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
+  const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot("DistanceField");
+  const collision_detection::CollisionRobotDistanceField* crobot_df =
+    dynamic_cast<const collision_detection::CollisionRobotDistanceField*>(crobot);
 
+  if (!crobot_df)
+  {
+    ROS_ERROR("Could not find the CollisionRobotDistanceField instance. %s:%d",__FILE__,__LINE__);
+  }
 
-//===========================================================================
-// update() processing
-//===========================================================================
+  return crobot_df;
+}
+
+const collision_detection::CollisionWorldDistanceField *moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollisionWorldDistanceField() const
+{
+  planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
+  const collision_detection::CollisionWorld* cworld = &*ps->getCollisionWorld("DistanceField");
+  const collision_detection::CollisionWorldDistanceField* cworld_df =
+    dynamic_cast<const collision_detection::CollisionWorldDistanceField*>(cworld);
+
+  if (!cworld_df)
+  {
+    ROS_ERROR("Could not find the CollisionWorldDistanceField instance. %s:%d",__FILE__,__LINE__);
+  }
+
+  return cworld_df;
+}
+
+//###########################################################################
+//############################### update() processing #######################
+//###########################################################################
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, float ros_dt)
 {
@@ -483,9 +520,9 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
   tf_broadcaster_.sendTransform(transforms);
 }
 
-//===========================================================================
-// background tasks -- these run on background thread
-//===========================================================================
+//###########################################################################
+//############################### background tasks ##########################
+//###########################################################################
 
 // Update the marker visual appearance based on the robot state.
 // Do not call directly.  To trigger this call robotMarkersChanged() or robotMarkerPositionsChanged().

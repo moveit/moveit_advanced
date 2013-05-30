@@ -30,16 +30,21 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/df_link.h>
+#include <collision_distance_field_display/collision_distance_field_display.h>
+#include <collision_distance_field_display/per_link_object.h>
 #include <rviz/properties/bool_property.h>
+#include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 
 moveit_rviz_plugin::DFLink::DFLink(
     rviz::Robot* robot,
     const urdf::LinkConstPtr& link,
     const std::string& parent_joint_name,
     bool visual,
-    bool collision)
+    bool collision,
+    CollisionDistanceFieldDisplay *display)
   : RobotLink(robot, link, parent_joint_name, visual, collision)
   , sample_prop_(NULL)
+  , display_(display)
 {
   sample_prop_ = new rviz::BoolProperty(
                             "Dummy example property",
@@ -48,6 +53,8 @@ moveit_rviz_plugin::DFLink::DFLink(
                             link_property_,
                             SLOT( updateSampleProp() ),
                             this );
+
+  display_->getLinkObjects()->addLink(this);
 }
 
 moveit_rviz_plugin::DFLink::~DFLink()
@@ -65,6 +72,25 @@ void moveit_rviz_plugin::DFLink::hideSubProperties(bool hide)
   sample_prop_->setHidden(hide);
 }
 
+void moveit_rviz_plugin::DFLink::getLinkSpheres(
+      EigenSTL::vector_Vector3d& centers, 
+      std::vector<double>& radii) const
+{
+  const collision_detection::CollisionRobotDistanceField *crobot_df = display_->getCollisionRobotDistanceField();
+  if (crobot_df)
+    crobot_df->getLinkSpheres( getName(), centers, radii );
+  else
+  {
+    centers.clear();
+    radii.clear();
+  }
+}
+
+moveit_rviz_plugin::DFLinkFactory::DFLinkFactory(CollisionDistanceFieldDisplay *display)
+  : display_(display)
+{
+}
+
 rviz::RobotLink* moveit_rviz_plugin::DFLinkFactory::createLink(
     rviz::Robot* robot,
     const boost::shared_ptr<const urdf::Link>& link,
@@ -72,5 +98,6 @@ rviz::RobotLink* moveit_rviz_plugin::DFLinkFactory::createLink(
     bool visual,
     bool collision)
 {
-  return new DFLink(robot, link, parent_joint_name, visual, collision);
+  return new DFLink(robot, link, parent_joint_name, visual, collision, display_);
 }
+
