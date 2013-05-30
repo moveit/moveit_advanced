@@ -56,15 +56,37 @@ collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
 {
 }
 
-const srdf::Model::LinkSpheres *collision_detection::CollisionRobotDistanceField::getSrdfLinkSpheres(const std::string& link)
+const srdf::Model::LinkSpheres *collision_detection::CollisionRobotDistanceField::getSrdfLinkSpheres(const std::string& link_name) const
 {
   for (std::vector<srdf::Model::LinkSpheres>::const_iterator lsp = kmodel_->getSRDF()->getLinkSphereApproximations().begin() ;
        lsp != kmodel_->getSRDF()->getLinkSphereApproximations().end() ; 
        ++lsp)
-    if (lsp->link_ == link)
+    if (lsp->link_ == link_name)
       return &*lsp;
 
   return NULL;
+}
+
+
+void collision_detection::CollisionRobotDistanceField::getLinkSpheres(
+      const std::string& link_name,
+      EigenSTL::vector_Vector3d& centers,
+      std::vector<double>& radii) const
+{
+  const srdf::Model::LinkSpheres *spheres = getSrdfLinkSpheres(link_name);
+
+  centers.resize(spheres->spheres_.size());
+  radii.resize(spheres->spheres_.size());
+
+  std::vector<srdf::Model::Sphere>::const_iterator sphere_it = spheres->spheres_.begin();
+  std::vector<srdf::Model::Sphere>::const_iterator sphere_end = spheres->spheres_.end();
+  for (int i=0 ; sphere_it != sphere_end ; ++sphere_it, ++i )
+  {
+    centers[i].x() = sphere_it->center_x_;
+    centers[i].y() = sphere_it->center_y_;
+    centers[i].z() = sphere_it->center_z_;
+    radii[i] = sphere_it->radius_;
+  }
 }
 
 void collision_detection::CollisionRobotDistanceField::initSpheres()

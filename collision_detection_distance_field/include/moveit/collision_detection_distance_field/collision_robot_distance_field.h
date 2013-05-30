@@ -107,6 +107,13 @@ public:
                                const robot_state::RobotState &other_state,
                                const AllowedCollisionMatrix &acm) const;
 
+public: /* DEBUGGING functions */
+
+  // return the collision spheres for a link in link's collision geometry frame.
+  void getLinkSpheres(const std::string& link_name,
+                      EigenSTL::vector_Vector3d& centers,
+                      std::vector<double>& radii) const;
+
 protected:
 
   virtual void updatedPaddingOrScaling(const std::vector<std::string> &links);
@@ -188,7 +195,7 @@ private:
   }
 
   // find a link's collision spheres in the srdf
-  const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link);
+  const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link) const;
 
 
   //###########################################################################
