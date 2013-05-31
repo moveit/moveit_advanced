@@ -74,8 +74,12 @@ public:
 
   // generate spheres by various methods
   // Method names available from RobotSphereRepresentation::getGenMethods()
+  // Note: The spheres are not actually generated until needed (e.g. getSpheres generates them)
   void genSpheres(const std::string& method);
   void genSpheres(RobotSphereRepresentation::GenMethods method = RobotSphereRepresentation::GM_DEFAULT);
+
+  // get the spheres from the last call to genSpheres()
+  void getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii);
 
   // copy spheres from srdf.
   void useSrdfSpheres(const srdf::Model *srdf = NULL);
@@ -87,6 +91,8 @@ public:
   const boost::shared_ptr<const bodies::Body>& getBody() const;
 
 private:
+  // actually generate the spheres
+  void genSpheresInternal();
 
   // Use a single sphere for a link that bounds the entire link.
   // If there is no collision geometry this creates an empty entry for this
@@ -99,6 +105,10 @@ private:
   // the spheres that bound this link.
   EigenSTL::vector_Vector3d centers_;
   std::vector<double> radii_;
+
+  // method set with genSpheres().
+  RobotSphereRepresentation::GenMethods method_;
+  bool dirty_;
 
   // a body representing the link in its own collision frame
   mutable boost::shared_ptr<bodies::Body> body_;
