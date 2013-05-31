@@ -141,7 +141,11 @@ const boost::shared_ptr<const bodies::Body>& collision_detection::LinkSphereRepr
 {
   if (!body_)
   {
-    body_.reset(bodies::createBodyFromShape(link_model_->getShape().get()));
+    static const shapes::Sphere empty_shape(0.0);
+    const shapes::Shape *shape = link_model_->getShape().get();
+    if (!shape)
+      shape = &empty_shape;
+    body_.reset(bodies::createBodyFromShape(shape));
     body_const_ = body_;
   }
   return body_const_;

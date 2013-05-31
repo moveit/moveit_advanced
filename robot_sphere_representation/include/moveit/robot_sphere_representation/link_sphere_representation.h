@@ -81,7 +81,7 @@ public:
   void useSrdfSpheres(const srdf::Model *srdf = NULL);
 
   // get a cylinder that approximates the link.  Pose is center of cylinder in link collision frame.  z is major axis.
-  void getBoundingCylinder(bodies::BoundingCylinder& cyl) const;
+  void getBoundingCylinder(bodies::BoundingCylinder& cylinder) const;
 
   // get a body representing the link in the link collision frame
   const boost::shared_ptr<const bodies::Body>& getBody() const;
