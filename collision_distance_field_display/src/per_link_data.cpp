@@ -68,6 +68,36 @@ public:
     link_->getLinkSpheres(centers, radii);
   }
 };
+
+
+// Draw Link bounding sphere
+class LinkObj_BCyl : public PerLinkSubObj
+{
+public:
+  LinkObj_BCyl(PerLinkObjBase *base, DFLink *link) :
+    PerLinkSubObj(base, link)
+  {}
+
+  static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+  {
+    per_link_objects.addVisObject(new PerLinkObj<LinkObj_BCyl>(
+                                parent,
+                                "Show Link Bounding Cylinder",
+                                "Cylinder enclosing link.",
+                                QColor(128, 0, 255),
+                                0.5,
+                                PerLinkObjBase::CYLINDERS));
+  }
+
+  virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+  {
+    robot_relative = false;
+    // TODO
+  }
+};
+
+
+
 }
 
 
@@ -77,5 +107,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::add_per_link_data(rviz::
   per_link_objects_.reset(new PerLinkObjList());
 
   LinkObj_LinkSpheres::addSelf(parent_property, *per_link_objects_);
+  LinkObj_BCyl::addSelf(parent_property, *per_link_objects_);
 }
 

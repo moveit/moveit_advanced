@@ -57,6 +57,7 @@ namespace collision_detection
 {
 class CollisionRobotDistanceField;
 class CollisionWorldDistanceField;
+class RobotSphereRepresentation;
 }
 
 namespace moveit_rviz_plugin
@@ -77,6 +78,7 @@ public:
   robot_state::RobotStateConstPtr getRobotState() const;
 
   const boost::shared_ptr<PerLinkObjList>& getLinkObjects() { return per_link_objects_; }
+  const boost::shared_ptr<collision_detection::RobotSphereRepresentation>& getSphereRep() { return robot_sphere_rep_; }
 
   const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
   const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
@@ -160,6 +162,9 @@ private:
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;
+
+  // object for calculating spheres
+  boost::shared_ptr<collision_detection::RobotSphereRepresentation> robot_sphere_rep_;
 };
 
 }
