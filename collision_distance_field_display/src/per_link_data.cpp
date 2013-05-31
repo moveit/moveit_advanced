@@ -37,6 +37,8 @@
 #include <collision_distance_field_display/cylinders_display.h>
 #include <collision_distance_field_display/color_cast.h>
 
+#include <moveit/robot_sphere_representation/link_sphere_representation.h>
+
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 
@@ -89,10 +91,19 @@ public:
                                 PerLinkObjBase::CYLINDERS));
   }
 
-  virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+  virtual void changed()
   {
-    robot_relative = false;
-    // TODO
+    cylinders_.reset();
+    if (!getBool())
+      return;
+
+    robot_relative_ = false;
+    cylinders_.reset(new CylindersDisplay(getSceneNode(), base_->getColor()));
+
+    bodies::BoundingCylinder cylinder;
+    link_->getSphereRep()->getBoundingCylinder(cylinder);
+    if (cylinder.radius > 0.0)
+      cylinders_->addZCylinder(cylinder.pose, cylinder.radius, cylinder.length);
   }
 };
 

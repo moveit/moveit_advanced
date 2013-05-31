@@ -34,6 +34,8 @@
 #include <collision_distance_field_display/per_link_object.h>
 #include <rviz/properties/bool_property.h>
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
+#include <moveit/robot_sphere_representation/robot_sphere_representation.h>
+
 
 moveit_rviz_plugin::DFLink::DFLink(
     rviz::Robot* robot,
@@ -44,6 +46,7 @@ moveit_rviz_plugin::DFLink::DFLink(
     CollisionDistanceFieldDisplay *display)
   : RobotLink(robot, link, parent_joint_name, visual, collision)
   , sample_prop_(NULL)
+  , sphere_rep_(NULL)
   , display_(display)
 {
   // An example of how to add a property.  Can be removed along with sample_prop_ and updateSampleProp().
@@ -56,6 +59,7 @@ moveit_rviz_plugin::DFLink::DFLink(
                             this );
 
   display_->getLinkObjects()->addLink(this, per_link_objects_);
+  sphere_rep_ = display_->getSphereRep()->getLink(getName());
 }
 
 moveit_rviz_plugin::DFLink::~DFLink()
@@ -106,4 +110,5 @@ rviz::RobotLink* moveit_rviz_plugin::DFLinkFactory::createLink(
 {
   return new DFLink(robot, link, parent_joint_name, visual, collision, display_);
 }
+
 

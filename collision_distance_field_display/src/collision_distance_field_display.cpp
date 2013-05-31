@@ -53,6 +53,7 @@
 #include <moveit/rviz_plugin_render_tools/robot_state_visualization.h>
 #include <moveit/collision_detection_distance_field/collision_detector_allocator_distance_field.h>
 #include <moveit/collision_detection_fcl/collision_detector_allocator_fcl.h>
+#include <moveit/robot_sphere_representation/robot_sphere_representation.h>
 
 enum {
   CD_UNKNOWN,
@@ -231,6 +232,8 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::fixedFrameChanged()
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
 {
   PlanningSceneDisplay::onRobotModelLoaded();
+
+  robot_sphere_rep_.reset(new collision_detection::RobotSphereRepresentation(getRobotModel()));
 
   robot_interaction_.reset(new robot_interaction::RobotInteraction(getRobotModel(), "distance_field_display"));
   int_marker_display_->subProp("Update Topic")->setValue(QString::fromStdString(robot_interaction_->getServerTopic() + "/update"));

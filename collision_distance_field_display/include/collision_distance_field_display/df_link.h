@@ -45,6 +45,11 @@ class EnumProperty;
 class EditableEnumProperty;
 }
 
+namespace collision_detection
+{
+class LinkSphereRepresentation;
+}
+
 namespace moveit_rviz_plugin
 {
 class CollisionDistanceFieldDisplay;
@@ -65,9 +70,11 @@ public:
 
   virtual void hideSubProperties(bool hide);
 
-  CollisionDistanceFieldDisplay *getDisplay() const { return display_; }
+  CollisionDistanceFieldDisplay* getDisplay() const { return display_; }
+  collision_detection::LinkSphereRepresentation* getSphereRep() const { return sphere_rep_; }
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
+
 
 
 public Q_SLOTS:
@@ -78,7 +85,11 @@ protected:
   rviz::BoolProperty* sample_prop_;
   CollisionDistanceFieldDisplay *display_;
   std::vector<PerLinkSubObjBase*> per_link_objects_;
+  collision_detection::LinkSphereRepresentation *sphere_rep_;
 };
+
+
+
 
 
 class DFLinkFactory : public rviz::Robot::LinkFactory

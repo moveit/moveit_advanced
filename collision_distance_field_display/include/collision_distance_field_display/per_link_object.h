@@ -54,7 +54,7 @@ namespace moveit_rviz_plugin
 class DFLink;
 class PointsDisplay;
 class SpheresDisplay;
-class CylinderDisplay;
+class CylindersDisplay;
 class PerLinkObjBase;
 class PerLinkSubObjBase;
 
@@ -205,7 +205,7 @@ protected:
   // getGeom does
   boost::shared_ptr<PointsDisplay> points_;
   boost::shared_ptr<SpheresDisplay> spheres_;
-  boost::shared_ptr<CylinderDisplay> cylinders_;
+  boost::shared_ptr<CylindersDisplay> cylinders_;
 
 private Q_SLOTS:
   // some property changed.
