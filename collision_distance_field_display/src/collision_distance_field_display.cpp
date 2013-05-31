@@ -32,6 +32,7 @@
 #include <collision_distance_field_display/collision_distance_field_display.h>
 #include <collision_distance_field_display/df_link.h>
 #include <collision_distance_field_display/color_cast.h>
+#include <collision_distance_field_display/per_link_object.h>
 
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
@@ -233,6 +234,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
 
   robot_interaction_.reset(new robot_interaction::RobotInteraction(getRobotModel(), "distance_field_display"));
   int_marker_display_->subProp("Update Topic")->setValue(QString::fromStdString(robot_interaction_->getServerTopic() + "/update"));
+  per_link_objects_->clear();
   robot_visual_->load(*getRobotModel()->getURDF());
 
   robot_state::RobotStatePtr state(new robot_state::RobotState(getRobotModel()));
