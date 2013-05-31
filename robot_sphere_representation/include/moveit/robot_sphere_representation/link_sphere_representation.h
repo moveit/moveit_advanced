@@ -56,6 +56,12 @@ namespace srdf
 class Model;
 }
 
+namespace bodies
+{
+class Body;
+class BoundingCylinder;
+}
+
 namespace collision_detection
 {
 class LinkSphereRepresentation
@@ -74,6 +80,12 @@ public:
   // copy spheres from srdf.
   void useSrdfSpheres(const srdf::Model *srdf = NULL);
 
+  // get a cylinder that approximates the link.  Pose is center of cylinder in link collision frame.  z is major axis.
+  void getBoundingCylinder(bodies::BoundingCylinder& cyl) const;
+
+  // get a body representing the link in the link collision frame
+  const boost::shared_ptr<const bodies::Body>& getBody() const;
+
 private:
 
   // Use a single sphere for a link that bounds the entire link.
@@ -87,6 +99,10 @@ private:
   // the spheres that bound this link.
   EigenSTL::vector_Vector3d centers_;
   std::vector<double> radii_;
+
+  // a body representing the link in its own collision frame
+  mutable boost::shared_ptr<bodies::Body> body_;
+  mutable boost::shared_ptr<const bodies::Body> body_const_;
 };
 
 }

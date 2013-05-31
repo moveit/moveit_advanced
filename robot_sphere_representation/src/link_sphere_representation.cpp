@@ -39,6 +39,8 @@
 #include <moveit/robot_model/robot_model.h>
 
 #include <geometric_shapes/shape_operations.h>
+#include <geometric_shapes/bodies.h>
+#include <geometric_shapes/body_operations.h>
 
 collision_detection::LinkSphereRepresentation::LinkSphereRepresentation(
       RobotSphereRepresentation *parent, 
@@ -134,3 +136,20 @@ void collision_detection::LinkSphereRepresentation::useBoundingSpheres()
     radii_.push_back(radius);
   }
 }
+
+const boost::shared_ptr<const bodies::Body>& collision_detection::LinkSphereRepresentation::getBody() const
+{
+  if (!body_)
+  {
+    body_.reset(bodies::createBodyFromShape(link_model_->getShape().get()));
+    body_const_ = body_;
+  }
+  return body_const_;
+}
+
+void collision_detection::LinkSphereRepresentation::getBoundingCylinder(bodies::BoundingCylinder& cylinder) const
+{
+  getBody()->computeBoundingCylinder(cylinder);
+}
+
+
