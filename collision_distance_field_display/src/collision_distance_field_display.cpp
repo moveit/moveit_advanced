@@ -246,7 +246,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
 
   per_link_objects_->clear();
 
-  robot_sphere_rep_.reset(new collision_detection::RobotSphereRepresentation(getRobotModel()));
+  robot_sphere_rep_.reset(new robot_sphere_representation::RobotSphereRepresentation(getRobotModel()));
 
   // add RobotSphereRepresentaton GenSpheres methods to enum property
   sphere_method_property_->clearOptions();

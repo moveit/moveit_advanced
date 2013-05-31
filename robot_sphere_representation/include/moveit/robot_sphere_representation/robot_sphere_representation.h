@@ -52,7 +52,7 @@ namespace srdf
 class Model;
 }
 
-namespace collision_detection
+namespace robot_sphere_representation
 {
 class LinkSphereRepresentation;
 

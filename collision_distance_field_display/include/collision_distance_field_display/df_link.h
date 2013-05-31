@@ -45,7 +45,7 @@ class EnumProperty;
 class EditableEnumProperty;
 }
 
-namespace collision_detection
+namespace robot_sphere_representation
 {
 class LinkSphereRepresentation;
 }
@@ -71,7 +71,7 @@ public:
   virtual void hideSubProperties(bool hide);
 
   CollisionDistanceFieldDisplay* getDisplay() const { return display_; }
-  collision_detection::LinkSphereRepresentation* getSphereRep() const { return sphere_rep_; }
+  robot_sphere_representation::LinkSphereRepresentation* getSphereRep() const { return sphere_rep_; }
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
 
@@ -85,7 +85,7 @@ protected:
   rviz::BoolProperty* sample_prop_;
   CollisionDistanceFieldDisplay *display_;
   std::vector<PerLinkSubObjBase*> per_link_objects_;
-  collision_detection::LinkSphereRepresentation *sphere_rep_;
+  robot_sphere_representation::LinkSphereRepresentation *sphere_rep_;
 };
 
 

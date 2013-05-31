@@ -42,7 +42,7 @@
 #include <geometric_shapes/bodies.h>
 #include <geometric_shapes/body_operations.h>
 
-collision_detection::LinkSphereRepresentation::LinkSphereRepresentation(
+robot_sphere_representation::LinkSphereRepresentation::LinkSphereRepresentation(
       RobotSphereRepresentation *parent, 
       const robot_model::LinkModel *link_model)
   : parent_(parent)
@@ -52,17 +52,17 @@ collision_detection::LinkSphereRepresentation::LinkSphereRepresentation(
 {
 }
 
-collision_detection::LinkSphereRepresentation::~LinkSphereRepresentation()
+robot_sphere_representation::LinkSphereRepresentation::~LinkSphereRepresentation()
 {}
 
 
 
-void collision_detection::LinkSphereRepresentation::genSpheres(const std::string& method)
+void robot_sphere_representation::LinkSphereRepresentation::genSpheres(const std::string& method)
 {
   genSpheres(parent_->getMethod(method));
 }
 
-void collision_detection::LinkSphereRepresentation::genSpheres(RobotSphereRepresentation::GenMethods method)
+void robot_sphere_representation::LinkSphereRepresentation::genSpheres(RobotSphereRepresentation::GenMethods method)
 {
   if (method != method_)
   {
@@ -75,7 +75,7 @@ void collision_detection::LinkSphereRepresentation::genSpheres(RobotSphereRepres
   }
 }
 
-void collision_detection::LinkSphereRepresentation::genSpheresInternal()
+void robot_sphere_representation::LinkSphereRepresentation::genSpheresInternal()
 {
   if (!dirty_)
     return;
@@ -94,7 +94,7 @@ void collision_detection::LinkSphereRepresentation::genSpheresInternal()
   dirty_ = false;
 }
 
-void collision_detection::LinkSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf)
+void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf)
 {
   if (!srdf)
     srdf = parent_->getRobotModel()->getSRDF().get();
@@ -139,7 +139,7 @@ void collision_detection::LinkSphereRepresentation::useSrdfSpheres(const srdf::M
   dirty_ = false;
 }
 
-void collision_detection::LinkSphereRepresentation::useBoundingSpheres()
+void robot_sphere_representation::LinkSphereRepresentation::useBoundingSpheres()
 {
   centers_.clear();
   radii_.clear();
@@ -158,14 +158,14 @@ void collision_detection::LinkSphereRepresentation::useBoundingSpheres()
   }
 }
 
-void collision_detection::LinkSphereRepresentation::getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+void robot_sphere_representation::LinkSphereRepresentation::getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
 {
   genSpheresInternal();
   centers = centers_;
   radii = radii_;
 }
 
-const boost::shared_ptr<const bodies::Body>& collision_detection::LinkSphereRepresentation::getBody() const
+const boost::shared_ptr<const bodies::Body>& robot_sphere_representation::LinkSphereRepresentation::getBody() const
 {
   if (!body_)
   {
@@ -179,7 +179,7 @@ const boost::shared_ptr<const bodies::Body>& collision_detection::LinkSphereRepr
   return body_const_;
 }
 
-void collision_detection::LinkSphereRepresentation::getBoundingCylinder(bodies::BoundingCylinder& cylinder) const
+void robot_sphere_representation::LinkSphereRepresentation::getBoundingCylinder(bodies::BoundingCylinder& cylinder) const
 {
   getBody()->computeBoundingCylinder(cylinder);
 }

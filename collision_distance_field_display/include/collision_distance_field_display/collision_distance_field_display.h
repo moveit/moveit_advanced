@@ -57,6 +57,10 @@ namespace collision_detection
 {
 class CollisionRobotDistanceField;
 class CollisionWorldDistanceField;
+}
+
+namespace robot_sphere_representation
+{
 class RobotSphereRepresentation;
 }
 
@@ -78,7 +82,7 @@ public:
   robot_state::RobotStateConstPtr getRobotState() const;
 
   const boost::shared_ptr<PerLinkObjList>& getLinkObjects() { return per_link_objects_; }
-  const boost::shared_ptr<collision_detection::RobotSphereRepresentation>& getSphereRep() { return robot_sphere_rep_; }
+  const boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation>& getSphereRep() { return robot_sphere_rep_; }
 
   const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
   const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
@@ -166,7 +170,7 @@ private:
   boost::shared_ptr<PerLinkObjList> per_link_objects_;
 
   // object for calculating spheres
-  boost::shared_ptr<collision_detection::RobotSphereRepresentation> robot_sphere_rep_;
+  boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation> robot_sphere_rep_;
 };
 
 }

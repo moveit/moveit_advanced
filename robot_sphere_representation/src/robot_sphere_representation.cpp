@@ -38,7 +38,7 @@
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
 #include <moveit/robot_model/robot_model.h>
 
-collision_detection::RobotSphereRepresentation::RobotSphereRepresentation(
+robot_sphere_representation::RobotSphereRepresentation::RobotSphereRepresentation(
       boost::shared_ptr<const robot_model::RobotModel> robot_model)
   : robot_model_(robot_model)
 {
@@ -58,7 +58,7 @@ collision_detection::RobotSphereRepresentation::RobotSphereRepresentation(
   #undef x
 }
 
-collision_detection::RobotSphereRepresentation::~RobotSphereRepresentation()
+robot_sphere_representation::RobotSphereRepresentation::~RobotSphereRepresentation()
 {
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();
@@ -68,7 +68,7 @@ collision_detection::RobotSphereRepresentation::~RobotSphereRepresentation()
   }
 }
 
-void collision_detection::RobotSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf)
+void robot_sphere_representation::RobotSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf)
 {
   if (!srdf)
     srdf = getRobotModel()->getSRDF().get();
@@ -79,7 +79,7 @@ void collision_detection::RobotSphereRepresentation::useSrdfSpheres(const srdf::
     lsr->second->useSrdfSpheres(srdf);
 }
 
-collision_detection::LinkSphereRepresentation* collision_detection::RobotSphereRepresentation::getLink(
+robot_sphere_representation::LinkSphereRepresentation* robot_sphere_representation::RobotSphereRepresentation::getLink(
       const std::string& link_name) const
 {
   std::map<std::string, LinkSphereRepresentation*>::const_iterator it = links_.find(link_name);
@@ -89,7 +89,7 @@ collision_detection::LinkSphereRepresentation* collision_detection::RobotSphereR
     return NULL;
 }
 
-collision_detection::RobotSphereRepresentation::GenMethods collision_detection::RobotSphereRepresentation::getMethod(const std::string& method) const
+robot_sphere_representation::RobotSphereRepresentation::GenMethods robot_sphere_representation::RobotSphereRepresentation::getMethod(const std::string& method) const
 {
   std::map<std::string, GenMethods>::const_iterator it = method_map_.find(method);
   if (it != method_map_.end())
@@ -98,12 +98,12 @@ collision_detection::RobotSphereRepresentation::GenMethods collision_detection::
     return GM_DEFAULT;
 }
 
-void collision_detection::RobotSphereRepresentation::genSpheres(const std::string& method)
+void robot_sphere_representation::RobotSphereRepresentation::genSpheres(const std::string& method)
 {
   genSpheres(getMethod(method));
 }
 
-void collision_detection::RobotSphereRepresentation::genSpheres(GenMethods method)
+void robot_sphere_representation::RobotSphereRepresentation::genSpheres(GenMethods method)
 {
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();

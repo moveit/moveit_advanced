@@ -62,7 +62,7 @@ class Body;
 class BoundingCylinder;
 }
 
-namespace collision_detection
+namespace robot_sphere_representation
 {
 class LinkSphereRepresentation
 {
