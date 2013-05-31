@@ -57,12 +57,12 @@ robot_sphere_representation::LinkSphereRepresentation::~LinkSphereRepresentation
 
 
 
-void robot_sphere_representation::LinkSphereRepresentation::genSpheres(const std::string& method)
+void robot_sphere_representation::LinkSphereRepresentation::setMethod(const std::string& method)
 {
-  genSpheres(parent_->getMethod(method));
+  setMethod(parent_->getMethodValue(method));
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::genSpheres(RobotSphereRepresentation::GenMethods method)
+void robot_sphere_representation::LinkSphereRepresentation::setMethod(RobotSphereRepresentation::GenMethods method)
 {
   if (method != method_)
   {

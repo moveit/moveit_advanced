@@ -218,7 +218,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedSphereMethod()
   if (!robot_model_loaded_)
     return;
 
-  robot_sphere_rep_->genSpheres(sphere_method_property_->getStdString());
+  robot_sphere_rep_->setMethod(sphere_method_property_->getStdString());
 
   per_link_objects_->update();
 }

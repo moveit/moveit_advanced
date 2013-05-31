@@ -80,14 +80,14 @@ public:
   // Return the list of available sphere generation methods.
   const std::vector<std::string>& getGenMethods() const { return method_names_; }
 
-  // generate spheres for each link. 
-  // Discards old spheres (if any).
-  // An entry will be added to centers_ and radii_ for every link in the model.
-  // Links with no The entry will be empty for links with no collision geometry.
-  void genSpheres(const std::string& method);
-  void genSpheres(GenMethods method = GM_DEFAULT);
+  // Set what method to use to generate spheres.
+  // Spheres are actually generated when they are requested from
+  // LinkSphereRepresentation::getSpheres() (and any other methods that need to
+  // generate the spheres in order to operate).
+  void setMethod(const std::string& method);
+  void setMethod(GenMethods method = GM_DEFAULT);
 
-  // read spheres from the srdf
+  // read spheres from srdf
   // (by default the one associated with RobotModel)
   void useSrdfSpheres(const srdf::Model *srdf = NULL);
 
@@ -95,7 +95,7 @@ public:
   const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
   const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
   LinkSphereRepresentation* getLink(const std::string& link_name) const;
-  GenMethods getMethod(const std::string& method) const;
+  GenMethods getMethodValue(const std::string& method) const;
 
 private:
   boost::shared_ptr<const robot_model::RobotModel> robot_model_;

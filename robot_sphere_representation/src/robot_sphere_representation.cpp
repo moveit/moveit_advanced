@@ -89,7 +89,7 @@ robot_sphere_representation::LinkSphereRepresentation* robot_sphere_representati
     return NULL;
 }
 
-robot_sphere_representation::RobotSphereRepresentation::GenMethods robot_sphere_representation::RobotSphereRepresentation::getMethod(const std::string& method) const
+robot_sphere_representation::RobotSphereRepresentation::GenMethods robot_sphere_representation::RobotSphereRepresentation::getMethodValue(const std::string& method) const
 {
   std::map<std::string, GenMethods>::const_iterator it = method_map_.find(method);
   if (it != method_map_.end())
@@ -98,16 +98,16 @@ robot_sphere_representation::RobotSphereRepresentation::GenMethods robot_sphere_
     return GM_DEFAULT;
 }
 
-void robot_sphere_representation::RobotSphereRepresentation::genSpheres(const std::string& method)
+void robot_sphere_representation::RobotSphereRepresentation::setMethod(const std::string& method)
 {
-  genSpheres(getMethod(method));
+  setMethod(getMethodValue(method));
 }
 
-void robot_sphere_representation::RobotSphereRepresentation::genSpheres(GenMethods method)
+void robot_sphere_representation::RobotSphereRepresentation::setMethod(GenMethods method)
 {
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();
   for ( ; lsr != lsr_end ; ++lsr )
-    lsr->second->genSpheres(method);
+    lsr->second->setMethod(method);
 }
 

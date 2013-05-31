@@ -72,11 +72,11 @@ public:
 
   const std::string& getName() { return link_model_->getName(); }
 
-  // generate spheres by various methods
+  // Set what method to use to generate spheres.
   // Method names available from RobotSphereRepresentation::getGenMethods()
-  // Note: The spheres are not actually generated until needed (e.g. getSpheres generates them)
-  void genSpheres(const std::string& method);
-  void genSpheres(RobotSphereRepresentation::GenMethods method = RobotSphereRepresentation::GM_DEFAULT);
+  // Note: The spheres are not actually generated until needed (e.g. getSpheres() generates them)
+  void setMethod(const std::string& method);
+  void setMethod(RobotSphereRepresentation::GenMethods method = RobotSphereRepresentation::GM_DEFAULT);
 
   // get the spheres from the last call to genSpheres()
   void getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii);
