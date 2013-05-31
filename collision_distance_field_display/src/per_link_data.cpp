@@ -41,23 +41,24 @@
 
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
+#include <rviz/properties/enum_property.h>
 
 
 namespace moveit_rviz_plugin
 {
-// Draw Link Spheres (spheres used for collision)
-class LinkObj_LinkSpheres : public PerLinkSubObj
+// Draw Link Spheres from model
+class LinkObj_ModelLinkSpheres : public PerLinkSubObj
 {
 public:
-  LinkObj_LinkSpheres(PerLinkObjBase *base, DFLink *link) :
+  LinkObj_ModelLinkSpheres(PerLinkObjBase *base, DFLink *link) :
     PerLinkSubObj(base, link)
   {}
 
   static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
   {
-    per_link_objects.addVisObject(new PerLinkObj<LinkObj_LinkSpheres>(
+    per_link_objects.addVisObject(new PerLinkObj<LinkObj_ModelLinkSpheres>(
                                 parent,
-                                "Show Link Collision spheres",
+                                "Show Current Collision spheres",
                                 "Show spheres used for DistanceField collision detection.",
                                 QColor(0, 0, 255),
                                 0.5,
@@ -68,6 +69,33 @@ public:
   {
     robot_relative = false;
     link_->getLinkSpheres(centers, radii);
+  }
+};
+
+
+// Draw Link Spheres from RobotSphereRep
+class LinkObj_RepLinkSpheres : public PerLinkSubObj
+{
+public:
+  LinkObj_RepLinkSpheres(PerLinkObjBase *base, DFLink *link) :
+    PerLinkSubObj(base, link)
+  {}
+
+  static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+  {
+    per_link_objects.addVisObject(new PerLinkObj<LinkObj_RepLinkSpheres>(
+                                parent,
+                                "Show Generated Spheres",
+                                "Show spheres generated with RobotSphereRepresentation.",
+                                QColor(100, 100, 255),
+                                0.5,
+                                PerLinkObjBase::SPHERES));
+  }
+
+  virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+  {
+    robot_relative = false;
+    link_->getSphereRep()->getSpheres(centers, radii);
   }
 };
 
@@ -117,7 +145,19 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::add_per_link_data(rviz::
 {
   per_link_objects_.reset(new PerLinkObjList());
 
-  LinkObj_LinkSpheres::addSelf(parent_property, *per_link_objects_);
+  LinkObj_ModelLinkSpheres::addSelf(parent_property, *per_link_objects_);
+
+  sphere_method_property_ = new rviz::EnumProperty(
+                                      "Sphere Method",
+                                      "",
+                                      "How to generate collision spheres.",
+                                      parent_property,
+                                      SLOT( changedSphereMethod() ),
+                                      this );
+
+  LinkObj_RepLinkSpheres::addSelf(parent_property, *per_link_objects_);
   LinkObj_BCyl::addSelf(parent_property, *per_link_objects_);
 }
+
+
 

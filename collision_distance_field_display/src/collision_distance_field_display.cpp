@@ -70,6 +70,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   , robot_markers_dirty_(true)
   , robot_markers_position_dirty_(true)
   , int_marker_display_(NULL)
+  , sphere_method_property_(NULL)
 {
   robot_state_category_ = new rviz::Property(
                                       "Robot State",
@@ -212,6 +213,16 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
   }
 }
 
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedSphereMethod()
+{
+  if (!robot_model_loaded_)
+    return;
+
+  robot_sphere_rep_->genSpheres(sphere_method_property_->getStdString());
+
+  per_link_objects_->update();
+}
+
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::reset()
 {
   robot_model_loaded_ = false;
@@ -233,11 +244,26 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
 {
   PlanningSceneDisplay::onRobotModelLoaded();
 
+  per_link_objects_->clear();
+
   robot_sphere_rep_.reset(new collision_detection::RobotSphereRepresentation(getRobotModel()));
+
+  // add RobotSphereRepresentaton GenSpheres methods to enum property
+  sphere_method_property_->clearOptions();
+  std::vector<std::string>::const_iterator method = robot_sphere_rep_->getGenMethods().begin();
+  std::vector<std::string>::const_iterator method_end = robot_sphere_rep_->getGenMethods().end();
+  for ( ; method != method_end ; ++method )
+    sphere_method_property_->addOptionStd(*method);
+
+  method = find(robot_sphere_rep_->getGenMethods().begin(),
+                robot_sphere_rep_->getGenMethods().end(),
+                sphere_method_property_->getStdString());
+  if (method == robot_sphere_rep_->getGenMethods().end() && !robot_sphere_rep_->getGenMethods().empty())
+    sphere_method_property_->setStdString(robot_sphere_rep_->getGenMethods()[0]);
+
 
   robot_interaction_.reset(new robot_interaction::RobotInteraction(getRobotModel(), "distance_field_display"));
   int_marker_display_->subProp("Update Topic")->setValue(QString::fromStdString(robot_interaction_->getServerTopic() + "/update"));
-  per_link_objects_->clear();
   robot_visual_->load(*getRobotModel()->getURDF());
 
   robot_state::RobotStatePtr state(new robot_state::RobotState(getRobotModel()));

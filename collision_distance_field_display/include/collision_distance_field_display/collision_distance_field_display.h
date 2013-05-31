@@ -98,7 +98,8 @@ private Q_SLOTS:
   void robotMarkersChanged();         // call when the appearance and position of the markers needs to change
   void robotMarkerPositionsChanged(); // call when only the position of the markers needs to change
   void changedActiveGroup();
-  void changedCollisionMethod();
+  void changedCollisionMethod();      // collision detection type (FCL, distance field, etc) changed
+  void changedSphereMethod();         // method for generating spheres changed
 
 private:
 
@@ -159,6 +160,7 @@ private:
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
   rviz::Property* per_link_properties_;
+  rviz::EnumProperty* sphere_method_property_;
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;
