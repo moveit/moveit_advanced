@@ -45,6 +45,12 @@ void moveit_rviz_plugin::PerLinkObjList::addVisObject(PerLinkObjBase* obj)
   objs_.push_back(obj);
 }
 
+void moveit_rviz_plugin::PerLinkObjList::clear()
+{
+  for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
+    (*it)->clear();
+}
+
 void moveit_rviz_plugin::PerLinkObjList::update()
 {
   for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)

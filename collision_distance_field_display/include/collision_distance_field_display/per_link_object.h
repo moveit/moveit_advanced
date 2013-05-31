@@ -70,6 +70,9 @@ public:
   // turn off all objects for all links
   void disableAll();
 
+  // remove all sub-objects
+  void clear();
+
 
   // add a new object which will be available to be added to any link.
   // Generally this is called by a PerLinkSubObj subclass' addSelf() method.
