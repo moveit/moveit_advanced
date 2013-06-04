@@ -36,11 +36,14 @@
 
 #include <moveit/robot_sphere_representation/robot_sphere_representation.h>
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
+#include <moveit/robot_sphere_representation/sphere_rep.h>
 #include <moveit/robot_model/robot_model.h>
 
 robot_sphere_representation::RobotSphereRepresentation::RobotSphereRepresentation(
       boost::shared_ptr<const robot_model::RobotModel> robot_model)
   : robot_model_(robot_model)
+  , sphere_rep_robot_dirty_(true)
+  , resolution_(0.03)
 {
   std::vector<const robot_model::LinkModel*>::const_iterator lm = robot_model_->getLinkModels().begin();
   std::vector<const robot_model::LinkModel*>::const_iterator lm_end = robot_model_->getLinkModels().end();
@@ -53,7 +56,7 @@ robot_sphere_representation::RobotSphereRepresentation::RobotSphereRepresentatio
   // initialize method_names_ and method_map_
   #define x(e,f,n) \
     method_names_.push_back(n); \
-    method_map_.insert( std::pair<std::string, GenMethods>( n, e ) );
+    method_map_.insert( std::pair<std::string, GenMethod::GenMethod>( n, GenMethod::e ) );
   collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
   #undef x
 }
@@ -68,7 +71,7 @@ robot_sphere_representation::RobotSphereRepresentation::~RobotSphereRepresentati
   }
 }
 
-void robot_sphere_representation::RobotSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf)
+void robot_sphere_representation::RobotSphereRepresentation::copySrdfSpheres(const srdf::Model *srdf)
 {
   if (!srdf)
     srdf = getRobotModel()->getSRDF().get();
@@ -76,7 +79,7 @@ void robot_sphere_representation::RobotSphereRepresentation::useSrdfSpheres(cons
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();
   for ( ; lsr != lsr_end ; ++lsr )
-    lsr->second->useSrdfSpheres(srdf);
+    lsr->second->copySrdfSpheres(srdf);
 }
 
 robot_sphere_representation::LinkSphereRepresentation* robot_sphere_representation::RobotSphereRepresentation::getLink(
@@ -89,13 +92,13 @@ robot_sphere_representation::LinkSphereRepresentation* robot_sphere_representati
     return NULL;
 }
 
-robot_sphere_representation::RobotSphereRepresentation::GenMethods robot_sphere_representation::RobotSphereRepresentation::getMethodValue(const std::string& method) const
+robot_sphere_representation::GenMethod::GenMethod robot_sphere_representation::RobotSphereRepresentation::getMethodValue(const std::string& method) const
 {
-  std::map<std::string, GenMethods>::const_iterator it = method_map_.find(method);
+  std::map<std::string, GenMethod::GenMethod>::const_iterator it = method_map_.find(method);
   if (it != method_map_.end())
     return it->second;
   else
-    return GM_DEFAULT;
+    return GenMethod::DEFAULT;
 }
 
 void robot_sphere_representation::RobotSphereRepresentation::setMethod(const std::string& method)
@@ -103,11 +106,37 @@ void robot_sphere_representation::RobotSphereRepresentation::setMethod(const std
   setMethod(getMethodValue(method));
 }
 
-void robot_sphere_representation::RobotSphereRepresentation::setMethod(GenMethods method)
+void robot_sphere_representation::RobotSphereRepresentation::setMethod(GenMethod::GenMethod method)
 {
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();
   for ( ; lsr != lsr_end ; ++lsr )
     lsr->second->setMethod(method);
 }
+
+void robot_sphere_representation::RobotSphereRepresentation::updateSphereRepRobot() const
+{
+  sphere_rep_robot_.reset(new Robot(robot_model_, resolution_));
+
+  sphere_rep_robot_dirty_ = false;
+
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+    lsr->second->updateSphereRepLink();
+}
+
+void robot_sphere_representation::RobotSphereRepresentation::setResolution(double resolution)
+{
+  sphere_rep_robot_dirty_ = true;
+  resolution_ = resolution;
+}
+
+void robot_sphere_representation::RobotSphereRepresentation::setTolerance(double tolerance)
+{
+  sphere_rep_robot_dirty_ = true;
+  tolerance_ = tolerance;
+}
+
+
 

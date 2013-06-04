@@ -36,19 +36,22 @@
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
 #include <moveit/robot_sphere_representation/robot_sphere_representation.h>
+#include <moveit/robot_sphere_representation/sphere_rep.h>
 #include <moveit/robot_model/robot_model.h>
 
 #include <geometric_shapes/shape_operations.h>
 #include <geometric_shapes/bodies.h>
 #include <geometric_shapes/body_operations.h>
 
+#include <assert.h>
+
 robot_sphere_representation::LinkSphereRepresentation::LinkSphereRepresentation(
-      RobotSphereRepresentation *parent, 
+      RobotSphereRepresentation *robot, 
       const robot_model::LinkModel *link_model)
-  : parent_(parent)
+  : robot_(robot)
   , link_model_(link_model)
   , dirty_(true)
-  , method_(RobotSphereRepresentation::GM_DEFAULT)
+  , method_(GenMethod::DEFAULT)
 {
 }
 
@@ -59,23 +62,27 @@ robot_sphere_representation::LinkSphereRepresentation::~LinkSphereRepresentation
 
 void robot_sphere_representation::LinkSphereRepresentation::setMethod(const std::string& method)
 {
-  setMethod(parent_->getMethodValue(method));
+  setMethod(robot_->getMethodValue(method));
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::setMethod(RobotSphereRepresentation::GenMethods method)
+void robot_sphere_representation::LinkSphereRepresentation::setMethod(GenMethod::GenMethod method)
 {
+  // GM_SRDF_EXT can only be set by calling copySrdfSpheres()
+  if (method == GenMethod::SRDF_EXT && method_ != GenMethod::SRDF_EXT)
+    method = GenMethod::SRDF;
+
   if (method != method_)
   {
     dirty_ = true;
     method_ = method;
 
     // if method is srdf, do it right away since srdf could change.
-    if (method == RobotSphereRepresentation::GM_SRDF)
+    if (method == GenMethod::SRDF)
       useSrdfSpheres();
   }
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::genSpheresInternal()
+void robot_sphere_representation::LinkSphereRepresentation::genSpheres() const
 {
   if (!dirty_)
     return;
@@ -83,21 +90,37 @@ void robot_sphere_representation::LinkSphereRepresentation::genSpheresInternal()
   switch(method_)
   {
     #define x(e,f,n) \
-      case RobotSphereRepresentation::e: f(); break;
+      case GenMethod::e: f(); break;
     collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
     #undef x
-    case RobotSphereRepresentation::GM_DEFAULT:
+    case GenMethod::DEFAULT:
     default:
       useSrdfSpheres();
       break;
   }
-  dirty_ = false;
+  assert(dirty_ == false);
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf)
+void robot_sphere_representation::LinkSphereRepresentation::copySrdfSpheres(const srdf::Model *srdf)
 {
   if (!srdf)
-    srdf = parent_->getRobotModel()->getSRDF().get();
+    srdf = robot_->getRobotModel()->getSRDF().get();
+  if (srdf == robot_->getRobotModel()->getSRDF().get())
+    method_ = GenMethod::SRDF;
+  else
+    method_ = GenMethod::SRDF_EXT;
+  useSrdfSpheres(srdf);
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheresExt() const
+{
+  assert(dirty_ == false);
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf) const
+{
+  if (!srdf)
+    srdf = robot_->getRobotModel()->getSRDF().get();
 
   centers_.clear();
   radii_.clear();
@@ -135,11 +158,10 @@ void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheres(const
       break;
     }
   }
-  method_ = RobotSphereRepresentation::GM_SRDF;
   dirty_ = false;
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::useBoundingSpheres()
+void robot_sphere_representation::LinkSphereRepresentation::useBoundingSpheres() const
 {
   centers_.clear();
   radii_.clear();
@@ -156,11 +178,12 @@ void robot_sphere_representation::LinkSphereRepresentation::useBoundingSpheres()
     centers_.push_back(center);
     radii_.push_back(radius);
   }
+  dirty_ = false;
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+void robot_sphere_representation::LinkSphereRepresentation::getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const
 {
-  genSpheresInternal();
+  genSpheres();
   centers = centers_;
   radii = radii_;
 }
@@ -182,6 +205,13 @@ const boost::shared_ptr<const bodies::Body>& robot_sphere_representation::LinkSp
 void robot_sphere_representation::LinkSphereRepresentation::getBoundingCylinder(bodies::BoundingCylinder& cylinder) const
 {
   getBody()->computeBoundingCylinder(cylinder);
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::updateSphereRepLink() const
+{
+  sphere_rep_link_ = robot_->getSphereRepRobot()->getLink(getName());
+  if (method_ != GenMethod::SRDF_EXT)
+    dirty_ = true;
 }
 
 

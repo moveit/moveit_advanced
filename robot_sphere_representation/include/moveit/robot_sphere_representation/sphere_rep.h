@@ -438,9 +438,11 @@ public:
   Robot(const boost::shared_ptr<const robot_model::RobotModel>& kmodel, double resolution);
   ~Robot();
 
+#if 0
   // read/write yaml file
   void writeYaml(std::ostream) const;
   void readYaml(std::istream);
+#endif
 
   void initLink(Link *parent, const robot_model::LinkModel *lmodel);
   void initJoint(Link *parent, const robot_model::JointModel *jmodel);

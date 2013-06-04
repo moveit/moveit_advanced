@@ -55,27 +55,33 @@ class Model;
 namespace robot_sphere_representation
 {
 class LinkSphereRepresentation;
+class Robot;
+
+namespace GenMethod
+{
+  // Different methods for generating spheres.
+  // 
+  // Each method has an enum, a method, and a string.
+  // The method is a method in the LinkSphereRepresentation class.
+  //
+  enum GenMethod {
+    DEFAULT,
+    #define collision_detection__RobotSphereRepresentation__GenMethods__strings(X) \
+      X(SRDF,             useSrdfSpheres,     "From SRDF") \
+      X(SRDF_EXT,         useSrdfSpheresExt,  "From external SRDF") \
+      X(BOUNDING_SPHERES, useBoundingSpheres, "Use bounding sphere")
+    #define x(e,f,n) e,
+    collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
+    #undef x
+  };
+}
+
 
 class RobotSphereRepresentation
 {
 public:
   RobotSphereRepresentation(boost::shared_ptr<const robot_model::RobotModel> robot_model);
   ~RobotSphereRepresentation();
-
-  // Different methods for generating spheres.
-  // 
-  // Each method has an enum, a method, and a string.
-  // The method is a method in the LinkSphereRepresentation class.
-  //
-  enum GenMethods {
-    GM_DEFAULT,
-    #define collision_detection__RobotSphereRepresentation__GenMethods__strings(X) \
-      X(GM_SRDF,             useSrdfSpheres,     "From SRDF") \
-      X(GM_BOUNDING_SPHERES, useBoundingSpheres, "Use bounding sphere")
-    #define x(e,f,n) e,
-    collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
-    #undef x
-  };
 
   // Return the list of available sphere generation methods.
   const std::vector<std::string>& getGenMethods() const { return method_names_; }
@@ -85,29 +91,69 @@ public:
   // LinkSphereRepresentation::getSpheres() (and any other methods that need to
   // generate the spheres in order to operate).
   void setMethod(const std::string& method);
-  void setMethod(GenMethods method = GM_DEFAULT);
+  void setMethod(GenMethod::GenMethod method = GenMethod::DEFAULT);
+
+  // set distance field resolution to use for calculations.
+  void setResolution(double resolution);
+
+  // set tolerance to use.  For methods that pay attention to tolerance,
+  // spheres will stick out at most <tolerance> from the surface
+  // (+/- resolution).
+  void setTolerance(double tolerance);
 
   // read spheres from srdf
   // (by default the one associated with RobotModel)
-  void useSrdfSpheres(const srdf::Model *srdf = NULL);
+  void copySrdfSpheres(const srdf::Model *srdf = NULL);
+
+  const Robot* getSphereRepRobot() const;
+  Robot* getSphereRepRobot();
 
   // access
   const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
   const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
   LinkSphereRepresentation* getLink(const std::string& link_name) const;
-  GenMethods getMethodValue(const std::string& method) const;
+  GenMethod::GenMethod getMethodValue(const std::string& method) const;
+
+  void ensureSphereRepRobot() const
+  {
+    if (sphere_rep_robot_dirty_)
+      updateSphereRepRobot();
+  }
 
 private:
+  // update sphere_rep_robot_.  Should only be called by ensureSphereRepRobot()
+  void updateSphereRepRobot() const;
+
   boost::shared_ptr<const robot_model::RobotModel> robot_model_;
 
   std::map<std::string, LinkSphereRepresentation*> links_;
 
   // names of methods for generating spheres
   std::vector<std::string> method_names_;
-  std::map<std::string, GenMethods> method_map_;
+  std::map<std::string, GenMethod::GenMethod> method_map_;
+
+  double resolution_;
+  double tolerance_;
+
+  // SphereRep robot
+  mutable boost::shared_ptr<Robot> sphere_rep_robot_;
+  mutable bool sphere_rep_robot_dirty_;
 };
 
 }
+
+inline const robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereRepRobot() const
+{
+  ensureSphereRepRobot();
+  return &*sphere_rep_robot_;
+}
+
+inline robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereRepRobot()
+{
+  ensureSphereRepRobot();
+  return &*sphere_rep_robot_;
+}
+
 
 #endif
 
