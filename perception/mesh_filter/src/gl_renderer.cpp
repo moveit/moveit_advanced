@@ -354,14 +354,12 @@ GLuint mesh_filter::GLRenderer::loadShaders (const string& vertex_source, const 
 
 map<boost::thread::id, pair<unsigned, GLuint> > mesh_filter::GLRenderer::context_;
 boost::mutex mesh_filter::GLRenderer::context_lock_;
+bool mesh_filter::GLRenderer::glutInitialized_ = false;
 
 void mesh_filter::GLRenderer::createGLContext ()
 {
   boost::mutex::scoped_lock _(context_lock_);
-  boost::thread::id threadID = boost::this_thread::get_id();
-  map<boost::thread::id, pair<unsigned, GLuint> >::iterator contextIt = context_.find(threadID);
-  
-  if (contextIt == context_.end())
+  if (!glutInitialized_)
   {
     char buffer[1];
     char* args = buffer;
@@ -369,6 +367,18 @@ void mesh_filter::GLRenderer::createGLContext ()
     
     glutInit(&n, &args);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitialized_ = true;
+  }
+
+  // check if our thread is initialized
+  boost::thread::id threadID = boost::this_thread::get_id();
+  map<boost::thread::id, pair<unsigned, GLuint> >::iterator contextIt = context_.find(threadID);
+  
+  if (contextIt == context_.end())
+  {
+    context_ [threadID] = make_pair<unsigned, GLuint> (1, 0);
+    map<boost::thread::id, pair<unsigned, GLuint> >::iterator contextIt = context_.find(threadID);
+
     glutInitWindowPosition (glutGet(GLUT_SCREEN_WIDTH) + 30000, 0);
     glutInitWindowSize(1, 1);
     GLuint window_id = glutCreateWindow( "mesh_filter" );

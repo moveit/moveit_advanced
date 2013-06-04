@@ -290,6 +290,8 @@ private:
 
   /* \brief lock for context map */
   static boost::mutex context_lock_;
+
+  static bool glutInitialized_;
   
 };
 } // namespace mesh_filter

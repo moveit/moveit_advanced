@@ -59,6 +59,7 @@ include_directories(SYSTEM
  link_directories(${catkin_LIBRARY_DIRS})
  
 add_subdirectory(mesh_filter)
+add_subdirectory(perception_tests)
 add_subdirectory(depth_image_octomap_updater)
 
 install(FILES
