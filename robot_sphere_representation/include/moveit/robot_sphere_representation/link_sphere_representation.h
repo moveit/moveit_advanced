@@ -75,16 +75,40 @@ public:
   const std::string& getName() const { return link_model_->getName(); }
 
   // Set what method to use to generate spheres.
-  // Method names available from RobotSphereRepresentation::getGenMethods()
-  // Note: The spheres are not actually generated until needed (e.g. getSpheres() generates them)
-  void setMethod(const std::string& method);
-  void setMethod(GenMethod::GenMethod method = GenMethod::DEFAULT);
+  // Spheres are actually generated when they are requested from
+  // LinkSphereRepresentation::getSpheres() (and any other methods that need to
+  // generate the spheres in order to operate).
+  void setGenMethod(const std::string& gen_method);
+  void setGenMethod(GenMethod gen_method = GenMethod::DEFAULT);
+  GenMethod getGenMethod() const { return gen_method_; }
+
+  // Set what method to use to measure quality when generating spheres
+  void setQualMethod(const std::string& qual_method);
+  void setQualMethod(QualMethod qual_method = QualMethod::DEFAULT);
+  QualMethod getQualMethod() const { return qual_method_; }
+
+  // Some GenMethods use this as a parameter.  Actual number of spheres
+  // generated may be higher or lower than this depending on GenMethod.
+  void setRequestedNumSpheres(int nspheres);
+  int getRequestedNumSpheres() const { return requested_nspheres_; }
+  int getActualNumSpheres() const { return centers_.size(); }
+
+  // set tolerance to use.  For methods that pay attention to tolerance,
+  // spheres will stick out at most <tolerance> from the surface
+  // (+/- resolution).
+  void setTolerance(double tolerance);
+  double getTolerance() const { return tolerance_; }
 
   // get the spheres.  Calculates their values (based on currently set parameters) if necessary.
   void getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
 
   // copy spheres from srdf.
   void copySrdfSpheres(const srdf::Model *srdf = NULL);
+
+
+  //==============================
+  // utility functionality follows
+  //==============================
 
   // get a cylinder that approximates the link.  Pose is center of cylinder in
   // link collision frame.  z is major axis.
@@ -110,19 +134,24 @@ public:
   // called by RobotSphereRepresentation to update sphere_rep_link_
   void updateSphereRepLink() const;
 
+  // indicate that the spheres must be recalculated.
+  void invalidateSpheres() { dirty_ = true; }
+
 private:
 
   // Use a single sphere for a link that bounds the entire link.
   // If there is no collision geometry this creates an empty entry for this
   // link.
-  void useBoundingSpheres() const;
+  void genSpheresUsingBoundingSpheres() const;
 
   // copy spheres from srdf.
   void useSrdfSpheres(const srdf::Model *srdf = NULL) const;
 
-  // This does nothing.  If method is GenMethod::SRDF_EXT then dirty is always false.
-  // To set method to GenMethod::SRDF_EXT call 
-  void useSrdfSpheresExt() const;
+  // Use SphereRep methods to generate spheres
+  void genSpheresUsingSphereRep() const;
+
+
+
 
   RobotSphereRepresentation *robot_;
   const robot_model::LinkModel *link_model_;
@@ -131,14 +160,19 @@ private:
   mutable EigenSTL::vector_Vector3d centers_;
   mutable std::vector<double> radii_;
 
-  // method set with genSpheres().
-  GenMethod::GenMethod method_;
+  double tolerance_;
+  int requested_nspheres_;
+  GenMethod gen_method_;
+  QualMethod qual_method_;
+
+  // if true the centers_ and radii_ are invalid and must be recalculared before use.
   mutable bool dirty_;
 
   // a body representing the link in its own collision frame
   mutable boost::shared_ptr<bodies::Body> body_;
   mutable boost::shared_ptr<const bodies::Body> body_const_;
 
+  // Used to calculate spheres for most of the GenMethods
   mutable Link *sphere_rep_link_;
 };
 

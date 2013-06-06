@@ -48,6 +48,9 @@
 
 #include <visualization_msgs/Marker.h>
 
+#include <moveit/robot_sphere_representation/method_enums.h>
+
+
 namespace bodies
 {
   class Body;
@@ -68,6 +71,7 @@ class JointModel;
 namespace robot_state
 {
 class RobotState;
+class LinkState;
 }
 
 namespace robot_sphere_representation
@@ -183,66 +187,72 @@ private:
 class SphereRep
 {
 public:
+
+#if 0
+// THESE ARE MOVED TO method_enums.h
+
   // default is first in list
-  #define DF2_SPHEREREP_METHOD_LIST() \
-          X(THIN_LIMITGREEDY_GRADIENT) \
-          X(THIN_GREEDY_GRADIENT) \
-          X(THIN_GREEDY) \
-          X(THIN_GRADIENT) \
-          X(THIN_GOBBLE) \
-          X(LIMITGREEDY_GRADIENT) \
-          X(GREEDY_GRADIENT) \
-          X(GREEDY) \
-          X(GRADIENT) \
-          X(GOBBLE) \
+  #define DF2_SPHEREREP_METHOD_LIST(x) \
+          x(THIN_LIMITGREEDY_GRADIENT) \
+          x(THIN_GREEDY_GRADIENT) \
+          x(THIN_GREEDY) \
+          x(THIN_GRADIENT) \
+          x(THIN_GOBBLE) \
+          x(LIMITGREEDY_GRADIENT) \
+          x(GREEDY_GRADIENT) \
+          x(GREEDY) \
+          x(GRADIENT) \
+          x(GOBBLE) \
 
   enum Method {
     #define X(e) e,
-    DF2_SPHEREREP_METHOD_LIST()
+    DF2_SPHEREREP_METHOD_LIST(X)
     METHOD_DEFAULT
     #undef X
   };
 
   // default is first in list
-  #define DF2_SPHEREREP_QUALITY_METHOD_LIST() \
-          X(QUAL_MAX_DIST) \
-          X(QUAL_BADCOUNT) \
-          X(QUAL_RADIUS) \
+  #define DF2_SPHEREREP_QUALITY_METHOD_LIST(x) \
+          x(QUAL_MAX_DIST) \
+          x(QUAL_BADCOUNT) \
+          x(QUAL_RADIUS) \
 
   enum QualityMethod {
     #define X(e) e,
-    DF2_SPHEREREP_QUALITY_METHOD_LIST()
+    DF2_SPHEREREP_QUALITY_METHOD_LIST(X)
     QUAL_DEFAULT
     #undef X
   };
-
+#endif
 
   SphereRep(std::size_t nspheres,
             double resolution,
             const EigenSTL::vector_Vector3d& required_points,
             const EigenSTL::vector_Vector3d& optional_points,
             const std::string& name = "",
-            Method method = METHOD_DEFAULT,
+            GenMethod method = GenMethod::DEFAULT,
             double tolerance = 1.0,
-            QualityMethod quality_method = QUAL_DEFAULT);
+            QualMethod quality_method = QualMethod::DEFAULT);
   void setParams(
             std::size_t nspheres,
-            Method method = METHOD_DEFAULT,
+            GenMethod method = GenMethod::DEFAULT,
             double tolerance = 1.0,
-            QualityMethod quality_method = QUAL_DEFAULT);
+            QualMethod quality_method = QualMethod::DEFAULT);
 
-  // convert between string and Method/QualityMethod
+#if 0
+  // convert between string and GenMethod/QualMethod
   static const std::vector<std::string>& getMethodNames();
-  static Method parseMethodName(const std::string& method);
-  static const char* getMethodName(Method method);
+  static GenMethod parseMethodName(const std::string& method);
+  static const char* getMethodName(GenMethod method);
   static const std::vector<std::string>& getQualityMethodNames();
-  static QualityMethod parseQualityMethodName(const std::string& quality_method);
-  static const char* getQualityMethodName(QualityMethod quality_method);
+  static QualMethod parseQualityMethodName(const std::string& quality_method);
+  static const char* getQualityMethodName(QualMethod quality_method);
+#endif
 
   const std::vector<double>& getSphereRadii(int iteration = -1) const;
   const std::vector<double>& getSphereInnerRadii(int iteration = -1) const;
   const EigenSTL::vector_Vector3d& getSphereCenters(int iteration = -1) const;
-  double getQuality(int iteration = -1, QualityMethod quality_method=QUAL_DEFAULT) const;
+  double getQuality(int iteration = -1, QualMethod quality_method=QualMethod::DEFAULT) const;
   const char* getAlgorithm(int iteration = -1) const;
   int getBestIteration() const { return best_.history_index_; }
   int getNumIterations() const { return history_.size(); }
@@ -276,7 +286,7 @@ private:
 
   void checkQuality(const char* algorithm);
 
-  double calcQuality(const Result& result, QualityMethod quality_method) const;
+  double calcQuality(const Result& result, QualMethod quality_method) const;
   double calcQualityByBadCount(const Result& result) const;
   double calcQualityByRadius(const Result& result) const;
   double calcQualityByMaxDistance(const Result& result) const;
@@ -307,7 +317,7 @@ private:
         double max_radius);
 
 
-  Method method_;
+  GenMethod gen_method_;
   std::size_t nspheres_requested_;
   double tolerance_;
   double radius2_padding_;
@@ -350,7 +360,7 @@ private:
   V3List centers_;
   std::vector<double> radius1_;
   std::vector<double> radius2_;
-  QualityMethod quality_method_;
+  QualMethod quality_method_;
   std::size_t nspheres_;
   int iteration_;
 #endif
@@ -373,7 +383,7 @@ private:
     std::vector<double> radius1_;
     std::vector<double> radius2_;
     double quality_;
-    QualityMethod quality_method_;
+    QualMethod quality_method_;
     int history_index_;
     const char *algorithm_;
   };
@@ -398,18 +408,22 @@ class Robot;
 /** one link in the Robot.  For initializing CollisionRobotDF2 */
 class Link {
 public:
-  Link(Link *parent);
+  Link(Robot *robot, Link *parent, const robot_model::LinkModel *lmodel);
   ~Link();
-  void calculatePoints(Robot& robot, const robot_model::LinkModel *lmodel);
-  void clusterPoints(const Robot& robot, std::size_t nclusters);
-  EigenSTL::vector_Vector3d getClusterPoints(const Robot& robot,
-                                             std::size_t nclusters,
+  const std::string& getName() const;
+  void calculatePoints();
+  void clusterPoints(std::size_t nclusters);
+  EigenSTL::vector_Vector3d getClusterPoints(std::size_t nclusters,
                                              std::size_t cluster_idx);
-  const SphereRep* getSphereRep(const Robot& robot,
-                                std::size_t nspheres,
-                                SphereRep::Method method = SphereRep::METHOD_DEFAULT,
+  const SphereRep* getSphereRep(std::size_t nspheres,
+                                GenMethod method = GenMethod::DEFAULT,
                                 double tolerance = 1.0,
-                                SphereRep::QualityMethod quality_method = SphereRep::QUAL_DEFAULT);
+                                QualMethod quality_method = QualMethod::DEFAULT);
+
+  // transform points from robot frame to link collision frame
+  Eigen::Vector3d transformRobotToLink(Eigen::Vector3d p);
+  void transformRobotToLink(EigenSTL::vector_Vector3d::iterator begin,
+                            EigenSTL::vector_Vector3d::iterator end); 
 
   bool hasCollision()
   {
@@ -417,8 +431,9 @@ public:
   }
 
 private:
-  std::string name_;
+  Robot *robot_;
   Link *parent_;
+  robot_state::LinkState *lstate_;
   V3iSet all_points_;                 // points in link
   V3iSet post_cull_points_;           // temp: points in link that are not culled
   V3iSet all_points_with_children_;   // temp: points in child links
@@ -480,9 +495,9 @@ public:
   const SphereRep* getLinkSphereRep(
                         const std::string& link_name,
                         std::size_t nspheres,
-                        SphereRep::Method method = SphereRep::METHOD_DEFAULT,
+                        GenMethod method = GenMethod::DEFAULT,
                         double tolerance = 1.0,
-                        SphereRep::QualityMethod quality_method = SphereRep::QUAL_DEFAULT);
+                        QualMethod quality_method = QualMethod::DEFAULT);
 
   Link *getLink(const std::string& name)
   {
@@ -523,7 +538,6 @@ private:
   boost::shared_ptr<const robot_model::RobotModel> kmodel_;
   boost::shared_ptr<robot_state::RobotState> kstate_;
   
-  Link root_;
   std::map<std::string, Link*> links_;
   double resolution_;
   double oo_resolution_;

@@ -70,7 +70,12 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   , robot_markers_dirty_(true)
   , robot_markers_position_dirty_(true)
   , int_marker_display_(NULL)
-  , sphere_method_property_(NULL)
+  , sphere_gen_method_property_(NULL)
+  , sphere_qual_method_property_(NULL)
+  , sphere_gen_resolution_property_(NULL)
+  , sphere_gen_tolerance_property_(NULL)
+  , requested_nspheres_property_(NULL)
+  , unsetting_property_(false)
 {
   robot_state_category_ = new rviz::Property(
                                       "Robot State",
@@ -174,7 +179,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   robotVisualChanged();
 
   // add per-link data displays to show aspects of distance field
-  add_per_link_data(per_link_properties_);
+  addPerLinkData(per_link_properties_);
 
   // create an interactive marker display used to display markers for interacting with the robot.
   delete int_marker_display_;
@@ -213,16 +218,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
   }
 }
 
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedSphereMethod()
-{
-  if (!robot_model_loaded_)
-    return;
-
-  robot_sphere_rep_->setMethod(sphere_method_property_->getStdString());
-
-  per_link_objects_->update();
-}
-
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::reset()
 {
   robot_model_loaded_ = false;
@@ -248,18 +243,12 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
 
   robot_sphere_rep_.reset(new robot_sphere_representation::RobotSphereRepresentation(getRobotModel()));
 
-  // add RobotSphereRepresentaton GenSpheres methods to enum property
-  sphere_method_property_->clearOptions();
-  std::vector<std::string>::const_iterator method = robot_sphere_rep_->getGenMethods().begin();
-  std::vector<std::string>::const_iterator method_end = robot_sphere_rep_->getGenMethods().end();
-  for ( ; method != method_end ; ++method )
-    sphere_method_property_->addOptionStd(*method);
+  robot_sphere_rep_->setResolution(sphere_gen_resolution_property_->getFloat());
+  robot_sphere_rep_->setTolerance(sphere_gen_tolerance_property_->getFloat());
+  robot_sphere_rep_->setGenMethod(sphere_gen_method_property_->getStdString());
+  robot_sphere_rep_->setQualMethod(sphere_qual_method_property_->getStdString());
 
-  method = find(robot_sphere_rep_->getGenMethods().begin(),
-                robot_sphere_rep_->getGenMethods().end(),
-                sphere_method_property_->getStdString());
-  if (method == robot_sphere_rep_->getGenMethods().end() && !robot_sphere_rep_->getGenMethods().empty())
-    sphere_method_property_->setStdString(robot_sphere_rep_->getGenMethods()[0]);
+  updateAllSphereGenPropertyValues();
 
 
   robot_interaction_.reset(new robot_interaction::RobotInteraction(getRobotModel(), "distance_field_display"));

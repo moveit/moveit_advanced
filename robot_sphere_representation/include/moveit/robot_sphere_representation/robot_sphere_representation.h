@@ -40,6 +40,7 @@
 #include <boost/shared_ptr.hpp>
 #include <map>
 #include <vector>
+#include <moveit/robot_sphere_representation/method_enums.h>
 
 namespace robot_model
 {
@@ -57,25 +58,6 @@ namespace robot_sphere_representation
 class LinkSphereRepresentation;
 class Robot;
 
-namespace GenMethod
-{
-  // Different methods for generating spheres.
-  // 
-  // Each method has an enum, a method, and a string.
-  // The method is a method in the LinkSphereRepresentation class.
-  //
-  enum GenMethod {
-    DEFAULT,
-    #define collision_detection__RobotSphereRepresentation__GenMethods__strings(X) \
-      X(SRDF,             useSrdfSpheres,     "From SRDF") \
-      X(SRDF_EXT,         useSrdfSpheresExt,  "From external SRDF") \
-      X(BOUNDING_SPHERES, useBoundingSpheres, "Use bounding sphere")
-    #define x(e,f,n) e,
-    collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
-    #undef x
-  };
-}
-
 
 class RobotSphereRepresentation
 {
@@ -83,23 +65,36 @@ public:
   RobotSphereRepresentation(boost::shared_ptr<const robot_model::RobotModel> robot_model);
   ~RobotSphereRepresentation();
 
-  // Return the list of available sphere generation methods.
-  const std::vector<std::string>& getGenMethods() const { return method_names_; }
+  // Return the list of available sphere generation methods or quality methods.
+  const std::vector<std::string>& getGenMethods() const;
+  const std::vector<std::string>& getQualMethods() const;
 
   // Set what method to use to generate spheres.
   // Spheres are actually generated when they are requested from
   // LinkSphereRepresentation::getSpheres() (and any other methods that need to
   // generate the spheres in order to operate).
-  void setMethod(const std::string& method);
-  void setMethod(GenMethod::GenMethod method = GenMethod::DEFAULT);
+  void setGenMethod(const std::string& gen_method);
+  void setGenMethod(GenMethod gen_method = GenMethod::DEFAULT);
+
+  // Set what method to use to measure quality when generating spheres
+  void setQualMethod(const std::string& qual_method);
+  void setQualMethod(QualMethod qual_method = QualMethod::DEFAULT);
 
   // set distance field resolution to use for calculations.
   void setResolution(double resolution);
+  double getResolution() { return resolution_; }
 
   // set tolerance to use.  For methods that pay attention to tolerance,
   // spheres will stick out at most <tolerance> from the surface
   // (+/- resolution).
+  // Tolerance can also be set per-link.  Calling this method sets the
+  // tolerance for all links to the same value.
   void setTolerance(double tolerance);
+
+  // how many spheres do we want for each link.
+  // Usually this would be set per-link, not globally here.
+  // For many GenMethods this is ignored.
+  void setRequestedNumSpheres(int nspheres);
 
   // read spheres from srdf
   // (by default the one associated with RobotModel)
@@ -112,7 +107,6 @@ public:
   const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
   const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
   LinkSphereRepresentation* getLink(const std::string& link_name) const;
-  GenMethod::GenMethod getMethodValue(const std::string& method) const;
 
   void ensureSphereRepRobot() const
   {
@@ -120,22 +114,24 @@ public:
       updateSphereRepRobot();
   }
 
+  void invalidateSphereRep() { sphere_rep_robot_dirty_ = true; }
+
+
 private:
+  void invalidateSpheresForAllLinks();
+
   // update sphere_rep_robot_.  Should only be called by ensureSphereRepRobot()
   void updateSphereRepRobot() const;
+
+
 
   boost::shared_ptr<const robot_model::RobotModel> robot_model_;
 
   std::map<std::string, LinkSphereRepresentation*> links_;
 
-  // names of methods for generating spheres
-  std::vector<std::string> method_names_;
-  std::map<std::string, GenMethod::GenMethod> method_map_;
-
+  // resolution for SphereRep distance field 
   double resolution_;
-  double tolerance_;
 
-  // SphereRep robot
   mutable boost::shared_ptr<Robot> sphere_rep_robot_;
   mutable bool sphere_rep_robot_dirty_;
 };

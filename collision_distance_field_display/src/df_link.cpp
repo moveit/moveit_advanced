@@ -48,6 +48,7 @@ moveit_rviz_plugin::DFLink::DFLink(
   , sample_prop_(NULL)
   , sphere_rep_(NULL)
   , display_(display)
+  , inUpdatePropertyValues(false)
 {
   // An example of how to add a property.  Can be removed along with sample_prop_ and updateSampleProp().
   sample_prop_ = new rviz::BoolProperty(
@@ -57,9 +58,13 @@ moveit_rviz_plugin::DFLink::DFLink(
                             link_property_,
                             SLOT( updateSampleProp() ),
                             this );
+  sample_prop_->hide();
+
+  sphere_rep_ = display_->getSphereRep()->getLink(getName());
+
+  addSphereGenProperties(link_property_);
 
   display_->getLinkObjects()->addLink(this, per_link_objects_);
-  sphere_rep_ = display_->getSphereRep()->getLink(getName());
 }
 
 moveit_rviz_plugin::DFLink::~DFLink()
@@ -95,6 +100,8 @@ void moveit_rviz_plugin::DFLink::getLinkSpheres(
     radii.clear();
   }
 }
+
+
 
 moveit_rviz_plugin::DFLinkFactory::DFLinkFactory(CollisionDistanceFieldDisplay *display)
   : display_(display)

@@ -42,6 +42,7 @@
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/enum_property.h>
+#include <rviz/properties/int_property.h>
 
 
 namespace moveit_rviz_plugin
@@ -58,7 +59,7 @@ public:
   {
     per_link_objects.addVisObject(new PerLinkObj<LinkObj_ModelLinkSpheres>(
                                 parent,
-                                "Show Current Collision spheres",
+                                "Show Current Collision spheres from SRDF",
                                 "Show spheres used for DistanceField collision detection.",
                                 QColor(0, 0, 255),
                                 0.5,
@@ -140,24 +141,17 @@ public:
 }
 
 
-
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::add_per_link_data(rviz::Property* parent_property)
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Property* parent_property)
 {
   per_link_objects_.reset(new PerLinkObjList());
 
   LinkObj_ModelLinkSpheres::addSelf(parent_property, *per_link_objects_);
 
-  sphere_method_property_ = new rviz::EnumProperty(
-                                      "Sphere Method",
-                                      "",
-                                      "How to generate collision spheres.",
-                                      parent_property,
-                                      SLOT( changedSphereMethod() ),
-                                      this );
+  addSphereGenProperties(parent_property);
 
   LinkObj_RepLinkSpheres::addSelf(parent_property, *per_link_objects_);
   LinkObj_BCyl::addSelf(parent_property, *per_link_objects_);
-}
 
+}
 
 

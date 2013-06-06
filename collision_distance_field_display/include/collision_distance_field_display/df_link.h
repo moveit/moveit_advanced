@@ -75,17 +75,42 @@ public:
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
 
+  // update displayed property values based on current getSphereRep() values.
+  void updatePropertyValues();
 
-
-public Q_SLOTS:
+private Q_SLOTS:
   void updateSampleProp();
-
+  void changedSphereGenMethod();
+  void changedSphereQualMethod();
+  void changedSphereGenTolerance();
+  void changedRequestedNspheres();
+  
 protected:
-  // sample property
-  rviz::BoolProperty* sample_prop_;
+  // redraw per_link_objects_
+  void updateObjects();
+
+  // add properties to the link property.  Called once from constructor.
+  void addSphereGenProperties(rviz::Property *parent_property);
+
+
+
   CollisionDistanceFieldDisplay *display_;
   std::vector<PerLinkSubObjBase*> per_link_objects_;
   robot_sphere_representation::LinkSphereRepresentation *sphere_rep_;
+
+  bool inUpdatePropertyValues; // true when in updatePropertyValues()
+
+  // properties
+  rviz::EnumProperty* sphere_gen_method_property_;
+  rviz::EnumProperty* sphere_qual_method_property_;
+  rviz::FloatProperty* sphere_gen_tolerance_property_;
+  rviz::IntProperty* requested_nspheres_property_;
+  rviz::IntProperty* generated_nspheres_property_;
+
+
+  // sample property
+  rviz::BoolProperty* sample_prop_;
+
 };
 
 

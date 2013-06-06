@@ -52,13 +52,6 @@ robot_sphere_representation::RobotSphereRepresentation::RobotSphereRepresentatio
     LinkSphereRepresentation *lsr = new LinkSphereRepresentation(this, *lm);
     links_.insert( std::pair<std::string, LinkSphereRepresentation*>( lsr->getName(), lsr ) );
   }
-
-  // initialize method_names_ and method_map_
-  #define x(e,f,n) \
-    method_names_.push_back(n); \
-    method_map_.insert( std::pair<std::string, GenMethod::GenMethod>( n, GenMethod::e ) );
-  collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
-  #undef x
 }
 
 robot_sphere_representation::RobotSphereRepresentation::~RobotSphereRepresentation()
@@ -70,6 +63,17 @@ robot_sphere_representation::RobotSphereRepresentation::~RobotSphereRepresentati
     delete lsr->second;
   }
 }
+
+const std::vector<std::string>& robot_sphere_representation::RobotSphereRepresentation::getGenMethods() const
+{
+  return GenMethod::getNames();
+}
+
+const std::vector<std::string>& robot_sphere_representation::RobotSphereRepresentation::getQualMethods() const
+{
+  return QualMethod::getNames();
+}
+
 
 void robot_sphere_representation::RobotSphereRepresentation::copySrdfSpheres(const srdf::Model *srdf)
 {
@@ -92,26 +96,46 @@ robot_sphere_representation::LinkSphereRepresentation* robot_sphere_representati
     return NULL;
 }
 
-robot_sphere_representation::GenMethod::GenMethod robot_sphere_representation::RobotSphereRepresentation::getMethodValue(const std::string& method) const
+void robot_sphere_representation::RobotSphereRepresentation::setGenMethod(const std::string& gen_method)
 {
-  std::map<std::string, GenMethod::GenMethod>::const_iterator it = method_map_.find(method);
-  if (it != method_map_.end())
-    return it->second;
-  else
-    return GenMethod::DEFAULT;
+  setGenMethod(GenMethod(gen_method));
 }
 
-void robot_sphere_representation::RobotSphereRepresentation::setMethod(const std::string& method)
+void robot_sphere_representation::RobotSphereRepresentation::setGenMethod(GenMethod gen_method)
 {
-  setMethod(getMethodValue(method));
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+    lsr->second->setGenMethod(gen_method);
 }
 
-void robot_sphere_representation::RobotSphereRepresentation::setMethod(GenMethod::GenMethod method)
+void robot_sphere_representation::RobotSphereRepresentation::setQualMethod(const std::string& qual_method)
+{
+  setQualMethod(QualMethod(qual_method));
+}
+
+void robot_sphere_representation::RobotSphereRepresentation::setRequestedNumSpheres(int nspheres)
+{
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+    lsr->second->setRequestedNumSpheres(nspheres);
+}
+
+void robot_sphere_representation::RobotSphereRepresentation::setQualMethod(QualMethod qual_method)
+{
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+    lsr->second->setQualMethod(qual_method);
+}
+
+void robot_sphere_representation::RobotSphereRepresentation::invalidateSpheresForAllLinks()
 {
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr = links_.begin();
   std::map<std::string, LinkSphereRepresentation*>::iterator lsr_end = links_.end();
   for ( ; lsr != lsr_end ; ++lsr )
-    lsr->second->setMethod(method);
+    lsr->second->invalidateSpheres();
 }
 
 void robot_sphere_representation::RobotSphereRepresentation::updateSphereRepRobot() const
@@ -128,14 +152,19 @@ void robot_sphere_representation::RobotSphereRepresentation::updateSphereRepRobo
 
 void robot_sphere_representation::RobotSphereRepresentation::setResolution(double resolution)
 {
-  sphere_rep_robot_dirty_ = true;
-  resolution_ = resolution;
+  if (resolution_ != resolution)
+  {
+    sphere_rep_robot_dirty_ = true;
+    resolution_ = resolution;
+  }
 }
 
 void robot_sphere_representation::RobotSphereRepresentation::setTolerance(double tolerance)
 {
-  sphere_rep_robot_dirty_ = true;
-  tolerance_ = tolerance;
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+    lsr->second->setTolerance(tolerance);
 }
 
 

@@ -87,6 +87,19 @@ public:
   const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
   const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
 
+#if 0
+  // These unset the properties when they have been set individually per link.
+  void unsetGenMethodPropertyIfNot(const std::string& val);
+  void unsetQualMethodProperty(const std::string& val);
+  void unsetTilerancePropertyIfNot(double val);
+  void unsetNSpheresPropertyIfNot(int val);
+#endif
+
+  // Update global and per-link property values to match actual values in SphereRep.
+  void updateLinkSphereGenPropertyValues();
+  void updateAllSphereGenPropertyValues();
+
+
 protected:
   virtual void onInitialize();
   virtual void onEnable();
@@ -103,7 +116,12 @@ private Q_SLOTS:
   void robotMarkerPositionsChanged(); // call when only the position of the markers needs to change
   void changedActiveGroup();
   void changedCollisionMethod();      // collision detection type (FCL, distance field, etc) changed
-  void changedSphereMethod();         // method for generating spheres changed
+
+  void changedSphereGenMethod();
+  void changedSphereQualMethod();
+  void changedSphereGenResolution();
+  void changedSphereGenTolerance();
+  void changedRequestedNspheres();
 
 private:
 
@@ -131,8 +149,8 @@ private:
   void updateRobotMarkers();
 
   // Add per link data displays.
-  void add_per_link_data(rviz::Property* parent_property);
-
+  void addPerLinkData(rviz::Property* parent_property);
+  void addSphereGenProperties(rviz::Property* parent_property);
 
   // for drawing the robot
   RobotStateVisualizationPtr robot_visual_;
@@ -164,13 +182,19 @@ private:
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
   rviz::Property* per_link_properties_;
-  rviz::EnumProperty* sphere_method_property_;
+  rviz::EnumProperty* sphere_gen_method_property_;
+  rviz::EnumProperty* sphere_qual_method_property_;
+  rviz::FloatProperty* sphere_gen_resolution_property_;
+  rviz::FloatProperty* sphere_gen_tolerance_property_;
+  rviz::IntProperty* requested_nspheres_property_;
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;
 
   // object for calculating spheres
   boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation> robot_sphere_rep_;
+
+  bool unsetting_property_;  // true to skip callback when a property changes
 };
 
 }

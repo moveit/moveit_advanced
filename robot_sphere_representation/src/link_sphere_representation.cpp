@@ -51,7 +51,8 @@ robot_sphere_representation::LinkSphereRepresentation::LinkSphereRepresentation(
   : robot_(robot)
   , link_model_(link_model)
   , dirty_(true)
-  , method_(GenMethod::DEFAULT)
+  , tolerance_(1.0)
+  , requested_nspheres_(10)
 {
 }
 
@@ -59,27 +60,61 @@ robot_sphere_representation::LinkSphereRepresentation::~LinkSphereRepresentation
 {}
 
 
-
-void robot_sphere_representation::LinkSphereRepresentation::setMethod(const std::string& method)
+void robot_sphere_representation::LinkSphereRepresentation::setRequestedNumSpheres(int nspheres)
 {
-  setMethod(robot_->getMethodValue(method));
+  nspheres = nspheres >= 1 ? nspheres : 1;
+  if (requested_nspheres_ != nspheres)
+  {
+    requested_nspheres_ = nspheres;
+    dirty_ = true;
+  }
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::setMethod(GenMethod::GenMethod method)
+void robot_sphere_representation::LinkSphereRepresentation::setTolerance(double tolerance)
 {
-  // GM_SRDF_EXT can only be set by calling copySrdfSpheres()
-  if (method == GenMethod::SRDF_EXT && method_ != GenMethod::SRDF_EXT)
-    method = GenMethod::SRDF;
-
-  if (method != method_)
+  tolerance = tolerance>0.0 ? tolerance : 1.0;
+  if (tolerance_ != tolerance)
   {
+    tolerance_ = tolerance;
     dirty_ = true;
-    method_ = method;
-
-    // if method is srdf, do it right away since srdf could change.
-    if (method == GenMethod::SRDF)
-      useSrdfSpheres();
   }
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::setGenMethod(const std::string& gen_method)
+{
+  setGenMethod(GenMethod(gen_method));
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::setGenMethod(GenMethod gen_method)
+{
+  if (!gen_method.isValid() || gen_method_ == gen_method)
+    return;
+
+  gen_method_ = gen_method;
+  invalidateSpheres();
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::setQualMethod(const std::string& qual_method)
+{
+  setQualMethod(QualMethod(qual_method));
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::setQualMethod(QualMethod qual_method)
+{
+  if (!qual_method.isValid() || qual_method_ == qual_method)
+    return;
+
+  qual_method_ = qual_method;
+  invalidateSpheres();
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::getSpheres(
+        EigenSTL::vector_Vector3d& centers, 
+        std::vector<double>& radii) const
+{
+  genSpheres();
+  centers = centers_;
+  radii = radii_;
 }
 
 void robot_sphere_representation::LinkSphereRepresentation::genSpheres() const
@@ -87,16 +122,22 @@ void robot_sphere_representation::LinkSphereRepresentation::genSpheres() const
   if (!dirty_)
     return;
 
-  switch(method_)
+  switch(gen_method_)
   {
-    #define x(e,f,n) \
-      case GenMethod::e: f(); break;
-    collision_detection__RobotSphereRepresentation__GenMethods__strings(x)
-    #undef x
-    case GenMethod::DEFAULT:
-    default:
-      useSrdfSpheres();
-      break;
+  case GenMethod::SRDF:
+    useSrdfSpheres();
+    break;
+
+  case GenMethod::SRDF_EXT:
+    break; // nothing to do
+
+  case GenMethod::BOUNDING_SPHERES:
+    genSpheresUsingBoundingSpheres();
+    break;
+
+  default:
+    genSpheresUsingSphereRep();
+    break;
   }
   assert(dirty_ == false);
 }
@@ -105,16 +146,13 @@ void robot_sphere_representation::LinkSphereRepresentation::copySrdfSpheres(cons
 {
   if (!srdf)
     srdf = robot_->getRobotModel()->getSRDF().get();
-  if (srdf == robot_->getRobotModel()->getSRDF().get())
-    method_ = GenMethod::SRDF;
-  else
-    method_ = GenMethod::SRDF_EXT;
-  useSrdfSpheres(srdf);
-}
 
-void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheresExt() const
-{
-  assert(dirty_ == false);
+  if (srdf == robot_->getRobotModel()->getSRDF().get())
+    gen_method_ = GenMethod::SRDF;
+  else
+    gen_method_ = GenMethod::SRDF_EXT;
+
+  useSrdfSpheres(srdf);
 }
 
 void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheres(const srdf::Model *srdf) const
@@ -135,7 +173,7 @@ void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheres(const
     // if no spheres in srdf, use a single bounding sphere
     if (lsp == lsp_end)
     {
-      useBoundingSpheres();
+      genSpheresUsingBoundingSpheres();
       break;
     }
 
@@ -161,7 +199,7 @@ void robot_sphere_representation::LinkSphereRepresentation::useSrdfSpheres(const
   dirty_ = false;
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::useBoundingSpheres() const
+void robot_sphere_representation::LinkSphereRepresentation::genSpheresUsingBoundingSpheres() const
 {
   centers_.clear();
   radii_.clear();
@@ -179,13 +217,6 @@ void robot_sphere_representation::LinkSphereRepresentation::useBoundingSpheres()
     radii_.push_back(radius);
   }
   dirty_ = false;
-}
-
-void robot_sphere_representation::LinkSphereRepresentation::getSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const
-{
-  genSpheres();
-  centers = centers_;
-  radii = radii_;
 }
 
 const boost::shared_ptr<const bodies::Body>& robot_sphere_representation::LinkSphereRepresentation::getBody() const
@@ -210,8 +241,31 @@ void robot_sphere_representation::LinkSphereRepresentation::getBoundingCylinder(
 void robot_sphere_representation::LinkSphereRepresentation::updateSphereRepLink() const
 {
   sphere_rep_link_ = robot_->getSphereRepRobot()->getLink(getName());
-  if (method_ != GenMethod::SRDF_EXT)
+  if (gen_method_ != GenMethod::SRDF_EXT)
     dirty_ = true;
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::genSpheresUsingSphereRep() const
+{
+  robot_->ensureSphereRepRobot();
+
+  const SphereRep* sphere_rep = sphere_rep_link_->getSphereRep(
+                                                  requested_nspheres_,
+                                                  gen_method_,
+                                                  tolerance_,
+                                                  qual_method_);
+  if (sphere_rep)
+  {
+    radii_ = sphere_rep->getSphereRadii();
+    centers_ = sphere_rep->getSphereCenters();
+    sphere_rep_link_->transformRobotToLink(centers_.begin(), centers_.end());
+  }
+  else
+  {
+    radii_.clear();
+    centers_.clear();
+  }
+  dirty_ = false;
 }
 
 

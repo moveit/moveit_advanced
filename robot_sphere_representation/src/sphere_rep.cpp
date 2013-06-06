@@ -520,10 +520,10 @@ robot_sphere_representation::SphereRep::SphereRep(std::size_t nspheres,
                                                     const EigenSTL::vector_Vector3d& required_points,
                                                     const EigenSTL::vector_Vector3d& optional_points,
                                                     const std::string& name,
-                                                    Method method,
+                                                    GenMethod gen_method,
                                                     double tolerance,
-                                                    QualityMethod quality_method) :
-  method_(method),
+                                                    QualMethod quality_method) :
+  gen_method_(gen_method),
   tolerance_(tolerance),
   radius2_padding_(resolution*0.1),
   nspheres_requested_(nspheres),
@@ -901,7 +901,7 @@ const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRe
   return face_point_set_;
 }
 
-double robot_sphere_representation::SphereRep::getQuality(int iteration, QualityMethod quality_method) const
+double robot_sphere_representation::SphereRep::getQuality(int iteration, QualMethod quality_method) const
 {
   const Result *r = getIteration(iteration);
 
@@ -919,20 +919,20 @@ const char* robot_sphere_representation::SphereRep::getAlgorithm(int iteration) 
 
 
 void robot_sphere_representation::SphereRep::setParams(std::size_t nspheres,
-                                                         Method method,
+                                                         GenMethod gen_method,
                                                          double tolerance,
-                                                         QualityMethod quality_method)
+                                                         QualMethod quality_method)
 {
   if (nspheres_requested_ != nspheres ||
       tolerance_ != tolerance ||
-      method_ != method ||
+      gen_method_ != gen_method ||
       current_.quality_method_ != quality_method)
   {
     PROF_PUSH_SCOPED(SphereRep_setParams);
 
     nspheres_requested_ = nspheres;
     tolerance_ = tolerance;
-    method_ = method;
+    gen_method_ = gen_method;
     current_.quality_method_ = quality_method;
     findSpheres();
     PROF_PRINT_CLEAR();
@@ -983,10 +983,10 @@ void robot_sphere_representation::SphereRep::findSpheres()
 
   clear(0);
 
-  if (method_ < 0 || method_ >= METHOD_DEFAULT)
-    method_ = Method(0);
-  if (current_.quality_method_ < 0 || current_.quality_method_ >= QUAL_DEFAULT)
-    current_.quality_method_ = QualityMethod(0);
+  if (gen_method_ < 0 || gen_method_ >= GenMethod::DEFAULT)
+    gen_method_ = GenMethod::DEFAULT;
+  if (current_.quality_method_ < 0 || current_.quality_method_ >= QualMethod::DEFAULT)
+    current_.quality_method_ = QualMethod(0);
 
   logInform("SphereRep(%s) ======= BEGIN findSpheres N=%d npoints=%d thin=%d opt=%d",
     getName().c_str(),
@@ -999,44 +999,49 @@ void robot_sphere_representation::SphereRep::findSpheres()
 
   step_size_ = resolution_;
   use_required_points_ = &thinned_required_points_;
-  switch(method_)
+  switch(gen_method_)
   {
-  case GOBBLE:
+  case GenMethod::CLUSTERING:
+    // Does not work very well
+    solveUsingClustering();
+    break;
+
+  case GenMethod::GOBBLE:
     use_required_points_ = &required_points_;
-  case THIN_GOBBLE:
+  case GenMethod::THIN_GOBBLE:
     // Does not work very well
     solveUsingClustering();
     solveUsingGobble();
     break;
 
-  case GRADIENT:
+  case GenMethod::GRADIENT:
     use_required_points_ = &required_points_;
-  case THIN_GRADIENT:
+  case GenMethod::THIN_GRADIENT:
     // gradient descent
     solveUsingClustering();
     solveUsingGradientDescent();
     eliminateUselessSpheres();
     break;
 
-  case GREEDY:
+  case GenMethod::GREEDY:
     use_required_points_ = &required_points_;
-  case THIN_GREEDY:
+  case GenMethod::THIN_GREEDY:
     // Use as many spheres as necessary with greedy assignment
     solveUsingGreedy();
     break;
 
-  case GREEDY_GRADIENT:
+  case GenMethod::GREEDY_GRADIENT:
     use_required_points_ = &required_points_;
-  case THIN_GREEDY_GRADIENT:
+  case GenMethod::THIN_GREEDY_GRADIENT:
     // Use GREEDY then GRADIENT
     solveUsingGreedy();
     solveUsingGradientDescent();
     eliminateUselessSpheres();
     break;
 
-  case LIMITGREEDY_GRADIENT:
+  case GenMethod::LIMITGREEDY_GRADIENT:
     use_required_points_ = &required_points_;
-  case THIN_LIMITGREEDY_GRADIENT:
+  case GenMethod::THIN_LIMITGREEDY_GRADIENT:
   default:
     // Use GRADIENT but place initial spheres using GREEDY
     solveUsingGreedy(nspheres_requested_);
@@ -1483,18 +1488,18 @@ void robot_sphere_representation::SphereRep::solveUsingClustering()
   checkQuality("Clustering");
 }
 
-double robot_sphere_representation::SphereRep::calcQuality(const Result& result, QualityMethod quality_method) const
+double robot_sphere_representation::SphereRep::calcQuality(const Result& result, QualMethod quality_method) const
 {
   PROF_PUSH_SCOPED(SphereRep_calcQuality);
   switch (quality_method)
   {
-  case QUAL_MAX_DIST:
+  case QualMethod::MAX_DIST:
     return calcQualityByMaxDistance(result);
 
-  case QUAL_RADIUS:
+  case QualMethod::RADIUS:
     return calcQualityByRadius(result);
 
-  case QUAL_BADCOUNT:
+  case QualMethod::BADCOUNT:
   default:
     return calcQualityByBadCount(result);
   }
@@ -1831,7 +1836,7 @@ void robot_sphere_representation::SphereRep::findRadius2BySmallestRadiusChange()
     {
       if (sphere >= current_.nspheres_)
       {
-        if (method_ == GOBBLE)
+        if (gen_method_ == GenMethod::GOBBLE)
         {
           spheres_[closest_sphere].distant_good_points_.push_back(*point);
           distant_good_points_.push_back(*point);
@@ -1964,94 +1969,16 @@ void robot_sphere_representation::SphereRep::sphereIterate(
       }
 }
 
-
-
-const std::vector<std::string>& robot_sphere_representation::SphereRep::getMethodNames()
+inline const std::string& robot_sphere_representation::Link::getName() const
 {
-  static std::vector<std::string> method_names;
-
-  if (method_names.empty())
-  {
-    std::vector<std::string> list;
-    #define X(e) list.push_back(std::string(#e));
-    DF2_SPHEREREP_METHOD_LIST()
-    #undef X
-    
-    swap(list, method_names);
-  }
-  return method_names;
+  return lstate_->getName();
 }
-
-// -1 if unknown
-robot_sphere_representation::SphereRep::Method robot_sphere_representation::SphereRep::parseMethodName(const std::string& method)
-{
-  const std::vector<std::string>& method_names = getMethodNames();
-
-  std::vector<std::string>::const_iterator it = find(method_names.begin(), method_names.end(), method);
-
-  if (it == method_names.end())
-    return Method(-1);
-  return Method(it - method_names.begin());
-}
-
-const char* robot_sphere_representation::SphereRep::getMethodName(Method method)
-{
-  const std::vector<std::string>& method_names = getMethodNames();
-  if (method < 0 || method >= method_names.size())
-    return "UnknownMethod";
-  return method_names[method].c_str();
-}
-
-
-
-const std::vector<std::string>& robot_sphere_representation::SphereRep::getQualityMethodNames()
-{
-  static std::vector<std::string> quality_method_names;
-
-  if (quality_method_names.empty())
-  {
-    std::vector<std::string> list;
-    #define X(e) list.push_back(std::string(#e));
-    DF2_SPHEREREP_QUALITY_METHOD_LIST()
-    #undef X
-    
-    swap(list, quality_method_names);
-  }
-  return quality_method_names;
-}
-
-// -1 if unknown
-robot_sphere_representation::SphereRep::QualityMethod robot_sphere_representation::SphereRep::parseQualityMethodName(const std::string& quality_method)
-{
-  const std::vector<std::string>& quality_method_names = getQualityMethodNames();
-
-  std::vector<std::string>::const_iterator it = find(quality_method_names.begin(), quality_method_names.end(), quality_method);
-
-  if (it == quality_method_names.end())
-    return QualityMethod(-1);
-  return QualityMethod(it - quality_method_names.begin());
-}
-
-const char* robot_sphere_representation::SphereRep::getQualityMethodName(QualityMethod quality_method)
-{
-  const std::vector<std::string>& quality_method_names = getQualityMethodNames();
-  if (quality_method < 0 || quality_method >= quality_method_names.size())
-    return "UnknownQualityMethod";
-  return quality_method_names[quality_method].c_str();
-}
-
-
-
-
-
-
 
 const robot_sphere_representation::SphereRep* robot_sphere_representation::Link::getSphereRep(
-                                                          const Robot& robot,
                                                           std::size_t nspheres,
-                                                          SphereRep::Method method,
+                                                          GenMethod gen_method,
                                                           double tolerance,
-                                                          SphereRep::QualityMethod quality_method)
+                                                          QualMethod quality_method)
 {
   if (!sphere_rep_)
   {
@@ -2064,7 +1991,7 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
                         robot_sphere_representation::V3iLess());
 
     logInform("SphereRep(%s) all_points:%d final_points:%d optional:%d",
-      name_.c_str(),
+      getName().c_str(),
       all_points_.size(),
       final_points_.size(),
       optional_ipoints.size());
@@ -2074,9 +2001,9 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
     int i = 0;
     for (V3iSet::const_iterator it = final_points_.begin() ; it != final_points_.end() ; ++it, ++i)
     {
-      points[i].x() = robot.gridToWorld(it->x());
-      points[i].y() = robot.gridToWorld(it->y());
-      points[i].z() = robot.gridToWorld(it->z());
+      points[i].x() = robot_->gridToWorld(it->x());
+      points[i].y() = robot_->gridToWorld(it->y());
+      points[i].z() = robot_->gridToWorld(it->z());
     }
 
     V3List optional_points;
@@ -2084,21 +2011,21 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
     i = 0;
     for (V3iSet::const_iterator it = optional_ipoints.begin() ; it != optional_ipoints.end() ; ++it, ++i)
     {
-      optional_points[i].x() = robot.gridToWorld(it->x());
-      optional_points[i].y() = robot.gridToWorld(it->y());
-      optional_points[i].z() = robot.gridToWorld(it->z());
+      optional_points[i].x() = robot_->gridToWorld(it->x());
+      optional_points[i].y() = robot_->gridToWorld(it->y());
+      optional_points[i].z() = robot_->gridToWorld(it->z());
     }
 
     logInform("SphereRep(%s) points:%d optional_points:%d",
-      name_.c_str(),
+      getName().c_str(),
       points.size(),
       optional_points.size());
 
-    sphere_rep_ = new SphereRep(nspheres, robot.resolution_, points, optional_points, name_, method, tolerance, quality_method);
+    sphere_rep_ = new SphereRep(nspheres, robot_->resolution_, points, optional_points, getName(), gen_method, tolerance, quality_method);
   }
   else
   {
-    sphere_rep_->setParams(nspheres, method, tolerance, quality_method);
+    sphere_rep_->setParams(nspheres, gen_method, tolerance, quality_method);
   }
 
   return sphere_rep_;
@@ -2107,39 +2034,38 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
 const robot_sphere_representation::SphereRep* robot_sphere_representation::Robot::getLinkSphereRep(
           const std::string& link_name,
           std::size_t nspheres,
-          SphereRep::Method method,
+          GenMethod gen_method,
           double tolerance,
-          SphereRep::QualityMethod quality_method)
+          QualMethod quality_method)
 {
   Link *link = getLink(link_name);
   if (!link)
     return NULL;
 
-  return link->getSphereRep(*this, nspheres, method, tolerance, quality_method);
+  return link->getSphereRep(nspheres, gen_method, tolerance, quality_method);
 }
 
 
 
 
-void robot_sphere_representation::Link::clusterPoints(const Robot& robot, std::size_t nclusters)
+void robot_sphere_representation::Link::clusterPoints(std::size_t nclusters)
 {
   EigenSTL::vector_Vector3d points;
   points.resize(final_points_.size());
   int i = 0;
   for (V3iSet::const_iterator it = final_points_.begin() ; it != final_points_.end() ; ++it, ++i)
-    robot.gridToWorld(*it, points[i]);
+    robot_->gridToWorld(*it, points[i]);
 
   delete cluster_;
   cluster_ = new robot_sphere_representation::PointCluster(nclusters, points);
 } 
 
 EigenSTL::vector_Vector3d robot_sphere_representation::Link::getClusterPoints(
-                                                          const Robot& robot,
                                                           std::size_t nclusters,
                                                           std::size_t cluster_idx)
 {
   if (!cluster_)
-    clusterPoints(robot, nclusters);
+    clusterPoints(nclusters);
 
   cluster_->setNClusters(nclusters);
 
@@ -2168,7 +2094,7 @@ void robot_sphere_representation::Robot::getLinkClusterPointsMarker(
   if (!link)
     return;
 
-  EigenSTL::vector_Vector3d points = link->getClusterPoints(*this, nclusters, cluster_idx);
+  EigenSTL::vector_Vector3d points = link->getClusterPoints(nclusters, cluster_idx);
 
   for (EigenSTL::vector_Vector3d::const_iterator it = points.begin() ;
        it != points.end() ;
@@ -2192,16 +2118,20 @@ EigenSTL::vector_Vector3d robot_sphere_representation::Robot::getCluster(
   if (!link)
     return EigenSTL::vector_Vector3d();
 
-  return link->getClusterPoints(this, nclusters, cluster_idx);
+  return link->getClusterPoints(nclusters, cluster_idx);
 }
 #endif
 
-robot_sphere_representation::Link::Link(Link *parent) :
-  parent_(parent),
-  has_collision_(false),
-  cluster_(NULL),
-  sphere_rep_(NULL),
-  body_(NULL)
+robot_sphere_representation::Link::Link(Robot *robot,
+                                        Link *parent,
+                                        const robot_model::LinkModel *lmodel)
+  : robot_(robot)
+  , parent_(parent)
+  , lstate_(robot->kstate_->getLinkState(lmodel->getName()))
+  , has_collision_(false)
+  , cluster_(NULL)
+  , sphere_rep_(NULL)
+  , body_(NULL)
 {}
 
 robot_sphere_representation::Link::~Link()
@@ -2211,30 +2141,45 @@ robot_sphere_representation::Link::~Link()
   delete sphere_rep_;
 }
 
-void robot_sphere_representation::Link::calculatePoints(Robot& robot, const robot_model::LinkModel *lmodel)
+void robot_sphere_representation::Link::calculatePoints()
 {
-  const shapes::ShapeConstPtr& shape = lmodel->getShape();
+  const shapes::ShapeConstPtr& shape = lstate_->getLinkModel()->getShape();
   if (!shape)
     return;
   body_ = bodies::createBodyFromShape(shape.get());
   if (!body_)
     return;
 
-  robot_state::LinkState *lstate = robot.kstate_->getLinkState(lmodel->getName());
-
-  body_->setPose(lstate->getGlobalCollisionBodyTransform());
-  EigenSTL::vector_Vector3d points = distance_field::determineCollisionPoints(body_, robot.resolution_);
+  body_->setPose(lstate_->getGlobalCollisionBodyTransform());
+  EigenSTL::vector_Vector3d points = distance_field::determineCollisionPoints(body_, robot_->resolution_);
   for (EigenSTL::vector_Vector3d::const_iterator it = points.begin() ;
        it != points.end() ;
        ++it)
   {
     V3i ip;
-    robot.worldToGrid(*it, ip);
+    robot_->worldToGrid(*it, ip);
     all_points_.insert(ip);
   }
 
   has_collision_ = !all_points_.empty();
 } 
+
+Eigen::Vector3d robot_sphere_representation::Link::transformRobotToLink(
+      Eigen::Vector3d p)
+{
+  return lstate_->getGlobalCollisionBodyTransform().inverse() * p;
+}
+
+void robot_sphere_representation::Link::transformRobotToLink(
+      EigenSTL::vector_Vector3d::iterator begin,
+      EigenSTL::vector_Vector3d::iterator end)
+{
+  Eigen::Affine3d xform = lstate_->getGlobalCollisionBodyTransform().inverse();
+  for( ; begin != end ; ++begin)
+  {
+    *begin = xform * *begin;
+  }
+}
 
 
 
@@ -2360,10 +2305,9 @@ void robot_sphere_representation::Robot::getLinkFinalPointsMarker(
 
 void robot_sphere_representation::Robot::initLink(Link *parent, const robot_model::LinkModel *lmodel)
 {
-  Link *link = new Link(parent);
-  link->name_ = lmodel->getName();
+  Link *link = new Link(this, parent, lmodel);
 
-  link->calculatePoints(*this, lmodel);
+  link->calculatePoints();
   links_[lmodel->getName()] = link;
 
   const std::vector<robot_model::JointModel*>& children = lmodel->getChildJointModels();
@@ -2505,7 +2449,7 @@ bool robot_sphere_representation::Robot::CullLinks2Pre(const robot_model::LinkMo
   {
       diff(parent->post_cull_points_, link->all_points_, parent->post_cull_points_);
       logInform("CullLinks link %30s with %d points after removing child %s.",
-          parent->name_.c_str(),
+          parent->getName().c_str(),
           parent->post_cull_points_.size(),
           link_model.getName().c_str());
       if (parent->post_cull_points_.empty())
@@ -2542,7 +2486,7 @@ bool robot_sphere_representation::Robot::CullLinksPre(const robot_model::LinkMod
       logInform("CullLinks link %30s with %d points after removing parent %s.",
           link_model.getName().c_str(),
           link->all_points_.size(),
-          parent->name_.c_str());
+          parent->getName().c_str());
       cnt++;
       if (link->post_cull_points_.empty())
         break;
@@ -2667,7 +2611,6 @@ robot_sphere_representation::Robot::Robot(
               double resolution) :
   kmodel_(kmodel),
   kstate_(new robot_state::RobotState(kmodel_)),
-  root_(NULL),
   resolution_(resolution),
   oo_resolution_(1.0/resolution)
 {
@@ -2678,7 +2621,7 @@ robot_sphere_representation::Robot::Robot(
   kstate_->setToDefaultValues();
 
   PROF_PUSH(FindLinkPoints);
-  initJoint(&root_, kmodel->getRoot());
+  initJoint(NULL, kmodel->getRoot());
   PROF_POP();
 
 #if 0
