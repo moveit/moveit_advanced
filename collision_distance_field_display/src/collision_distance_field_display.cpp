@@ -76,6 +76,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   , sphere_gen_tolerance_property_(NULL)
   , requested_nspheres_property_(NULL)
   , unsetting_property_(false)
+  , saving_spheres_to_srdf_(false)
 {
   robot_state_category_ = new rviz::Property(
                                       "Robot State",

@@ -46,6 +46,8 @@
 #include <rviz/properties/enum_property.h>
 #include <rviz/properties/int_property.h>
 
+#include <QFileDialog>
+
 
 
 static void setGenMethodValues(rviz::EnumProperty *prop)
@@ -85,6 +87,14 @@ static void setQualMethodDefault(rviz::EnumProperty *prop)
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addSphereGenProperties(rviz::Property* parent_property)
 {
+  save_to_srdf_property_ = new rviz::BoolProperty(
+                                      "Save Generated Spheres to SRDF",
+                                      false,
+                                      "Save generated spheres to SRDF.  Spheres will be generated with current settings.  "
+                                      "Click 'Show Generated Spheres' to see spheres before saving.",
+                                      parent_property,
+                                      SLOT( changedSaveSpheresToSrdf() ),
+                                      this );
   sphere_gen_method_property_ = new rviz::EnumProperty(
                                       "Sphere Gen Method",
                                       "",
@@ -193,6 +203,43 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedRequestedNspheres
   per_link_objects_->update();
   updateLinkSphereGenPropertyValues();
 }
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedSaveSpheresToSrdf()
+{
+  if (saving_spheres_to_srdf_)
+    return;
+
+  if (!save_to_srdf_property_->getBool())
+    return;
+
+  save_to_srdf_property_->setReadOnly(true);
+  save_to_srdf_property_->setValue("GENERATING SPHERES");
+  saving_spheres_to_srdf_ = true;
+
+  addMainLoopJob(boost::bind(&CollisionDistanceFieldDisplay::saveSpheresToSrdf, this));
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::saveSpheresToSrdf()
+{
+  if (saving_spheres_to_srdf_)
+  {
+
+    QString srdf_filename = QFileDialog::getSaveFileName(
+                  0,
+                  "SRDF file to save",
+                  QString(),
+                  "*.srdf",
+                  0,
+                  0);
+                                            
+    ROS_INFO("SAVE SPHERES HERE to file %s", srdf_filename.toStdString().c_str());
+  }
+
+  save_to_srdf_property_->setValue(false);
+  save_to_srdf_property_->setReadOnly(false);
+  saving_spheres_to_srdf_ = false;
+}
+
 
 // Set property values for links to match current SphereRep values.
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkSphereGenPropertyValues()

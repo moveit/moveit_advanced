@@ -114,6 +114,7 @@ private Q_SLOTS:
   void changedSphereGenResolution();
   void changedSphereGenTolerance();
   void changedRequestedNspheres();
+  void changedSaveSpheresToSrdf();
 
 private:
 
@@ -139,6 +140,9 @@ private:
   // Do not call this directly.  Instead call robotMarkersChanged() which causes this to be called in background.
   // Creates and/or updates the robot_interaction markers.
   void updateRobotMarkers();
+
+  // save 
+  void saveSpheresToSrdf();
 
   // Add per link data displays.
   void addPerLinkData(rviz::Property* parent_property);
@@ -174,6 +178,7 @@ private:
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
   rviz::Property* sphere_gen_category_;
+  rviz::BoolProperty* save_to_srdf_property_;
   rviz::EnumProperty* sphere_gen_method_property_;
   rviz::EnumProperty* sphere_qual_method_property_;
   rviz::FloatProperty* sphere_gen_resolution_property_;
@@ -187,6 +192,8 @@ private:
   boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation> robot_sphere_rep_;
 
   bool unsetting_property_;  // true to skip callback when a property changes
+
+  bool saving_spheres_to_srdf_; // true to trigger saving spheres to SRDF
 };
 
 }
