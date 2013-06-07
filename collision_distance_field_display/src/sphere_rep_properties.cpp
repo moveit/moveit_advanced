@@ -239,8 +239,8 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedRequestedNspheres
 // Set property values for links to match current SphereRep values.
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkSphereGenPropertyValues()
 {
-  rviz::Robot::M_NameToLink::iterator link_it = robot_visual_->getRobot().getLinks().begin();
-  rviz::Robot::M_NameToLink::iterator link_end = robot_visual_->getRobot().getLinks().end();
+  rviz::Robot::M_NameToLink::const_iterator link_it = robot_visual_->getRobot().getLinks().begin();
+  rviz::Robot::M_NameToLink::const_iterator link_end = robot_visual_->getRobot().getLinks().end();
   for ( ; link_it != link_end ; ++link_it )
   {
     DFLink *link = dynamic_cast<DFLink*>(link_it->second);
@@ -270,8 +270,8 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateAllSphereGenProper
   bool first = true;
 
   // Find property values from link
-  rviz::Robot::M_NameToLink::iterator link_it = robot_visual_->getRobot().getLinks().begin();
-  rviz::Robot::M_NameToLink::iterator link_end = robot_visual_->getRobot().getLinks().end();
+  rviz::Robot::M_NameToLink::const_iterator link_it = robot_visual_->getRobot().getLinks().begin();
+  rviz::Robot::M_NameToLink::const_iterator link_end = robot_visual_->getRobot().getLinks().end();
   for ( ; link_it != link_end ; ++link_it )
   {
     DFLink *link = dynamic_cast<DFLink*>(link_it->second);
@@ -392,6 +392,14 @@ void moveit_rviz_plugin::DFLink::updateObjects()
   if (inUpdatePropertyValues)
     return;
 
+  if (getSphereRep())
+  {
+    getSphereRep()->setGenMethod(sphere_gen_method_property_->getStdString());
+    getSphereRep()->setQualMethod(sphere_qual_method_property_->getStdString());
+    getSphereRep()->setTolerance(sphere_gen_tolerance_property_->getFloat());
+    getSphereRep()->setRequestedNumSpheres(requested_nspheres_property_->getInt());
+  }
+
   std::vector<PerLinkSubObjBase*>::iterator it = per_link_objects_.begin();
   std::vector<PerLinkSubObjBase*>::iterator it_end = per_link_objects_.end();
   for ( ; it != it_end ; ++it )
@@ -406,7 +414,6 @@ void moveit_rviz_plugin::DFLink::changedSphereGenMethod()
   if (inUpdatePropertyValues)
     return;
 
-  getSphereRep()->setGenMethod(sphere_gen_method_property_->getStdString());
   updateObjects();
   display_->updateAllSphereGenPropertyValues();
 }
@@ -416,7 +423,6 @@ void moveit_rviz_plugin::DFLink::changedSphereQualMethod()
   if (inUpdatePropertyValues)
     return;
 
-  getSphereRep()->setQualMethod(sphere_qual_method_property_->getStdString());
   updateObjects();
   display_->updateAllSphereGenPropertyValues();
 }
@@ -426,7 +432,6 @@ void moveit_rviz_plugin::DFLink::changedSphereGenTolerance()
   if (inUpdatePropertyValues)
     return;
 
-  getSphereRep()->setTolerance(sphere_gen_tolerance_property_->getFloat());
   updateObjects();
   display_->updateAllSphereGenPropertyValues();
 }
@@ -436,7 +441,6 @@ void moveit_rviz_plugin::DFLink::changedRequestedNspheres()
   if (inUpdatePropertyValues)
     return;
 
-  getSphereRep()->setRequestedNumSpheres(requested_nspheres_property_->getInt());
   updateObjects();
   display_->updateAllSphereGenPropertyValues();
 }
