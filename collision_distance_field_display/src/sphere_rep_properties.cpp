@@ -206,6 +206,13 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedRequestedNspheres
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedSaveSpheresToSrdf()
 {
+  if (!robot_sphere_rep_)
+  {
+    save_to_srdf_property_->setValue(false);
+    save_to_srdf_property_->setReadOnly(false);
+    return;
+  }
+
   if (saving_spheres_to_srdf_)
     return;
 
@@ -224,7 +231,12 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::saveSpheresToSrdf()
   if (saving_spheres_to_srdf_)
   {
 
-    QString srdf_filename = QFileDialog::getSaveFileName(
+    // Generate spheres for all links if not already done
+    // This is not necessary, but it ensures the spheres are all successfully
+    // generated before asking the user for a filename.
+    robot_sphere_rep_->genSpheresForAllLinks();
+
+    QString srdf_qfilename = QFileDialog::getSaveFileName(
                   0,
                   "SRDF file to save",
                   QString(),
@@ -232,7 +244,17 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::saveSpheresToSrdf()
                   0,
                   0);
                                             
-    ROS_INFO("SAVE SPHERES HERE to file %s", srdf_filename.toStdString().c_str());
+    std::string srdf_filename = srdf_qfilename.toStdString();
+
+    if (!srdf_filename.empty())
+    {
+      ROS_INFO("Saving spheres to file %s", srdf_filename.c_str());
+      robot_sphere_rep_->saveToSrdfFile(srdf_filename);
+    }
+    else
+    {
+      ROS_WARN("No filename -- not saving SRDF");
+    }
   }
 
   save_to_srdf_property_->setValue(false);
