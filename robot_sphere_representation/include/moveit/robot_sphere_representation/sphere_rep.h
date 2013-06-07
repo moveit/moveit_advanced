@@ -187,44 +187,6 @@ private:
 class SphereRep
 {
 public:
-
-#if 0
-// THESE ARE MOVED TO method_enums.h
-
-  // default is first in list
-  #define DF2_SPHEREREP_METHOD_LIST(x) \
-          x(THIN_LIMITGREEDY_GRADIENT) \
-          x(THIN_GREEDY_GRADIENT) \
-          x(THIN_GREEDY) \
-          x(THIN_GRADIENT) \
-          x(THIN_GOBBLE) \
-          x(LIMITGREEDY_GRADIENT) \
-          x(GREEDY_GRADIENT) \
-          x(GREEDY) \
-          x(GRADIENT) \
-          x(GOBBLE) \
-
-  enum Method {
-    #define X(e) e,
-    DF2_SPHEREREP_METHOD_LIST(X)
-    METHOD_DEFAULT
-    #undef X
-  };
-
-  // default is first in list
-  #define DF2_SPHEREREP_QUALITY_METHOD_LIST(x) \
-          x(QUAL_MAX_DIST) \
-          x(QUAL_BADCOUNT) \
-          x(QUAL_RADIUS) \
-
-  enum QualityMethod {
-    #define X(e) e,
-    DF2_SPHEREREP_QUALITY_METHOD_LIST(X)
-    QUAL_DEFAULT
-    #undef X
-  };
-#endif
-
   SphereRep(std::size_t nspheres,
             double resolution,
             const EigenSTL::vector_Vector3d& required_points,
@@ -238,16 +200,6 @@ public:
             GenMethod method = GenMethod::DEFAULT,
             double tolerance = 1.0,
             QualMethod qual_method = QualMethod::DEFAULT);
-
-#if 0
-  // convert between string and GenMethod/QualMethod
-  static const std::vector<std::string>& getMethodNames();
-  static GenMethod parseMethodName(const std::string& method);
-  static const char* getMethodName(GenMethod method);
-  static const std::vector<std::string>& getQualityMethodNames();
-  static QualMethod parseQualityMethodName(const std::string& qual_method);
-  static const char* getQualityMethodName(QualMethod qual_method);
-#endif
 
   const std::vector<double>& getSphereRadii(int iteration = -1) const;
   const std::vector<double>& getSphereInnerRadii(int iteration = -1) const;
@@ -454,12 +406,6 @@ class Robot {
 public:
   Robot(const boost::shared_ptr<const robot_model::RobotModel>& kmodel, double resolution);
   ~Robot();
-
-#if 0
-  // read/write yaml file
-  void writeYaml(std::ostream) const;
-  void readYaml(std::istream);
-#endif
 
   void initLink(Link *parent, const robot_model::LinkModel *lmodel);
   void initJoint(Link *parent, const robot_model::JointModel *jmodel);

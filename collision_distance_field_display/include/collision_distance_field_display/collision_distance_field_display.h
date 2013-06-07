@@ -87,14 +87,6 @@ public:
   const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
   const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
 
-#if 0
-  // These unset the properties when they have been set individually per link.
-  void unsetGenMethodPropertyIfNot(const std::string& val);
-  void unsetQualMethodProperty(const std::string& val);
-  void unsetTilerancePropertyIfNot(double val);
-  void unsetNSpheresPropertyIfNot(int val);
-#endif
-
   // Update global and per-link property values to match actual values in SphereRep.
   void updateLinkSphereGenPropertyValues();
   void updateAllSphereGenPropertyValues();

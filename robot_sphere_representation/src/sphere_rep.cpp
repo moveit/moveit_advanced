@@ -284,14 +284,6 @@ robot_sphere_representation::PointCluster::PointCluster(std::size_t nclusters, c
   findClusters();
 }
 
-#if 0
-void PointCluster::equals(const std::vector<std::vector<int> >& a,
-                          const std::vector<std::vector<int> >& b)
-{
-  return a==b;
-}
-#endif
-
 EigenSTL::vector_Vector3d robot_sphere_representation::PointCluster::getClusterPoints(std::size_t cluster_idx)
 {
   EigenSTL::vector_Vector3d points;
@@ -2737,74 +2729,4 @@ robot_sphere_representation::Robot::~Robot()
   for (std::map<std::string, Link*>::iterator it = links_.begin() ; it != links_.end() ; ++it)
     delete it->second;
 }
-
-#if 0
-bool robot_sphere_representation::Robot::writeYamlFile(const std::string& filename) const
-{
-  ifstream in (filename, ifstream::in);
-  if (in.fail())
-  {
-    logError("df2_init::Robot: Error opening YAML file to write: %s",filename.c_str());
-    return false;
-  }
-  writeYaml(
-  in.close();
-}
-
-bool robot_sphere_representation::Robot::readYamlFile(const std::string& filename)
-{
-  ifstream out (filename, ifstream::in);
-  if (out.fail())
-  {
-    logError("df2_init::Robot: Error opening YAML file to read: %s",filename.c_str());
-    return false;
-  }
-  if (!writeYaml(out))
-  {
-    logError("df2_init::Robot: Error writing YAML to file %s",filename.c_str());
-    return false;
-  }
-  out.close();
-  if (out.fail())
-  {
-    logError("df2_init::Robot: Error writing YAML file: %s",filename.c_str());
-    return false;
-  }
-}
-
-void robot_sphere_representation::Robot::writeYaml(std::ostream out) const
-{
-  YAML::Emitter emitter;
-  writeYaml(emitter);
-  out << emitter.c_str() << std::endl;
-}
-
-bool robot_sphere_representation::Robot::readYaml(std::istream in)
-{
-  try
-  {
-    YAML::Parser parser(in);
-    YAML::Node yaml_node;
-    parser.GetNextDocument(yaml_node);
-    readYaml(yaml_node);
-    logInform("df2_init::Robot: Parsed YAML file",ex.what());
-    return true;
-  }
-  catch( YAML::ParserException& ex )
-  {
-    logError("df2_init::Robot: Error parsing YAML file: %s",ex.what());
-    return false;
-  }
-}
-
-void robot_sphere_representation::Robot::writeYaml(const YAML::Emitter& emitter) const
-{
-}
-
-bool robot_sphere_representation::Robot::readYaml(const YAML::Node& node)
-{
-
-}
-#endif
-
 

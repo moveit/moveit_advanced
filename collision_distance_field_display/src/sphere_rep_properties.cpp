@@ -132,48 +132,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addSphereGenProperties(r
                                       this );
 }
 
-#if 0
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::unsetGenMethodPropertyIfNot(const std::string& val)
-{
-  if (sphere_gen_method_property_->getStdString() == val)
-    return;
-
-  unsetting_property_ = true;
-  sphere_gen_method_property_->setValye("");
-  unsetting_property_ = false;
-}
-
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::unsetQualMethodPropertyIfNot(const std::string& val)
-{
-  if (sphere_qual_method_property_->getStdString() == val)
-    return;
-
-  unsetting_property_ = true;
-  sphere_qual_method_property_->setValue("");
-  unsetting_property_ = false;
-}
-
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::unsetTilerancePropertyIfNot(double val)
-{
-  if (sphere_gen_tolerance_property_->getFloat() == val)
-    return;
-
-  unsetting_property_ = true;
-  sphere_gen_tolerance_property_->setValue(-1.0);
-  unsetting_property_ = false;
-}
-
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::unsetNSpheresPropertyIfNot(int val)
-{
-  if (requested_nspheres_property_->getInt() == val)
-    return;
-
-  unsetting_property_ = true;
-  requested_nspheres_property_->setValye(-1);
-  unsetting_property_ = false;
-}
-#endif
-
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedSphereGenMethod()
 {
   if (!robot_model_loaded_ || unsetting_property_)
