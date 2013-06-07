@@ -522,7 +522,7 @@ robot_sphere_representation::SphereRep::SphereRep(std::size_t nspheres,
                                                     const std::string& name,
                                                     GenMethod gen_method,
                                                     double tolerance,
-                                                    QualMethod quality_method) :
+                                                    QualMethod qual_method) :
   gen_method_(gen_method),
   tolerance_(tolerance),
   radius2_padding_(resolution*0.1),
@@ -535,7 +535,7 @@ robot_sphere_representation::SphereRep::SphereRep(std::size_t nspheres,
   save_history_(true),
   name_(name)
 {
-  current_.quality_method_ = quality_method;
+  current_.qual_method_ = qual_method;
 
   PROF_PUSH_SCOPED(SphereRep_Constructor);
   if (use_required_points_->empty())
@@ -908,14 +908,14 @@ const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRe
   return face_point_set_;
 }
 
-double robot_sphere_representation::SphereRep::getQuality(int iteration, QualMethod quality_method) const
+double robot_sphere_representation::SphereRep::getQuality(int iteration, QualMethod qual_method) const
 {
   const Result *r = getIteration(iteration);
 
-  if (quality_method == r->quality_method_)
+  if (qual_method == r->qual_method_)
     return r->quality_;
 
-  return calcQuality(*r, quality_method);
+  return calcQuality(*r, qual_method);
 }
 
 const char* robot_sphere_representation::SphereRep::getAlgorithm(int iteration) const
@@ -928,12 +928,12 @@ const char* robot_sphere_representation::SphereRep::getAlgorithm(int iteration) 
 void robot_sphere_representation::SphereRep::setParams(std::size_t nspheres,
                                                          GenMethod gen_method,
                                                          double tolerance,
-                                                         QualMethod quality_method)
+                                                         QualMethod qual_method)
 {
   if (nspheres_requested_ != nspheres ||
       tolerance_ != tolerance ||
       gen_method_ != gen_method ||
-      current_.quality_method_ != quality_method)
+      current_.qual_method_ != qual_method)
   {
     PROF_PUSH_SCOPED(SphereRep_setParams);
 
@@ -946,7 +946,7 @@ void robot_sphere_representation::SphereRep::setParams(std::size_t nspheres,
       nspheres_requested_ = nspheres;
       tolerance_ = tolerance;
       gen_method_ = gen_method;
-      current_.quality_method_ = quality_method;
+      current_.qual_method_ = qual_method;
     }
     findSpheres();
     PROF_PRINT_CLEAR();
@@ -999,8 +999,8 @@ void robot_sphere_representation::SphereRep::findSpheres()
 
   if (!gen_method_.isValid())
     gen_method_ = GenMethod::ONE_SPHERE;
-  if (!current_.quality_method_.isValid())
-    current_.quality_method_ = QualMethod::DEFAULT;
+  if (!current_.qual_method_.isValid())
+    current_.qual_method_ = QualMethod::DEFAULT;
 
   if (use_required_points_->empty())
     gen_method_ = GenMethod::ZERO_SPHERES;
@@ -1013,8 +1013,8 @@ void robot_sphere_representation::SphereRep::findSpheres()
     optional_points_.size(),
     gen_method_.toValue(),
     gen_method_.toName().c_str(),
-    current_.quality_method_.toValue(),
-    current_.quality_method_.toName().c_str());
+    current_.qual_method_.toValue(),
+    current_.qual_method_.toName().c_str());
 
   PROF_PUSH_SCOPED(SphereRep_findSpheres_COMBINED);
 
@@ -1095,8 +1095,8 @@ void robot_sphere_representation::SphereRep::findSpheres()
     optional_points_.size(),
     gen_method_.toValue(),
     gen_method_.toName().c_str(),
-    current_.quality_method_.toValue(),
-    current_.quality_method_.toName().c_str());
+    current_.qual_method_.toValue(),
+    current_.qual_method_.toName().c_str());
 }
 
 // Greedy algorithm
@@ -1583,10 +1583,10 @@ void robot_sphere_representation::SphereRep::solveUsingClustering()
   checkQuality("Clustering");
 }
 
-double robot_sphere_representation::SphereRep::calcQuality(const Result& result, QualMethod quality_method) const
+double robot_sphere_representation::SphereRep::calcQuality(const Result& result, QualMethod qual_method) const
 {
   PROF_PUSH_SCOPED(SphereRep_calcQuality);
-  switch (quality_method)
+  switch (qual_method)
   {
   case QualMethod::MAX_DIST:
     return calcQualityByMaxDistance(result);
@@ -1670,12 +1670,12 @@ void robot_sphere_representation::SphereRep::checkQuality(const char* algorithm)
 {
   PROF_PUSH_SCOPED(SphereRep_checkQuality);
 
-  current_.quality_ = calcQuality(current_, current_.quality_method_);
+  current_.quality_ = calcQuality(current_, current_.qual_method_);
 
-  if (current_.quality_method_ != best_.quality_method_)
+  if (current_.qual_method_ != best_.qual_method_)
   {
-    best_.quality_method_ = current_.quality_method_;
-    best_.quality_ = calcQuality(best_, best_.quality_method_);
+    best_.qual_method_ = current_.qual_method_;
+    best_.quality_ = calcQuality(best_, best_.qual_method_);
   }
 
   const bool better = current_.quality_ < best_.quality_;
@@ -2073,7 +2073,7 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
                                                           std::size_t nspheres,
                                                           GenMethod gen_method,
                                                           double tolerance,
-                                                          QualMethod quality_method)
+                                                          QualMethod qual_method)
 {
   if (!sphere_rep_)
   {
@@ -2116,11 +2116,11 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
       points.size(),
       optional_points.size());
 
-    sphere_rep_ = new SphereRep(nspheres, robot_->resolution_, points, optional_points, getName(), gen_method, tolerance, quality_method);
+    sphere_rep_ = new SphereRep(nspheres, robot_->resolution_, points, optional_points, getName(), gen_method, tolerance, qual_method);
   }
   else
   {
-    sphere_rep_->setParams(nspheres, gen_method, tolerance, quality_method);
+    sphere_rep_->setParams(nspheres, gen_method, tolerance, qual_method);
   }
 
   return sphere_rep_;
@@ -2131,13 +2131,13 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Robot
           std::size_t nspheres,
           GenMethod gen_method,
           double tolerance,
-          QualMethod quality_method)
+          QualMethod qual_method)
 {
   Link *link = getLink(link_name);
   if (!link)
     return NULL;
 
-  return link->getSphereRep(nspheres, gen_method, tolerance, quality_method);
+  return link->getSphereRep(nspheres, gen_method, tolerance, qual_method);
 }
 
 

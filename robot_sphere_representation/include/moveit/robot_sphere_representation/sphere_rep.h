@@ -232,12 +232,12 @@ public:
             const std::string& name = "",
             GenMethod method = GenMethod::DEFAULT,
             double tolerance = 1.0,
-            QualMethod quality_method = QualMethod::DEFAULT);
+            QualMethod qual_method = QualMethod::DEFAULT);
   void setParams(
             std::size_t nspheres,
             GenMethod method = GenMethod::DEFAULT,
             double tolerance = 1.0,
-            QualMethod quality_method = QualMethod::DEFAULT);
+            QualMethod qual_method = QualMethod::DEFAULT);
 
 #if 0
   // convert between string and GenMethod/QualMethod
@@ -245,14 +245,14 @@ public:
   static GenMethod parseMethodName(const std::string& method);
   static const char* getMethodName(GenMethod method);
   static const std::vector<std::string>& getQualityMethodNames();
-  static QualMethod parseQualityMethodName(const std::string& quality_method);
-  static const char* getQualityMethodName(QualMethod quality_method);
+  static QualMethod parseQualityMethodName(const std::string& qual_method);
+  static const char* getQualityMethodName(QualMethod qual_method);
 #endif
 
   const std::vector<double>& getSphereRadii(int iteration = -1) const;
   const std::vector<double>& getSphereInnerRadii(int iteration = -1) const;
   const EigenSTL::vector_Vector3d& getSphereCenters(int iteration = -1) const;
-  double getQuality(int iteration = -1, QualMethod quality_method=QualMethod::DEFAULT) const;
+  double getQuality(int iteration = -1, QualMethod qual_method=QualMethod::DEFAULT) const;
   const char* getAlgorithm(int iteration = -1) const;
   int getBestIteration() const { return best_.history_index_; }
   int getNumIterations() const { return history_.size(); }
@@ -287,7 +287,7 @@ private:
 
   void checkQuality(const char* algorithm);
 
-  double calcQuality(const Result& result, QualMethod quality_method) const;
+  double calcQuality(const Result& result, QualMethod qual_method) const;
   double calcQualityByBadCount(const Result& result) const;
   double calcQualityByRadius(const Result& result) const;
   double calcQualityByMaxDistance(const Result& result) const;
@@ -362,7 +362,7 @@ private:
   V3List centers_;
   std::vector<double> radius1_;
   std::vector<double> radius2_;
-  QualMethod quality_method_;
+  QualMethod qual_method_;
   std::size_t nspheres_;
   int iteration_;
 #endif
@@ -385,7 +385,7 @@ private:
     std::vector<double> radius1_;
     std::vector<double> radius2_;
     double quality_;
-    QualMethod quality_method_;
+    QualMethod qual_method_;
     int history_index_;
     const char *algorithm_;
   };
@@ -420,7 +420,7 @@ public:
   const SphereRep* getSphereRep(std::size_t nspheres,
                                 GenMethod method = GenMethod::DEFAULT,
                                 double tolerance = 1.0,
-                                QualMethod quality_method = QualMethod::DEFAULT);
+                                QualMethod qual_method = QualMethod::DEFAULT);
 
   // transform points from robot frame to link collision frame
   Eigen::Vector3d transformRobotToLink(Eigen::Vector3d p);
@@ -499,7 +499,7 @@ public:
                         std::size_t nspheres,
                         GenMethod method = GenMethod::DEFAULT,
                         double tolerance = 1.0,
-                        QualMethod quality_method = QualMethod::DEFAULT);
+                        QualMethod qual_method = QualMethod::DEFAULT);
 
   Link *getLink(const std::string& name)
   {
