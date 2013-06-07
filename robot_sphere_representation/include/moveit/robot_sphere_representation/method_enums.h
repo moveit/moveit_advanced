@@ -57,6 +57,7 @@ namespace robot_sphere_representation
   VD(GRADIENT) \
   VD(GOBBLE) \
   VD(CLUSTERING) \
+  VD(ONE_SPHERE) \
   VA(DEFAULT,SRDF) \
 
 ENUM_STRING_DECLARE(GenMethod,robot_sphere_representation__GenMethod__Values);
@@ -68,7 +69,7 @@ namespace robot_sphere_representation
 #define robot_sphere_representation__QualMethod__Values(VD,VS,VV,VVS,VA) \
   VS(MAX_DIST, "Max distance from link") \
   VS(BADCOUNT, "Count of weighted points inside spheres but outside link") \
-  VS(RADIUS,   "Radius based") \
+  VS(RADIUS,   "How much the radius sticks out") \
   VA(DEFAULT,MAX_DIST) \
 
 ENUM_STRING_DECLARE(QualMethod,robot_sphere_representation__QualMethod__Values);

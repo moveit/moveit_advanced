@@ -983,17 +983,21 @@ void robot_sphere_representation::SphereRep::findSpheres()
 
   clear(0);
 
-  if (gen_method_ < 0 || gen_method_ >= GenMethod::DEFAULT)
-    gen_method_ = GenMethod::DEFAULT;
-  if (current_.quality_method_ < 0 || current_.quality_method_ >= QualMethod::DEFAULT)
-    current_.quality_method_ = QualMethod(0);
+  if (!gen_method_.isValid())
+    gen_method_ = GenMethod::ONE_SPHERE;
+  if (!current_.quality_method_.isValid())
+    current_.quality_method_ = QualMethod::DEFAULT;
 
-  logInform("SphereRep(%s) ======= BEGIN findSpheres N=%d npoints=%d thin=%d opt=%d",
+  logInform("SphereRep(%s) ======= BEGIN findSpheres N=%d npoints=%d thin=%d opt=%d gen=%d=%s qual=%d=%s",
     getName().c_str(),
     nspheres_requested_,
     required_points_.size(),
     thinned_required_points_.size(),
-    optional_points_.size());
+    optional_points_.size(),
+    gen_method_.toValue(),
+    gen_method_.toName().c_str(),
+    current_.quality_method_.toValue(),
+    current_.quality_method_.toName().c_str());
 
   PROF_PUSH_SCOPED(SphereRep_findSpheres_COMBINED);
 
@@ -1042,20 +1046,36 @@ void robot_sphere_representation::SphereRep::findSpheres()
   case GenMethod::LIMITGREEDY_GRADIENT:
     use_required_points_ = &required_points_;
   case GenMethod::THIN_LIMITGREEDY_GRADIENT:
-  default:
     // Use GRADIENT but place initial spheres using GREEDY
     solveUsingGreedy(nspheres_requested_);
     solveUsingGradientDescent();
     eliminateUselessSpheres();
     break;
+
+  case GenMethod::ONE_SPHERE:
+  default:
+  {
+    gen_method_ = GenMethod::ONE_SPHERE;
+    // Not useful except to show when an error occurred
+    int nspheres_requested = nspheres_requested_;
+    nspheres_requested_ = 1;
+    solveUsingClustering();
+    nspheres_requested_ = nspheres_requested;
+  }
+    break;
+
   }
 
-  logInform("SphereRep(%s) ======= END   findSpheres N=%d npoints=%d thin=%d opt=%d",
+  logInform("SphereRep(%s) ======= END   findSpheres N=%d npoints=%d thin=%d opt=%d gen=%d=%s qual=%d=%s",
     getName().c_str(),
     nspheres_requested_,
     required_points_.size(),
     thinned_required_points_.size(),
-    optional_points_.size());
+    optional_points_.size(),
+    gen_method_.toValue(),
+    gen_method_.toName().c_str(),
+    current_.quality_method_.toValue(),
+    current_.quality_method_.toName().c_str());
 }
 
 // Greedy algorithm
@@ -1478,10 +1498,13 @@ void robot_sphere_representation::SphereRep::solveUsingClustering()
   PROF_PUSH_SCOPED(SphereRep_solveUsingClustering);
 
   int nspheres = std::min(nspheres_requested_, required_points_.size());
+  nspheres = std::max(1, nspheres);
   PointCluster cluster(nspheres, required_points_);
 
   current_.clear(nspheres);
   current_.centers_ = cluster.getCenters();
+
+  spheres_.resize(current_.centers_.size());
 
   findRadius1();
   findRadius2();
