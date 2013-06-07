@@ -58,6 +58,7 @@ namespace robot_sphere_representation
   VD(GOBBLE) \
   VD(CLUSTERING) \
   VD(ONE_SPHERE) \
+  VD(ZERO_SPHERES) \
   VA(DEFAULT,SRDF) \
 
 ENUM_STRING_DECLARE(GenMethod,robot_sphere_representation__GenMethod__Values);

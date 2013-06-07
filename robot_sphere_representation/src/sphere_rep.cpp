@@ -538,13 +538,20 @@ robot_sphere_representation::SphereRep::SphereRep(std::size_t nspheres,
   current_.quality_method_ = quality_method;
 
   PROF_PUSH_SCOPED(SphereRep_Constructor);
-  createDistanceField();
+  if (use_required_points_->empty())
+  {
+    gen_method_ = GenMethod::ZERO_SPHERES;
+    createEmptyDistanceField();
+  }
+  else
+  {
+    createDistanceField();
 
-  thinInternalPoints();
-  use_required_points_ = &thinned_required_points_;
+    thinInternalPoints();
+    use_required_points_ = &thinned_required_points_;
+  }
 
   findSpheres();
-
   PROF_PRINT_CLEAR();
 }
 
@@ -930,10 +937,17 @@ void robot_sphere_representation::SphereRep::setParams(std::size_t nspheres,
   {
     PROF_PUSH_SCOPED(SphereRep_setParams);
 
-    nspheres_requested_ = nspheres;
-    tolerance_ = tolerance;
-    gen_method_ = gen_method;
-    current_.quality_method_ = quality_method;
+    if (use_required_points_->empty())
+    {
+      gen_method_ = GenMethod::ZERO_SPHERES;
+    }
+    else
+    {
+      nspheres_requested_ = nspheres;
+      tolerance_ = tolerance;
+      gen_method_ = gen_method;
+      current_.quality_method_ = quality_method;
+    }
     findSpheres();
     PROF_PRINT_CLEAR();
   }
@@ -987,6 +1001,9 @@ void robot_sphere_representation::SphereRep::findSpheres()
     gen_method_ = GenMethod::ONE_SPHERE;
   if (!current_.quality_method_.isValid())
     current_.quality_method_ = QualMethod::DEFAULT;
+
+  if (use_required_points_->empty())
+    gen_method_ = GenMethod::ZERO_SPHERES;
 
   logInform("SphereRep(%s) ======= BEGIN findSpheres N=%d npoints=%d thin=%d opt=%d gen=%d=%s qual=%d=%s",
     getName().c_str(),
@@ -1050,6 +1067,10 @@ void robot_sphere_representation::SphereRep::findSpheres()
     solveUsingGreedy(nspheres_requested_);
     solveUsingGradientDescent();
     eliminateUselessSpheres();
+    break;
+
+  case GenMethod::ZERO_SPHERES:
+    solveUsingZeroSpheres();
     break;
 
   case GenMethod::ONE_SPHERE:
@@ -1491,6 +1512,57 @@ void robot_sphere_representation::SphereRep::createDistanceField()
     if (d <= 0.0)
       df_body_aabb_.add(V3i(x,y,z));
   }
+}
+
+void robot_sphere_representation::SphereRep::createEmptyDistanceField()
+{
+  V3List dummy_points;
+  dummy_points.push_back(V3(0,0,0));
+
+  df_aabb_.clear();
+  df_aabb_.add(dummy_points);
+
+  df_aabb_size_ = df_aabb_.max_ - df_aabb_.min_;
+
+  const double max_dist = 1.0;
+
+  df_.reset(new distance_field::PropagationDistanceField(
+                  df_aabb_size_.x() + 2 * resolution_,
+                  df_aabb_size_.y() + 2 * resolution_,
+                  df_aabb_size_.z() + 2 * resolution_,
+                  resolution_,
+                  df_aabb_.min_.x(),
+                  df_aabb_.min_.y(),
+                  df_aabb_.min_.z(),
+                  1.0,
+                  true));
+  xsize_ = df_->getXNumCells();
+  ysize_ = df_->getYNumCells();
+  zsize_ = df_->getZNumCells();
+
+  // set grid_aabb_
+  df_->gridToWorld(0,0,0, grid_aabb_.min_.x(), grid_aabb_.min_.y(), grid_aabb_.min_.z());
+  df_->gridToWorld(xsize_-1, ysize_-1, zsize_-1, grid_aabb_.max_.x(), grid_aabb_.max_.y(), grid_aabb_.max_.z());
+  big_distance_ = 11;
+
+  Voxel default_voxel(big_distance_);
+  voxel_grid_.reset(new Grid(
+                  df_aabb_size_.x(),
+                  df_aabb_size_.y(),
+                  df_aabb_size_.z(),
+                  resolution_,
+                  df_aabb_.min_.x(),
+                  df_aabb_.min_.y(),
+                  df_aabb_.min_.z(),
+                  default_voxel));
+
+  df_body_aabb_.clear();
+}
+
+void robot_sphere_representation::SphereRep::solveUsingZeroSpheres()
+{
+  clear(0);
+  saveCurrentState("ZeroSpheres", true, save_history_);
 }
 
 void robot_sphere_representation::SphereRep::solveUsingClustering()

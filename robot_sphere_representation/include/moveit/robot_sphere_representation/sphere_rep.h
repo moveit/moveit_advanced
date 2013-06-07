@@ -282,6 +282,7 @@ private:
   void solveUsingGradientDescent();
   void solveUsingGobble();
   void solveUsingClustering();
+  void solveUsingZeroSpheres();
   void eliminateUselessSpheres();
 
   void checkQuality(const char* algorithm);
@@ -295,6 +296,7 @@ private:
 
   void clear(int nspheres);
   void createDistanceField();
+  void createEmptyDistanceField();
   void thinInternalPoints();
   void saveCurrentState(const char *algorithm, bool saveBest, bool save_history);
   bool checkSuccess();
