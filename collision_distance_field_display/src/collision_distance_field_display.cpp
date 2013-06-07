@@ -151,10 +151,10 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       robot_state_category_,
                                       SLOT( robotVisualChanged() ),
                                       this);
-  per_link_properties_ = new rviz::Property(
-                                      "Per Link Objects",
+  sphere_gen_category_ = new rviz::Property(
+                                      "Sphere Generation",
                                       QVariant(),
-                                      "Settings for objects associated with each link..",
+                                      "Settings for generating a sphere representation of the robot.  See also per-link settings under Links.",
                                       robot_state_category_);
 
   robot_state_category_->expand();
@@ -179,7 +179,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   robotVisualChanged();
 
   // add per-link data displays to show aspects of distance field
-  addPerLinkData(per_link_properties_);
+  addPerLinkData(sphere_gen_category_);
 
   // create an interactive marker display used to display markers for interacting with the robot.
   delete int_marker_display_;

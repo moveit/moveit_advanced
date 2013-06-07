@@ -59,8 +59,8 @@ public:
   {
     per_link_objects.addVisObject(new PerLinkObj<LinkObj_ModelLinkSpheres>(
                                 parent,
-                                "Show Current Collision spheres from SRDF",
-                                "Show spheres used for DistanceField collision detection.",
+                                "Show Current SRDF sphere representation",
+                                "Show spheres used for DistanceField collision detection as stored in the SRDF.",
                                 QColor(0, 0, 255),
                                 0.5,
                                 PerLinkObjBase::SPHERES));
@@ -141,17 +141,15 @@ public:
 }
 
 
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Property* parent_property)
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Property* sphere_gen_propety)
 {
   per_link_objects_.reset(new PerLinkObjList());
 
-  LinkObj_ModelLinkSpheres::addSelf(parent_property, *per_link_objects_);
+  addSphereGenProperties(sphere_gen_propety);
 
-  addSphereGenProperties(parent_property);
-
-  LinkObj_RepLinkSpheres::addSelf(parent_property, *per_link_objects_);
-  LinkObj_BCyl::addSelf(parent_property, *per_link_objects_);
-
+  LinkObj_RepLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_BCyl::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_ModelLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
 }
 
 

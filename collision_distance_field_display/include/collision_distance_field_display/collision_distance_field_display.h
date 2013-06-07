@@ -173,7 +173,7 @@ private:
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
-  rviz::Property* per_link_properties_;
+  rviz::Property* sphere_gen_category_;
   rviz::EnumProperty* sphere_gen_method_property_;
   rviz::EnumProperty* sphere_qual_method_property_;
   rviz::FloatProperty* sphere_gen_resolution_property_;
