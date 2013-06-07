@@ -8,6 +8,7 @@ find_package(
   catkin
   REQUIRED COMPONENTS
     moveit_core
+    moveit_setup_assistant
     roscpp
     srdfdom
     std_msgs
@@ -35,6 +36,7 @@ catkin_package(
     moveit_robot_sphere_representation
   CATKIN_DEPENDS
     moveit_core
+    moveit_setup_assistant
     roscpp
     srdfdom
 #  DEPENDS system_lib

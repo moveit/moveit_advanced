@@ -100,6 +100,13 @@ public:
   // (by default the one associated with RobotModel)
   void copySrdfSpheres(const srdf::Model *srdf = NULL);
 
+  // save to srdf file.  Clobbers file.  Return true on success.
+  bool saveToSrdfFile(const std::string& filename) const;
+
+  // generate all spheres.  This is never needed, but it forces all Links to
+  // update themselves which can make things faster later.
+  void genSpheresForAllLinks() const;
+
   const Robot* getSphereRepRobot() const;
   Robot* getSphereRepRobot();
 

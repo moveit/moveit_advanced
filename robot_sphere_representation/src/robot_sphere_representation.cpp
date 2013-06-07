@@ -38,6 +38,7 @@
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
 #include <moveit/robot_sphere_representation/sphere_rep.h>
 #include <moveit/robot_model/robot_model.h>
+#include <moveit/setup_assistant/tools/srdf_writer.h>
 
 robot_sphere_representation::RobotSphereRepresentation::RobotSphereRepresentation(
       boost::shared_ptr<const robot_model::RobotModel> robot_model)
@@ -167,5 +168,63 @@ void robot_sphere_representation::RobotSphereRepresentation::setTolerance(double
     lsr->second->setTolerance(tolerance);
 }
 
+void robot_sphere_representation::RobotSphereRepresentation::genSpheresForAllLinks() const
+{
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+    lsr->second->genSpheres();
+}
+
+bool robot_sphere_representation::RobotSphereRepresentation::saveToSrdfFile(const std::string& srdf_filename) const
+{
+  genSpheresForAllLinks();
+
+  // Get an SRDFWriter with the data from the current RobotModel
+  moveit_setup_assistant::SRDFWriter writer;
+  writer.initModel( *robot_model_->getURDF(), *robot_model_->getSRDF() );
+
+  // Delete any existing spheres
+  writer.link_sphere_approximations_.clear();
+
+  // Insert generated spheres into SRDFWriter
+  EigenSTL::vector_Vector3d centers;
+  std::vector<double> radii;
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
+  std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
+  for ( ; lsr != lsr_end ; ++lsr )
+  {
+    centers.clear();
+    radii.clear();
+    lsr->second->getSpheres(centers, radii);
+
+    if (centers.empty())
+    {
+      // a link with no geometry is represented by a single radius=0 sphere
+      radii.clear();
+      radii.push_back(0);
+      centers.push_back(Eigen::Vector3d(0,0,0));
+    }
+
+    srdf::Model::LinkSpheres lsp;
+    lsp.link_ = lsr->first;
+
+    for ( std::size_t i = 0 ; i < centers.size() ; ++i )
+    {
+      srdf::Model::Sphere sphere;
+      sphere.center_x_ = centers[i].x();
+      sphere.center_y_ = centers[i].y();
+      sphere.center_z_ = centers[i].z();
+      sphere.radius_ = radii[i];
+
+      lsp.spheres_.push_back(sphere);
+    }
+
+    writer.link_sphere_approximations_.push_back(lsp);
+  }
+
+  // write the SRDF to file and return true on success.
+  return writer.writeSRDF(srdf_filename);
+}
 
 
