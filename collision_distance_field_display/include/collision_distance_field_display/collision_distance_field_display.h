@@ -53,13 +53,21 @@ class EnumProperty;
 class EditableEnumProperty;
 }
 
-namespace joint_tree
+namespace collision_detection
 {
-class JointTreeBase;
+class CollisionRobotDistanceField;
+class CollisionWorldDistanceField;
+}
+
+namespace robot_sphere_representation
+{
+class RobotSphereRepresentation;
 }
 
 namespace moveit_rviz_plugin
 {
+
+class PerLinkObjList;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -72,6 +80,17 @@ public:
   // access to the robot state
   void setRobotState(const robot_state::RobotState &state);
   robot_state::RobotStateConstPtr getRobotState() const;
+
+  const boost::shared_ptr<PerLinkObjList>& getLinkObjects() { return per_link_objects_; }
+  const boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation>& getSphereRep() { return robot_sphere_rep_; }
+
+  const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
+  const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
+
+  // Update global and per-link property values to match actual values in SphereRep.
+  void updateLinkSphereGenPropertyValues();
+  void updateAllSphereGenPropertyValues();
+
 
 protected:
   virtual void onInitialize();
@@ -88,7 +107,14 @@ private Q_SLOTS:
   void robotMarkersChanged();         // call when the appearance and position of the markers needs to change
   void robotMarkerPositionsChanged(); // call when only the position of the markers needs to change
   void changedActiveGroup();
-  void changedCollisionMethod();
+  void changedCollisionMethod();      // collision detection type (FCL, distance field, etc) changed
+
+  void changedSphereGenMethod();
+  void changedSphereQualMethod();
+  void changedSphereGenResolution();
+  void changedSphereGenTolerance();
+  void changedRequestedNspheres();
+  void changedSaveSpheresToSrdf();
 
 private:
 
@@ -115,6 +141,12 @@ private:
   // Creates and/or updates the robot_interaction markers.
   void updateRobotMarkers();
 
+  // save 
+  void saveSpheresToSrdf();
+
+  // Add per link data displays.
+  void addPerLinkData(rviz::Property* parent_property);
+  void addSphereGenProperties(rviz::Property* parent_property);
 
   // for drawing the robot
   RobotStateVisualizationPtr robot_visual_;
@@ -131,8 +163,10 @@ private:
 
   // for publishing robot state in standalone mode
   tf::TransformBroadcaster tf_broadcaster_;
+
   
   // User-editable property variables.
+  rviz::Property* robot_state_category_;
   rviz::BoolProperty* show_robot_visual_property_;
   rviz::BoolProperty* show_robot_collision_property_;
   rviz::EnumProperty* collision_method_property_;
@@ -143,9 +177,23 @@ private:
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
+  rviz::Property* sphere_gen_category_;
+  rviz::BoolProperty* save_to_srdf_property_;
+  rviz::EnumProperty* sphere_gen_method_property_;
+  rviz::EnumProperty* sphere_qual_method_property_;
+  rviz::FloatProperty* sphere_gen_resolution_property_;
+  rviz::FloatProperty* sphere_gen_tolerance_property_;
+  rviz::IntProperty* requested_nspheres_property_;
 
-  // Joint tree
-  joint_tree::JointTreeBase *joint_tree_;
+  // per link visible objects to display
+  boost::shared_ptr<PerLinkObjList> per_link_objects_;
+
+  // object for calculating spheres
+  boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation> robot_sphere_rep_;
+
+  bool unsetting_property_;  // true to skip callback when a property changes
+
+  bool saving_spheres_to_srdf_; // true to trigger saving spheres to SRDF
 };
 
 }

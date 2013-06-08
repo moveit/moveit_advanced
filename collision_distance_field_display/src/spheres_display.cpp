@@ -29,18 +29,47 @@
 
 /* Author: Acorn Pooley */
 
-#include <collision_distance_field_display/collision_distance_field_display.h>
+#include <collision_distance_field_display/spheres_display.h>
+#include <OGRE/OgreSceneNode.h>
+#include <rviz/ogre_helpers/shape.h>
 
-int main(int argc, char *argv[])
+
+moveit_rviz_plugin::SpheresDisplay::SpheresDisplay(
+    Ogre::SceneNode* parent,
+    const Eigen::Vector4f& color)
+  : color_(color)
+  , node_(parent->createChildSceneNode())
 {
-  ros::init(argc, argv, "dftest");
-  ros::NodeHandle n;
-
-
-  joint_tree::JointTreeBase *joint_tree_ = 0;
-  ROS_INFO("HELLO!");
-
-  ros::spin();
-
-  return 0;
 }
+
+moveit_rviz_plugin::SpheresDisplay::~SpheresDisplay()
+{
+  clear();
+  node_->getParentSceneNode()->removeAndDestroyChild(node_->getName());
+}
+
+void moveit_rviz_plugin::SpheresDisplay::clear()
+{
+  for (std::vector<Sphere>::iterator it = spheres_.begin() ; it != spheres_.end() ; ++it)
+    delete it->shape_;
+  spheres_.clear();
+}
+
+void moveit_rviz_plugin::SpheresDisplay::addSphere(
+    const Eigen::Vector3d& center, 
+    double radius, 
+    const Eigen::Vector4f& color)
+{
+  Sphere s;
+  s.node_ = node_->createChildSceneNode();
+  s.shape_ = new rviz::Shape(rviz::Shape::Sphere, node_->getCreator(), s.node_);
+
+  Ogre::Vector3 pos(center.x(), center.y(), center.z());
+  Ogre::Vector3 scale(radius*2, radius*2, radius*2);
+  s.node_->setPosition(pos);
+  s.shape_->setScale(scale);
+  s.shape_->setColor(color.x(), color.y(), color.z(), color.w());
+
+  spheres_.push_back(s);
+}
+

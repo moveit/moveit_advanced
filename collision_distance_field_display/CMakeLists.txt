@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   class_loader
   rviz
   tf
+  robot_sphere_representation
   roscpp
   rosconsole
 )
@@ -73,7 +74,8 @@ link_directories(${catkin_LIBRARY_DIRS})
 qt4_wrap_cpp(
   MOC_SOURCES
     include/collision_distance_field_display/collision_distance_field_display.h
-    include/collision_distance_field_display/joint_tree_base.h
+    include/collision_distance_field_display/df_link.h
+    include/collision_distance_field_display/per_link_object.h
 )
 
 
@@ -81,27 +83,19 @@ add_library(
   ${LIBNAME}
     src/collision_distance_field_display_plugin.cpp
     src/collision_distance_field_display.cpp
-    src/joint_tree_base.cpp
+    src/df_link.cpp
+    src/per_link_data.cpp
+    src/sphere_rep_properties.cpp
+    src/per_link_object.cpp
+    src/cylinders_display.cpp
+    src/spheres_display.cpp
+    src/points_display.cpp
     src/color_cast.cpp
     ${MOC_SOURCES}
 )
 
 target_link_libraries(
   ${LIBNAME}
-    ${catkin_LIBRARIES}
-    ${OGRE_LIBRARIES}
-    ${QT_LIBRARIES}
-    ${Boost_LIBRARIES}
-)
-
-add_executable(
-  collision_distance_field_display_linktest
-    src/collision_distance_field_display_linktest.cpp
-)
-
-target_link_libraries(
-  collision_distance_field_display_linktest
-    ${LIBNAME}
     ${catkin_LIBRARIES}
     ${OGRE_LIBRARIES}
     ${QT_LIBRARIES}

@@ -8,6 +8,7 @@ find_package(
   catkin
   REQUIRED COMPONENTS
     moveit_core
+    moveit_setup_assistant
     roscpp
     srdfdom
     std_msgs
@@ -35,6 +36,7 @@ catkin_package(
     moveit_robot_sphere_representation
   CATKIN_DEPENDS
     moveit_core
+    moveit_setup_assistant
     roscpp
     srdfdom
 #  DEPENDS system_lib
@@ -54,6 +56,9 @@ set(MOVEIT_LIB_NAME moveit_robot_sphere_representation)
 add_library(
   ${MOVEIT_LIB_NAME}
     src/robot_sphere_representation.cpp
+    src/link_sphere_representation.cpp
+    src/sphere_rep.cpp
+    src/method_enums.cpp
 )
 
 target_link_libraries(

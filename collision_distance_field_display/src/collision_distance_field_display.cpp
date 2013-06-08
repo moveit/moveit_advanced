@@ -30,8 +30,9 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/collision_distance_field_display.h>
-#include <collision_distance_field_display/joint_tree_base.h>
+#include <collision_distance_field_display/df_link.h>
 #include <collision_distance_field_display/color_cast.h>
+#include <collision_distance_field_display/per_link_object.h>
 
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
@@ -52,6 +53,7 @@
 #include <moveit/rviz_plugin_render_tools/robot_state_visualization.h>
 #include <moveit/collision_detection_distance_field/collision_detector_allocator_distance_field.h>
 #include <moveit/collision_detection_fcl/collision_detector_allocator_fcl.h>
+#include <moveit/robot_sphere_representation/robot_sphere_representation.h>
 
 enum {
   CD_UNKNOWN,
@@ -61,32 +63,45 @@ enum {
 };
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay()
-  : PlanningSceneDisplay()
+  : PlanningSceneDisplay(true, false)
   , robot_model_loaded_(false)
   , robot_visual_dirty_(true)
   , robot_visual_position_dirty_(true)
   , robot_markers_dirty_(true)
   , robot_markers_position_dirty_(true)
   , int_marker_display_(NULL)
-  , joint_tree_(NULL)
+  , sphere_gen_method_property_(NULL)
+  , sphere_qual_method_property_(NULL)
+  , sphere_gen_resolution_property_(NULL)
+  , sphere_gen_tolerance_property_(NULL)
+  , requested_nspheres_property_(NULL)
+  , unsetting_property_(false)
+  , saving_spheres_to_srdf_(false)
 {
+  robot_state_category_ = new rviz::Property(
+                                      "Robot State",
+                                      QVariant(),
+                                      "Show the robot in a user-draggable state.",
+                                      this);
   show_robot_visual_property_ = new rviz::BoolProperty(
                                       "Show Robot Visual",
                                       false,
                                       "Show the robot visual appearance (what it looks like).",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   show_robot_collision_property_ = new rviz::BoolProperty(
                                       "Show Robot Collision",
                                       true,
                                       "Show the robot collision geometry.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   collision_method_property_ = new rviz::EnumProperty(
                                       "Collision Method",
                                       "",
                                       "How to perform collision detection.",
-                                      this,
+                                      robot_state_category_,
                                       SLOT( changedCollisionMethod() ),
                                       this );
   collision_method_property_->addOption("FCL", CD_FCL);
@@ -96,51 +111,54 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "Active Group",
                                       "",
                                       "The name of the group of links to interact with (from the ones defined in the SRDF)",
-                                      this,
+                                      robot_state_category_,
                                       SLOT( changedActiveGroup() ),
                                       this );
   collision_aware_ik_property_ = new rviz::BoolProperty(
                                       "Collision aware IK",
                                       true,
                                       "Check collisions when doing IK.",
-                                      this);
+                                      robot_state_category_);
   publish_tf_property_ = new rviz::BoolProperty(
                                       "Publish Robot State on TF",
                                       true,
                                       "Enable publishing of robot link frames on TF (useful with TF display).",
-                                      this);
+                                      robot_state_category_);
   colliding_link_color_property_ = new rviz::ColorProperty(
                                       "Colliding Link Color",
                                       QColor( 255, 0, 0 ),
                                       "Color to draw links that are colliding with something.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   joint_violation_link_color_property_ = new rviz::ColorProperty(
                                       "Joint Violation Link Color",
                                       QColor( 255, 0, 255 ),
                                       "Color to draw links whose parent joints are out of range.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   attached_object_color_property_ = new rviz::ColorProperty(
                                       "Attached Object Color",
                                       QColor( 204, 51, 204 ),
                                       "Color to draw objects attached to the robot.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
   robot_alpha_property_ = new rviz::FloatProperty(
                                       "Robot Alpha",
                                       1.0,
                                       "0 is fully transparent, 1.0 is fully opaque.",
-                                      this,
-                                      SLOT( robotVisualChanged() ));
+                                      robot_state_category_,
+                                      SLOT( robotVisualChanged() ),
+                                      this);
+  sphere_gen_category_ = new rviz::Property(
+                                      "Sphere Generation",
+                                      QVariant(),
+                                      "Settings for generating a sphere representation of the robot.  See also per-link settings under Links.",
+                                      robot_state_category_);
 
-  // turn Scene Robot visual off by default
-  if (scene_robot_enabled_property_)
-    scene_robot_enabled_property_->setValue(false);
-  if (robot_category_)
-    robot_category_->hide();
-
-  joint_tree_ = new joint_tree::JointTreeBase(this);
+  robot_state_category_->expand();
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
@@ -156,9 +174,15 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
 {
   PlanningSceneDisplay::onInitialize();
 
-  robot_visual_.reset(new RobotStateVisualization(planning_scene_node_, context_, "Robot", NULL));
+  // create the robot visualization -- this displays the robot in rviz.
+  robot_visual_.reset(new RobotStateVisualization(planning_scene_node_, context_, "Robot", robot_state_category_));
+  robot_visual_->getRobot().setLinkFactory(new DFLinkFactory(this));
   robotVisualChanged();
 
+  // add per-link data displays to show aspects of distance field
+  addPerLinkData(sphere_gen_category_);
+
+  // create an interactive marker display used to display markers for interacting with the robot.
   delete int_marker_display_;
   int_marker_display_ = context_->getDisplayFactory()->make("rviz/InteractiveMarkers");
   int_marker_display_->initialize(context_);
@@ -215,6 +239,18 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::fixedFrameChanged()
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
 {
   PlanningSceneDisplay::onRobotModelLoaded();
+
+  per_link_objects_->clear();
+
+  robot_sphere_rep_.reset(new robot_sphere_representation::RobotSphereRepresentation(getRobotModel()));
+
+  robot_sphere_rep_->setResolution(sphere_gen_resolution_property_->getFloat());
+  robot_sphere_rep_->setTolerance(sphere_gen_tolerance_property_->getFloat());
+  robot_sphere_rep_->setGenMethod(sphere_gen_method_property_->getStdString());
+  robot_sphere_rep_->setQualMethod(sphere_qual_method_property_->getStdString());
+
+  updateAllSphereGenPropertyValues();
+
 
   robot_interaction_.reset(new robot_interaction::RobotInteraction(getRobotModel(), "distance_field_display"));
   int_marker_display_->subProp("Update Topic")->setValue(QString::fromStdString(robot_interaction_->getServerTopic() + "/update"));
@@ -348,16 +384,48 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::setRobotState(const robo
   robotMarkerPositionsChanged();
 }
 
+//###########################################################################
+//############################### access functions ##########################
+//###########################################################################
+
 robot_state::RobotStateConstPtr moveit_rviz_plugin::CollisionDistanceFieldDisplay::getRobotState() const
 {
   return robot_state_handler_->getState();
 }
 
+const collision_detection::CollisionRobotDistanceField *moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollisionRobotDistanceField() const
+{
+  planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
+  const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot("DistanceField");
+  const collision_detection::CollisionRobotDistanceField* crobot_df =
+    dynamic_cast<const collision_detection::CollisionRobotDistanceField*>(crobot);
 
+  if (!crobot_df)
+  {
+    ROS_ERROR("Could not find the CollisionRobotDistanceField instance. %s:%d",__FILE__,__LINE__);
+  }
 
-//===========================================================================
-// update() processing
-//===========================================================================
+  return crobot_df;
+}
+
+const collision_detection::CollisionWorldDistanceField *moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollisionWorldDistanceField() const
+{
+  planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
+  const collision_detection::CollisionWorld* cworld = &*ps->getCollisionWorld("DistanceField");
+  const collision_detection::CollisionWorldDistanceField* cworld_df =
+    dynamic_cast<const collision_detection::CollisionWorldDistanceField*>(cworld);
+
+  if (!cworld_df)
+  {
+    ROS_ERROR("Could not find the CollisionWorldDistanceField instance. %s:%d",__FILE__,__LINE__);
+  }
+
+  return cworld_df;
+}
+
+//###########################################################################
+//############################### update() processing #######################
+//###########################################################################
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, float ros_dt)
 {
@@ -419,7 +487,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     updateLinkColors(*state);
     robot_visual_->update(state, color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
-    joint_tree_->setRobotState(state);
     context_->queueRender();
   }
   else if (robot_visual_position_dirty_)
@@ -428,7 +495,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     robot_state::RobotStateConstPtr state = getRobotState();
     updateLinkColors(*state);
     robot_visual_->update(state);
-    joint_tree_->setRobotState(state);
     context_->queueRender();
   }
 }
@@ -480,9 +546,9 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
   tf_broadcaster_.sendTransform(transforms);
 }
 
-//===========================================================================
-// background tasks -- these run on background thread
-//===========================================================================
+//###########################################################################
+//############################### background tasks ##########################
+//###########################################################################
 
 // Update the marker visual appearance based on the robot state.
 // Do not call directly.  To trigger this call robotMarkersChanged() or robotMarkerPositionsChanged().

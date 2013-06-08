@@ -42,14 +42,14 @@ collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
     double scale)
   : CollisionRobot(kmodel, padding, scale)
 {
-  initSpheres();
+  initialize();
 }
 
 collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
     const CollisionRobotDistanceField &other)
   : CollisionRobot(other)
 {
-  initSpheres();
+  initialize();
 }
 
 inline void collision_detection::CollisionRobotDistanceField::WorkArea::initQuery(
@@ -223,5 +223,32 @@ double collision_detection::CollisionRobotDistanceField::distanceOther(
 void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
     const std::vector<std::string> &links)
 {
+}
+
+const int collision_detection::CollisionRobotDistanceField::linkNameToIndex(const std::string& link_name) const
+{
+  std::map<std::string,LinkIndex>::const_iterator it = link_name_to_index_map_.find(link_name);
+  if (it != link_name_to_index_map_.end())
+    return it->second;
+  else
+    return -1;
+}
+
+void collision_detection::CollisionRobotDistanceField::initialize()
+{
+  initLinkNames();
+  initSpheres();
+}
+
+void collision_detection::CollisionRobotDistanceField::initLinkNames()
+{
+  link_name_to_index_map_.clear();
+
+  std::vector<const robot_model::LinkModel*>::const_iterator lm = kmodel_->getLinkModels().begin();
+  std::vector<const robot_model::LinkModel*>::const_iterator lm_end = kmodel_->getLinkModels().end();
+  for ( int idx = 0 ; lm != lm_end ; ++lm, ++idx )
+  {
+    link_name_to_index_map_.insert( std::pair<std::string,LinkIndex>((*lm)->getName(), idx) );
+  }
 }
 
