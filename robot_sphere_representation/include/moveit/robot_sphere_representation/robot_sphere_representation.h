@@ -37,9 +37,10 @@
 #ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_ROBOT_SPHERE_REPRESENTATION_
 #define MOVEIT_ROBOT_SPHERE_REPRESENTATION_ROBOT_SPHERE_REPRESENTATION_
 
-#include <eigen_stl_containers/eigen_stl_containers.h>
 #include <boost/shared_ptr.hpp>
 #include <map>
+#include <vector>
+#include <moveit/robot_sphere_representation/method_enums.h>
 
 namespace robot_model
 {
@@ -52,8 +53,11 @@ namespace srdf
 class Model;
 }
 
-namespace collision_detection
+namespace robot_sphere_representation
 {
+class LinkSphereRepresentation;
+class Robot;
+
 
 class RobotSphereRepresentation
 {
@@ -61,36 +65,98 @@ public:
   RobotSphereRepresentation(boost::shared_ptr<const robot_model::RobotModel> robot_model);
   ~RobotSphereRepresentation();
 
-  // generate spheres for each link. 
-  // Discards old spheres (if any).
-  // An entry will be added to centers_ and radii_ for every link in the model.
-  // The entry will be empty for links with no collision geometry.
-  void genSpheres();
+  // Return the list of available sphere generation methods or quality methods.
+  const std::vector<std::string>& getGenMethods() const;
+  const std::vector<std::string>& getQualMethods() const;
 
-  // read spheres from the srdf
+  // Set what method to use to generate spheres.
+  // Spheres are actually generated when they are requested from
+  // LinkSphereRepresentation::getSpheres() (and any other methods that need to
+  // generate the spheres in order to operate).
+  void setGenMethod(const std::string& gen_method);
+  void setGenMethod(GenMethod gen_method = GenMethod::DEFAULT);
+
+  // Set what method to use to measure quality when generating spheres
+  void setQualMethod(const std::string& qual_method);
+  void setQualMethod(QualMethod qual_method = QualMethod::DEFAULT);
+
+  // set distance field resolution to use for calculations.
+  void setResolution(double resolution);
+  double getResolution() { return resolution_; }
+
+  // set tolerance to use.  For methods that pay attention to tolerance,
+  // spheres will stick out at most <tolerance> from the surface
+  // (+/- resolution).
+  // Tolerance can also be set per-link.  Calling this method sets the
+  // tolerance for all links to the same value.
+  void setTolerance(double tolerance);
+
+  // how many spheres do we want for each link.
+  // Usually this would be set per-link, not globally here.
+  // For many GenMethods this is ignored.
+  void setRequestedNumSpheres(int nspheres);
+
+  // read spheres from srdf
   // (by default the one associated with RobotModel)
-  void spheresFromSrdf(const srdf::Model *srdf = NULL);
+  void copySrdfSpheres(const srdf::Model *srdf = NULL);
+
+  // save to srdf file.  Clobbers file.  Return true on success.
+  bool saveToSrdfFile(const std::string& filename) const;
+
+  // generate all spheres.  This is never needed, but it forces all Links to
+  // update themselves which can make things faster later.
+  void genSpheresForAllLinks() const;
+
+  const Robot* getSphereRepRobot() const;
+  Robot* getSphereRepRobot();
+
+  // access
+  const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
+  const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
+  LinkSphereRepresentation* getLink(const std::string& link_name) const;
+
+  void ensureSphereRepRobot() const
+  {
+    if (sphere_rep_robot_dirty_)
+      updateSphereRepRobot();
+  }
+
+  void invalidateSphereRep() { sphere_rep_robot_dirty_ = true; }
 
 
 private:
-  // generate a single sphere for each link that bounds the entire link.
-  void genBoundingSpheres();
+  void invalidateSpheresForAllLinks();
 
-  // Use a single sphere for a link that bounds the entire link.
-  // If there is no collision geometry this creates an empty entry for this
-  // link.
-  void useBoundingSphereForLink(const robot_model::LinkModel& lm);
+  // update sphere_rep_robot_.  Should only be called by ensureSphereRepRobot()
+  void updateSphereRepRobot() const;
+
+
 
   boost::shared_ptr<const robot_model::RobotModel> robot_model_;
 
-  // Map from link to spheres.
-  // Each link should have an entry.
-  // If entry is empty the link has no collision geometry.
-  std::map<std::string, EigenSTL::vector_Vector3d> centers_;
-  std::map<std::string, std::vector<double> > radii_;
+  std::map<std::string, LinkSphereRepresentation*> links_;
+
+  // resolution for SphereRep distance field 
+  double resolution_;
+
+  mutable boost::shared_ptr<Robot> sphere_rep_robot_;
+  mutable bool sphere_rep_robot_dirty_;
 };
 
 }
+
+inline const robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereRepRobot() const
+{
+  ensureSphereRepRobot();
+  return &*sphere_rep_robot_;
+}
+
+inline robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereRepRobot()
+{
+  ensureSphereRepRobot();
+  return &*sphere_rep_robot_;
+}
+
 
 #endif
 

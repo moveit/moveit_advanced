@@ -107,6 +107,13 @@ public:
                                const robot_state::RobotState &other_state,
                                const AllowedCollisionMatrix &acm) const;
 
+public: /* DEBUGGING functions */
+
+  // return the collision spheres for a link in link's collision geometry frame.
+  void getLinkSpheres(const std::string& link_name,
+                      EigenSTL::vector_Vector3d& centers,
+                      std::vector<double>& radii) const;
+
 protected:
 
   virtual void updatedPaddingOrScaling(const std::vector<std::string> &links);
@@ -115,8 +122,24 @@ protected:
   
 
 private:
+
+  // These types are 16 bits to minimize the size of various arrays for
+  // performance reasons.  If more than 65536 spheres or links are needed the
+  // size can be increased here.
+  typedef uint16_t SphereIndex;
+  typedef uint16_t LinkIndex;
+
+  //###########################################################################
+  //############################### WORK AREA #################################
+  //###########################################################################
+
+  /// Contains temporary data used during a collision query.
+  // Instead of allocating this every query, a single instance is allocated per
+  // thread and used for all queries from that thread.
   struct WorkArea
   {
+    ~WorkArea();
+
     // initialize query
     void initQuery(const char* descrip,
                    const CollisionRequest *req,
@@ -140,11 +163,18 @@ private:
     const robot_state::RobotState *other_state1_;
     const robot_state::RobotState *other_state2_;
     const AllowedCollisionMatrix *acm_;
+
+    // true if any of the collisions we saw have a DecideContactFn
+    bool found_conditional_contact_;
   };
 
 
   // get a mutable per-thread work area to store temporary values
   WorkArea& getWorkArea() const;
+
+  //###########################################################################
+  //############################### ACCESSOR CONVENIENCE FUNCTIONS ############
+  //###########################################################################
 
   // return the LinkModel for a particular index in sphere_centers_, sphere_radii_, or sphere_link_map_
   const robot_model::LinkModel* sphereIndexToLinkModel(int idx) const
@@ -152,7 +182,40 @@ private:
     return kmodel_->getLinkModels()[sphere_link_map_[idx]];
   }
 
-  // init functions
+  // lookup name for a link
+  const std::string& linkIndexToName(int idx) const
+  {
+    return kmodel_->getLinkModels()[idx]->getName();
+  }
+
+  // lookup index for a link.  -1 on failure.
+  const int linkNameToIndex(const std::string& link_name) const;
+
+  // number of links in robot
+  const std::size_t linkCount() const
+  {
+    return kmodel_->getLinkModels().size();
+  }
+
+  // find a link's collision spheres in the srdf
+  const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link) const;
+
+
+  //###########################################################################
+  //############################### INITIALIZATION ############################
+  //###########################################################################
+
+  // initialize everything.  Called from constructors.
+  void initialize();
+
+  // initialize link_name_to_index_map_
+  void initLinkNames();
+
+  //###########################################################################
+  //############################### SPHERE COLLISION ##########################
+  //###########################################################################
+
+  // sphere init functions
   void initSpheres();
   void initSphereAcm();
   bool avoidCheckingCollision(
@@ -160,6 +223,7 @@ private:
         size_t sphere_idx0,
         const robot_model::LinkModel* link1,
         size_t sphere_idx1);
+
 
   // transform sphere centers to planning frame.  Results are placed into mutable work.transformed_sphere_centers_.
   void transformSpheres(
@@ -171,18 +235,47 @@ private:
 
   // helpers for checkSelfCollisionUsingSpheres()
   template<class Collision>
-    bool checkSelfCollisionUsingSpheresLoop(WorkArea& work, const uint16_t *sphere_list) const;
-  bool checkSpherePairAll( WorkArea& work, int a_idx, int b_idx) const;
+    bool checkSelfCollisionUsingSpheresLoop(WorkArea& work, const SphereIndex *sphere_list) const;
+  bool checkSpherePairAll(WorkArea& work,
+                          int a_idx,
+                          int b_idx,
+                          const Eigen::Vector3d& a_center,
+                          const Eigen::Vector3d& b_center,
+                          double a_radius,
+                          double b_radius,
+                          double dsq) const;
   class CollisionBool;
   class CollisionAll;
   friend class CollisionBool;
   friend class CollisionAll;
 
+  // helpers for when a sphere collision is detected
+  AllowedCollision::Type getLinkPairAcmType(WorkArea& work,
+                                            int a_link,
+                                            int b_link) const;
+  void addSphereContact(WorkArea& work,
+                        int a_link,
+                        int b_link,
+                        const Eigen::Vector3d& a_center,
+                        const Eigen::Vector3d& b_center,
+                        double a_radius,
+                        double b_radius,
+                        double dsq) const;
+  void addSphereCost(WorkArea& work,
+                     int a_idx,
+                     int b_idx) const;
+
+  //###########################################################################
+  //############################### DATA ######################################
+  //###########################################################################
+
   
+  // This map allows looking up a link index from a link name.
   // link-order is defined by the order of links in kmodel_->getLinkModels().
+  std::map<std::string,LinkIndex> link_name_to_index_map_;
 
   // Table of link indices and spheres. Used to transform spheres.  See initSpheres() for details.
-  std::vector<uint16_t> sphere_transform_indices_;
+  std::vector<SphereIndex> sphere_transform_indices_;
 
   // sphere centers for all spheres for all links in link order
   EigenSTL::vector_Vector3d sphere_centers_;
@@ -192,10 +285,10 @@ private:
 
   // for each sphere, index of link the sphere is associated with.
   // This is an index into the kmodel_->getLinkModels() and state->getLinkStateVector() vectors
-  std::vector<uint16_t> sphere_link_map_;
+  std::vector<LinkIndex> sphere_link_map_;
 
   // Table of spheres to check for collisions.  See initSphereAcm() for details.
-  std::vector<uint16_t> self_collide_list_;
+  std::vector<SphereIndex> self_collide_list_;
 
   // mutable thread specific work area
   mutable boost::thread_specific_ptr<WorkArea> work_area_;
