@@ -39,25 +39,6 @@
 #include <console_bridge/console.h>
 #include <cassert>
 
-collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection::CollisionRobotDistanceField::getWorkArea() const
-{
-  if (!work_area_.get())
-  {
-    work_area_.reset(new WorkArea);
-    WorkArea& work = *work_area_;
-    work.transformed_sphere_centers_.resize(sphere_centers_.size());
-  }
-
-  WorkArea& work = *work_area_;
-  return work;
-}
-
-collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
-{
-}
-
-
-
 const srdf::Model::LinkSpheres *collision_detection::CollisionRobotDistanceField::getSrdfLinkSpheres(const std::string& link_name) const
 {
   for (std::vector<srdf::Model::LinkSpheres>::const_iterator lsp = kmodel_->getSRDF()->getLinkSphereApproximations().begin() ;
