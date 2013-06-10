@@ -33,6 +33,7 @@
 #include <collision_distance_field_display/df_link.h>
 #include <collision_distance_field_display/color_cast.h>
 #include <collision_distance_field_display/per_link_object.h>
+#include <collision_distance_field_display/spheres_display.h>
 
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
@@ -131,6 +132,29 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       robot_state_category_,
                                       SLOT( robotVisualChanged() ),
                                       this);
+  show_colliding_spheres_property_ = new rviz::BoolProperty(
+                                      "Show Colliding Spheres",
+                                      false,
+                                      "Show spheres that are colliding with something.",
+                                      robot_state_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  colliding_sphere_color_property_ = new rviz::ColorProperty(
+                                      "Colliding Sphere Color",
+                                      QColor( 255, 0, 0 ),
+                                      "Color to draw spheres that are colliding with something.",
+                                      robot_state_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  colliding_sphere_alpha_property_ = new rviz::FloatProperty(
+                                      "Colliding Sphere Alpha",
+                                      0.3,
+                                      "0 is fully transparent, 1.0 is fully opaque.",
+                                      robot_state_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  colliding_sphere_color_property_->setHidden(!show_colliding_spheres_property_->getBool());
+  colliding_sphere_alpha_property_->setHidden(!show_colliding_spheres_property_->getBool());
   joint_violation_link_color_property_ = new rviz::ColorProperty(
                                       "Joint Violation Link Color",
                                       QColor( 255, 0, 255 ),
@@ -217,6 +241,13 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
     // failed.  Set property string to actual active detector
     collision_method_property_->setStdString(getPlanningSceneRO()->getActiveCollisionDetectorName());
   }
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollidingSpheresChanged()
+{
+  colliding_sphere_color_property_->setHidden(!show_colliding_spheres_property_->getBool());
+  colliding_sphere_alpha_property_->setHidden(!show_colliding_spheres_property_->getBool());
+  robot_visual_dirty_ = true;
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::reset()
@@ -458,6 +489,30 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
     {
       const std::string& link = (*joint)->getJointModel()->getChildLinkModel()->getName();
       setLinkColor(&robot_visual_->getRobot(), link, joint_violation_link_color_property_->getColor());
+    }
+  }
+
+  colliding_spheres_display_.reset();
+  if (show_colliding_spheres_property_->getBool() && collision_method_property_->getStdString() == "DistanceField")
+  {
+    const collision_detection::CollisionRobotDistanceField *crobot = getCollisionRobotDistanceField();
+    if (crobot)
+    {
+      collision_detection::CollisionRequest req;
+      EigenSTL::vector_Vector3d centers;
+      std::vector<double> radii;
+      crobot->getSelfCollisionLinkSpheres(req, state, &getPlanningSceneRO()->getAllowedCollisionMatrix(), centers, radii);
+
+      if (!centers.empty())
+      {
+        colliding_spheres_display_.reset(new SpheresDisplay(planning_scene_node_,
+                                                            color_cast::getColorf(colliding_sphere_color_property_,
+                                                            colliding_sphere_alpha_property_)));
+        for ( int i = 0 ; i < centers.size() ; ++i )
+        {
+          colliding_spheres_display_->addSphere(centers[i], radii[i]);
+        }
+      }
     }
   }
 }

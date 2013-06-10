@@ -68,6 +68,7 @@ namespace moveit_rviz_plugin
 {
 
 class PerLinkObjList;
+class SpheresDisplay;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -108,6 +109,7 @@ private Q_SLOTS:
   void robotMarkerPositionsChanged(); // call when only the position of the markers needs to change
   void changedActiveGroup();
   void changedCollisionMethod();      // collision detection type (FCL, distance field, etc) changed
+  void showCollidingSpheresChanged();
 
   void changedSphereGenMethod();
   void changedSphereQualMethod();
@@ -174,6 +176,9 @@ private:
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
   rviz::ColorProperty* colliding_link_color_property_;
+  rviz::BoolProperty* show_colliding_spheres_property_;
+  rviz::ColorProperty* colliding_sphere_color_property_;
+  rviz::FloatProperty* colliding_sphere_alpha_property_;
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
@@ -194,6 +199,9 @@ private:
   bool unsetting_property_;  // true to skip callback when a property changes
 
   bool saving_spheres_to_srdf_; // true to trigger saving spheres to SRDF
+
+  // for displaying colliding spheres 
+  boost::shared_ptr<SpheresDisplay> colliding_spheres_display_;
 };
 
 }
