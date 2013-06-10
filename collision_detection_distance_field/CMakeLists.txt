@@ -69,6 +69,7 @@ add_library(
     src/collision_robot_distance_field.cpp
     src/collision_world_distance_field.cpp
     src/workarea.cpp
+    src/params.cpp
     src/sphere_collision.cpp
     src/df_intragroup_collision.cpp
 )

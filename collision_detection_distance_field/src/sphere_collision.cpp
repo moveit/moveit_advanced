@@ -60,9 +60,9 @@ void collision_detection::CollisionRobotDistanceField::getLinkSpheres(
 
   centers.clear();
   radii.clear();
-  for (std::size_t i = 0 ; i < sphere_link_map_.size() ; ++i)
+  for (std::size_t i = 0 ; i < sphere_idx_to_link_index_.size() ; ++i)
   {
-    if (sphere_link_map_[i] == link_idx)
+    if (sphere_idx_to_link_index_[i] == link_idx)
     {
       centers.push_back(sphere_centers_[i]);
       radii.push_back(sphere_radii_[i]);
@@ -72,27 +72,79 @@ void collision_detection::CollisionRobotDistanceField::getLinkSpheres(
 
 void collision_detection::CollisionRobotDistanceField::initSpheres()
 {
-  sphere_centers_.clear();
-  sphere_radii_.clear();
-  sphere_link_map_.clear();
-  sphere_transform_indices_.clear();
-  sphere_centers_.reserve(kmodel_->getLinkModels().size());
-  sphere_radii_.reserve(kmodel_->getLinkModels().size());
-  sphere_link_map_.reserve(kmodel_->getLinkModels().size());
-  sphere_transform_indices_.reserve(kmodel_->getLinkModels().size());
+  int sphere_cnt = 0;
+  int link_cnt = kmodel_->getLinkModels().size();
 
-  // sphere_transform_indices_ lists all spheres and how they are transformed.  Format is:
-  //    cnt=N         -- number of spheres for this link
-  //    link_index    -- index of link
-  //    ...
-  //
-  // list is terminated with cnt==0
-
+  // count how many spheres we will need
   for (std::vector<const robot_model::LinkModel*>::const_iterator lm = kmodel_->getLinkModels().begin() ;
        lm != kmodel_->getLinkModels().end() ;
        ++lm)
   {
+    if (!(*lm)->getShape())
+      continue;
 
+    const srdf::Model::LinkSpheres *lsp = getSrdfLinkSpheres((*lm)->getName());
+
+    if (lsp->spheres_.empty())
+    {
+      sphere_cnt++;
+    }
+    else if (lsp->spheres_.size() == 1 && lsp->spheres_.begin()->radius_ <= std::numeric_limits<double>::min())
+    {
+       // only radius=0 sphere
+    }
+    else
+    {
+      sphere_cnt += lsp->spheres_.size();
+    }
+  }
+
+  sphere_centers_.clear();
+  sphere_radii_.clear();
+  sphere_idx_to_link_index_.clear();
+  sphere_transform_indices_.clear();
+  link_order_.clear();
+  link_name_to_link_index_.clear();
+  bounding_sphere_centers_.clear();
+  bounding_sphere_radii_.clear();
+
+  sphere_centers_.reserve(sphere_cnt);
+  sphere_radii_.reserve(sphere_cnt);
+  sphere_idx_to_link_index_.reserve(sphere_cnt);
+  sphere_transform_indices_.reserve(link_cnt + sphere_cnt + 1);
+  link_order_.reserve(link_cnt);
+  bounding_sphere_centers_.reserve(link_cnt);
+  bounding_sphere_radii_.reserve(link_cnt);
+
+  max_bounding_sphere_radius_ = 0.0;
+
+  // sphere_transform_indices_ lists all spheres and how they are transformed.  Format is:
+  //    cnt=N         -- number of spheres for this link
+  //    link_index    -- index of link in RobotState::getLinkStateVector()
+  //    ...
+  //
+  // list is terminated with cnt==0
+
+  int link_model_index = 0;
+  for (std::vector<const robot_model::LinkModel*>::const_iterator lm = kmodel_->getLinkModels().begin() ;
+       lm != kmodel_->getLinkModels().end() ;
+       ++lm, ++link_model_index)
+  {
+    // initialize link to -1.  This will be the value if the link has no collision geometry.
+    link_name_to_link_index_[(*lm)->getName()] = -1;
+
+    LinkIndex link_index = link_order_.size();
+
+    // Calculate bounding sphere for entire link
+    const shapes::ShapeConstPtr& shape = (*lm)->getShape();
+    if (!shape)
+      continue;
+
+    double bounding_radius;
+    Eigen::Vector3d bounding_center;
+    shapes::computeShapeBoundingSphere(shape.get(), bounding_center, bounding_radius);
+    if (bounding_radius <= std::numeric_limits<double>::epsilon())
+      continue;
     
     // If srdf_model has any spheres:
     //   Use them.  Eliminate all spheres with radius<=0.  If none are left then
@@ -100,9 +152,9 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
     //   sphere-based collision detection.
     const srdf::Model::LinkSpheres *lsp = getSrdfLinkSpheres((*lm)->getName());
 
+    int sphere_cnt = 0;
     if (lsp && !lsp->spheres_.empty())
     {
-      int sphere_cnt = 0;
       for (std::vector<srdf::Model::Sphere>::const_iterator sp = lsp->spheres_.begin() ;
            sp != lsp->spheres_.end() ;
            ++sp)
@@ -114,40 +166,34 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
                                  sp->center_z_);
           sphere_centers_.push_back(center);
           sphere_radii_.push_back(sp->radius_);
-          sphere_link_map_.push_back(lm - kmodel_->getLinkModels().begin());
+          sphere_idx_to_link_index_.push_back(link_index);
           sphere_cnt++;
         }
       }
-
-      if (sphere_cnt)
-      {
-        sphere_transform_indices_.push_back(sphere_cnt);
-        sphere_transform_indices_.push_back(lm - kmodel_->getLinkModels().begin());
-      }
-
-      continue;
+    }
+    else
+    {
+      // If srdf_model does not have ANY spheres:
+      //   Use bounding sphere as the sole collision sphere.
+      sphere_centers_.push_back(bounding_center);
+      sphere_radii_.push_back(bounding_radius);
+      sphere_idx_to_link_index_.push_back(link_index);
+      sphere_cnt = 1;
     }
 
-    // If srdf_model does not have ANY spheres:
-    //   Calculate a single bounding sphere to use based on the collision
-    //   geometry (a single sphere that bounds the entire link).  If this sphere
-    //   is radius<=0 then this link has no collidable geometry and will not be
-    //   considered for sphere-based collision detection.
-
-    const shapes::ShapeConstPtr& shape = (*lm)->getShape();
-    if (!shape)
-      continue;
-
-    double radius;
-    Eigen::Vector3d center;
-    shapes::computeShapeBoundingSphere(shape.get(), center, radius);
-    if (radius > std::numeric_limits<double>::min())
+    // only add the link if there is geometry (i.e. sphere_cnt>=1)
+    if (sphere_cnt)
     {
-      sphere_centers_.push_back(center);
-      sphere_radii_.push_back(radius);
-      sphere_link_map_.push_back(lm - kmodel_->getLinkModels().begin());
-      sphere_transform_indices_.push_back(1);
-      sphere_transform_indices_.push_back(lm - kmodel_->getLinkModels().begin());
+      sphere_transform_indices_.push_back(sphere_cnt);
+      sphere_transform_indices_.push_back(link_model_index);
+
+      link_name_to_link_index_[(*lm)->getName()] = link_index;
+      link_order_.push_back(link_model_index);
+
+      bounding_sphere_centers_.push_back(bounding_center);
+      bounding_sphere_radii_.push_back(bounding_radius);
+
+      max_bounding_sphere_radius_ = std::max(max_bounding_sphere_radius_, bounding_radius);
     }
   }
 
@@ -160,7 +206,7 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
 void collision_detection::CollisionRobotDistanceField::initSphereAcm()
 {
   std::vector<SphereIndex> self_collide_list;
-  self_collide_list.resize(sphere_link_map_.size() * (3 + sphere_link_map_.size()) + 1);
+  self_collide_list.resize(sphere_idx_to_link_index_.size() * (3 + sphere_idx_to_link_index_.size()) + 1);
   std::vector<SphereIndex>::iterator acm_it = self_collide_list.begin();
 
   // The self_collide_list_ stores pairs of spheres which should be checked for collision in a
@@ -176,10 +222,10 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
   //
   // The last entry (and only the last entry) has a cnt==0
 
-  std::vector<LinkIndex>::const_iterator alinks_it = sphere_link_map_.begin();
+  std::vector<LinkIndex>::const_iterator alinks_it = sphere_idx_to_link_index_.begin();
   std::vector<LinkIndex>::const_iterator alinks_it_base = alinks_it;         // first sphere for this link
 
-  for (; alinks_it != sphere_link_map_.end() ; ++alinks_it)
+  for (; alinks_it != sphere_idx_to_link_index_.end() ; ++alinks_it)
   {
     if (alinks_it_base != alinks_it && *alinks_it_base != *alinks_it)
       alinks_it_base = alinks_it;
@@ -188,20 +234,20 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
     std::vector<LinkIndex>::const_iterator blinks_it_base = alinks_it_base;
 
     std::vector<SphereIndex>::iterator acm_it_cnt = acm_it++;
-    *acm_it++ = alinks_it - sphere_link_map_.begin();
+    *acm_it++ = alinks_it - sphere_idx_to_link_index_.begin();
 
-    for (; blinks_it != sphere_link_map_.end() ; ++blinks_it)
+    for (; blinks_it != sphere_idx_to_link_index_.end() ; ++blinks_it)
     {
       if (*blinks_it_base != *blinks_it)
         blinks_it_base = blinks_it;
 
-      if (avoidCheckingCollision(kmodel_->getLinkModels()[*alinks_it],
+      if (avoidCheckingCollision(linkIndexToLinkModel(*alinks_it),
                                  alinks_it - alinks_it_base,
-                                 kmodel_->getLinkModels()[*blinks_it],
+                                 linkIndexToLinkModel(*blinks_it),
                                  blinks_it - blinks_it_base))
         continue;
 
-      *acm_it++ = blinks_it - sphere_link_map_.begin();
+      *acm_it++ = blinks_it - sphere_idx_to_link_index_.begin();
     }
 
     int cnt = acm_it - acm_it_cnt - 2;
@@ -436,8 +482,8 @@ bool collision_detection::CollisionRobotDistanceField::checkSpherePairAll(
     double b_radius,
     double dsq) const
 {
-  int a_link = sphere_link_map_[a_idx];
-  int b_link = sphere_link_map_[b_idx];
+  int a_link = sphere_idx_to_link_index_[a_idx];
+  int b_link = sphere_idx_to_link_index_[b_idx];
 
   int max_contacts = work.req_->contacts ? work.req_->max_contacts : 0;
 

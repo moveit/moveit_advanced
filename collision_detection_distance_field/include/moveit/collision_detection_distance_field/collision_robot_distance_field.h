@@ -176,26 +176,53 @@ private:
   //############################### ACCESSOR CONVENIENCE FUNCTIONS ############
   //###########################################################################
 
-  // return the LinkModel for a particular index in sphere_centers_, sphere_radii_, or sphere_link_map_
-  const robot_model::LinkModel* sphereIndexToLinkModel(int idx) const
+  // return the LinkModel for a link index
+  const robot_model::LinkModel* linkIndexToLinkModel(int link_index) const
   {
-    return kmodel_->getLinkModels()[sphere_link_map_[idx]];
+    assert(link_index >= 0 && link_index < link_order_.size());
+    return kmodel_->getLinkModels()[link_order_[link_index]];
   }
 
-  // lookup name for a link
-  const std::string& linkIndexToName(int idx) const
+  // return the LinkState for a link index
+  robot_state::LinkState* linkIndexToLinkState(int link_index, const robot_state::RobotState* state) const
   {
-    return kmodel_->getLinkModels()[idx]->getName();
+    assert(link_index >= 0 && link_index < link_order_.size());
+    return state->getLinkStateVector()[link_order_[link_index]];
   }
 
-  // lookup index for a link.  -1 on failure.
+  // return name for a link index
+  const std::string& linkIndexToName(int link_index) const
+  {
+    return linkIndexToLinkModel(link_index)->getName();
+  }
+
+
+
+
+  // return the link_index of link owning sphere with sphere_index
+  int sphereIndexToLinkIndex(int sphere_index) const
+  {
+    assert(sphere_index >= 0 && sphere_index < sphere_idx_to_link_index_.size());
+    return sphere_idx_to_link_index_[sphere_index];
+  }
+
+  // return the LinkModel for a particular sphere index in sphere_centers_, sphere_radii_, or sphere_link_map_
+  const robot_model::LinkModel* sphereIndexToLinkModel(int sphere_index) const
+  {
+    return linkIndexToLinkModel(sphereIndexToLinkIndex(sphere_index));
+  }
+
+  // lookup index for a link. 
+  //   -1 if link has no geometry or does not exist.
   const int linkNameToIndex(const std::string& link_name) const;
 
+#if 0
   // number of links in robot
   const std::size_t linkCount() const
   {
     return kmodel_->getLinkModels().size();
   }
+#endif
 
   // find a link's collision spheres in the srdf
   const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link) const;
@@ -208,8 +235,7 @@ private:
   // initialize everything.  Called from constructors.
   void initialize();
 
-  // initialize link_name_to_index_map_
-  void initLinkNames();
+  void initParams();
 
   //###########################################################################
   //############################### SPHERE COLLISION ##########################
@@ -266,30 +292,70 @@ private:
                      int b_idx) const;
 
   //###########################################################################
+  //############################### INTRA GROUP DF COLLISION ##################
+  //###########################################################################
+
+
+
+  //###########################################################################
   //############################### DATA ######################################
   //###########################################################################
 
+  //===========================================================================
+  // Configuration
+  //===========================================================================
+
+  // This affects size and generation of distance fields.  Changing it requires
+  // recalculating all distance fields from scratch.
+  //
+  // This sets an upper bound on the size of sphere that can be checked with
+  // distance field calculation.
+  //
+  // This also sets an upper bound on results returned by distance*() queries.
+  double max_df_distance_;  
+
+  //===========================================================================
+  // Sphere data
+  //===========================================================================
   
-  // This map allows looking up a link index from a link name.
-  // link-order is defined by the order of links in kmodel_->getLinkModels().
-  std::map<std::string,LinkIndex> link_name_to_index_map_;
+  // This defines the "link order".  It contains only links with collision geometry.
+  // The position in the array is the LinkIndex.
+  // The value stored is the index into the RobotModel::getLinkModels() and
+  // RobotState::getLinkStateVector() arrays.
+  std::vector<int> link_order_;
+
+  // This map allows looking up a links_order_index from a link name.
+  // Links with no collision geometry are included in this list and contain an index of -1.
+  std::map<std::string,int> link_name_to_link_index_;
 
   // Table of link indices and spheres. Used to transform spheres.  See initSpheres() for details.
   std::vector<SphereIndex> sphere_transform_indices_;
 
-  // sphere centers for all spheres for all links in link order
+  // sphere centers for all spheres for all links in link_order_
   EigenSTL::vector_Vector3d sphere_centers_;
 
-  // sphere radii for all spheres for all links in link order
+  // sphere radii for all spheres for all links in link_order_
   std::vector<double> sphere_radii_;
 
-  // for each sphere, index of link the sphere is associated with.
-  // This is an index into the kmodel_->getLinkModels() and state->getLinkStateVector() vectors
-  std::vector<LinkIndex> sphere_link_map_;
+  // for each sphere, index in link_order_ of link the sphere is associated with.
+  std::vector<LinkIndex> sphere_idx_to_link_index_;
 
   // Table of spheres to check for collisions.  See initSphereAcm() for details.
   std::vector<SphereIndex> self_collide_list_;
 
+  // bounding sphere center for each link in link_order_
+  EigenSTL::vector_Vector3d bounding_sphere_centers_;
+
+  // bounding sphere radius for each link in link_order_
+  std::vector<double> bounding_sphere_radii_;
+
+  // radius of largest bounding sphere
+  double max_bounding_sphere_radius_;
+
+  //===========================================================================
+  // Work area
+  //===========================================================================
+  
   // mutable thread specific work area
   mutable boost::thread_specific_ptr<WorkArea> work_area_;
 };
