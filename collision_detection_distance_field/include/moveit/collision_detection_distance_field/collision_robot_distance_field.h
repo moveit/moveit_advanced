@@ -34,8 +34,8 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIEL
-#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIEL
+#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIELD
+#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIELD
 
 #include <moveit/collision_detection_distance_field/collision_common_distance_field.h>
 #include <boost/thread.hpp>
@@ -114,6 +114,13 @@ public: /* DEBUGGING functions */
                       EigenSTL::vector_Vector3d& centers,
                       std::vector<double>& radii) const;
 
+  void getSelfCollisionLinkSpheres(
+                      const CollisionRequest &req,
+                      const robot_state::RobotState &state,
+                      const AllowedCollisionMatrix *acm,
+                      EigenSTL::vector_Vector3d& centers,
+                      std::vector<double>& radii) const;
+
 protected:
 
   virtual void updatedPaddingOrScaling(const std::vector<std::string> &links);
@@ -166,6 +173,10 @@ private:
 
     // true if any of the collisions we saw have a DecideContactFn
     bool found_conditional_contact_;
+
+    // used to return sphere info for debugging (getSelfCollisionLinkSpheres)
+    EigenSTL::vector_Vector3d* touching_centers_;
+    std::vector<double>* touching_radii_;
   };
 
 
@@ -272,8 +283,10 @@ private:
                           double dsq) const;
   class CollisionBool;
   class CollisionAll;
+  class CollisionGetSpheres;
   friend class CollisionBool;
   friend class CollisionAll;
+  friend class CollisionGetSpheres;
 
   // helpers for when a sphere collision is detected
   AllowedCollision::Type getLinkPairAcmType(WorkArea& work,
@@ -361,5 +374,6 @@ private:
 };
 
 }
+
 
 #endif
