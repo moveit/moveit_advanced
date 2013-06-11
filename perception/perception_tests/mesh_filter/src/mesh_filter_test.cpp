@@ -82,9 +82,10 @@ class MeshFilterTest : public testing::TestWithParam <double>
   BOOST_STATIC_ASSERT_MSG (FilterTraits<Type>::GL_TYPE != GL_ZERO, "Only \"float\" and \"unsigned short int\" are allowed.");
   public:
     MeshFilterTest (unsigned width = 500, unsigned height = 500, double near = 0.5, double far = 5.0, double shadow = 0.1, double epsilon = 1e-7);
-    void test () const;
+    void test ();
     void setMeshDistance (double distance) { distance_ = distance; }
   private:
+    shapes::Mesh createMesh (double z) const;
     bool transform_callback (MeshHandle handle, Affine3d& transform) const;
     void getGroundTruth (unsigned int* labels, float* depth) const;
     const unsigned int width_;
@@ -119,22 +120,41 @@ MeshFilterTest<Type>::MeshFilterTest (unsigned width, unsigned height, double ne
   filter_.setPaddingScale (0.0);
 
   // create a large plane that covers the whole visible area -> no boundaries
+
+  shapes::Mesh mesh = createMesh (0);
+  handle_ = filter_.addMesh (mesh);
+
+  // make it random but reproducable
+  srand (0);
+  Type t_near = near_ / FilterTraits<Type>::ToMetricScale;
+  Type t_far = far_ / FilterTraits<Type>::ToMetricScale;
+  for (typename vector<Type>::iterator sIt = sensor_data_.begin (); sIt != sensor_data_.end (); ++sIt)
+  {
+    do {
+      *sIt = getRandomNumber<Type> (0.0, 10.0 / FilterTraits<Type>::ToMetricScale);
+    } while (*sIt == t_near || *sIt == t_far);
+  }
+}
+
+template<typename Type>
+shapes::Mesh MeshFilterTest<Type>::createMesh (double z) const
+{
   shapes::Mesh mesh (4, 4);
   mesh.vertices [0]  = -5;
   mesh.vertices [1]  = -5;
-  mesh.vertices [2]  =  0;
+  mesh.vertices [2]  =  z;
 
   mesh.vertices [3]  = -5;
   mesh.vertices [4]  =  5;
-  mesh.vertices [5]  =  0;
+  mesh.vertices [5]  =  z;
 
   mesh.vertices [6]  =  5;
   mesh.vertices [7]  =  5;
-  mesh.vertices [8]  =  0;
+  mesh.vertices [8]  =  z;
 
   mesh.vertices [9]  =  5;
   mesh.vertices [10] = -5;
-  mesh.vertices [11] =  0;
+  mesh.vertices [11] =  z;
 
   mesh.triangles [0] = 0;
   mesh.triangles [1] = 3;
@@ -168,18 +188,7 @@ MeshFilterTest<Type>::MeshFilterTest (unsigned width, unsigned height, double ne
   mesh.vertex_normals [10] = 0;
   mesh.vertex_normals [11] = 1;
 
-  handle_ = filter_.addMesh (mesh);
-
-  // make it random but reproducable
-  srand (0);
-  Type t_near = near_ / FilterTraits<Type>::ToMetricScale;
-  Type t_far = far_ / FilterTraits<Type>::ToMetricScale;
-  for (typename vector<Type>::iterator sIt = sensor_data_.begin (); sIt != sensor_data_.end (); ++sIt)
-  {
-    do {
-      *sIt = getRandomNumber<Type> (0.0, 10.0 / FilterTraits<Type>::ToMetricScale);
-    } while (*sIt == t_near || *sIt == t_far);
-  }
+  return mesh;
 }
 
 template<typename Type>
@@ -192,8 +201,10 @@ bool MeshFilterTest<Type>::transform_callback (MeshHandle handle, Affine3d& tran
 }
 
 template<typename Type>
-void MeshFilterTest<Type>::test () const
+void MeshFilterTest<Type>::test ()
 {
+  shapes::Mesh mesh = createMesh (0);
+  mesh_filter::MeshHandle handle = filter_.addMesh (mesh);
   filter_.filter (&sensor_data_[0], FilterTraits<Type>::GL_TYPE, false);
 
   vector<float> gt_depth (width_ * height_);
@@ -220,6 +231,7 @@ void MeshFilterTest<Type>::test () const
       EXPECT_EQ (filtered_labels [idx], gt_labels [idx]);
     }
   }
+  filter_.removeMesh (handle);
 }
 
 template<typename Type>

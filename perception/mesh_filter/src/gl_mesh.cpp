@@ -74,7 +74,7 @@ mesh_filter::GLMesh::GLMesh (const Mesh& mesh, unsigned int mesh_label)
 
 mesh_filter::GLMesh::~GLMesh ()
 {
-  glDeleteLists(1, list_);
+  glDeleteLists(list_, 1);
 }
 
 void mesh_filter::GLMesh::render (const Affine3d& transform) const

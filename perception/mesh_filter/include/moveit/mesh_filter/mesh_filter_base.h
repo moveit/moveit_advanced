@@ -201,6 +201,12 @@ class MeshFilterBase
     void addMeshHelper (MeshHandle handle, const shapes::Mesh *cmesh);
 
     /**
+     * \brief used within a Job to allow the main thread removing meshes
+     * \param[in] handle the handle of the mesh to be removed
+     */
+    void removeMeshHelper (MeshHandle handle);
+
+    /**
      * \brief add a Job for the main thread that needs to be executed there
      * \param[in] job the job object that has the function o be executed
      */

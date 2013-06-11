@@ -146,7 +146,7 @@ void mesh_filter::MeshFilterBase::addJob (const boost::shared_ptr<FilterJob> &jo
 
 void mesh_filter::MeshFilterBase::deInitialize ()
 {
-  glDeleteLists (1, canvas_);
+  glDeleteLists (canvas_, 1);
   glDeleteTextures (1, &sensor_depth_texture_);
 
   meshes_.clear ();
@@ -194,13 +194,19 @@ void mesh_filter::MeshFilterBase::addMeshHelper (MeshHandle handle, const Mesh *
 }
 
 void mesh_filter::MeshFilterBase::removeMesh (MeshHandle handle)
-{  
+{
   mutex::scoped_lock _(meshes_mutex_);
+  shared_ptr<FilterJob> job (new FilterJob (boost::bind (&MeshFilterBase::removeMeshHelper, this, handle)));
+  addJob(job);
+  job->wait ();
+}
 
+void mesh_filter::MeshFilterBase::removeMeshHelper (MeshHandle handle)
+{  
   std::size_t erased = meshes_.erase (handle);
-  min_handle_ = std::min(handle, min_handle_);
   if (erased == 0)
     throw runtime_error ("Could not remove mesh. Mesh not found!");
+  min_handle_ = std::min(handle, min_handle_);
 }
 
 void mesh_filter::MeshFilterBase::setShadowThreshold (float threshold)
