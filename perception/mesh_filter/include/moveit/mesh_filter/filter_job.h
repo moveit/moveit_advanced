@@ -53,9 +53,10 @@ class Job
     Job ()
     : done_ (false)
     {}
-    virtual void wait () const;
+    inline void wait () const;
     virtual void execute () = 0;
-    virtual void cancel ();
+    inline void cancel ();
+    inline bool isDone () const;
   protected:
     bool done_;
     mutable boost::condition_variable condition_;
@@ -74,6 +75,11 @@ void Job::cancel ()
   boost::unique_lock<boost::mutex> lock (mutex_);
   done_ = true;
   condition_.notify_all ();
+}
+
+bool Job::isDone () const
+{
+  return done_;
 }
 
 template <typename ReturnType>
@@ -105,6 +111,7 @@ void FilterJob<ReturnType>::execute ()
 template <typename ReturnType>
 const ReturnType& FilterJob<ReturnType>::getResult () const
 {
+  wait ();
   return result_;
 }
 
