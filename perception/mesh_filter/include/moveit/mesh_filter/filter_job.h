@@ -46,45 +46,89 @@ namespace mesh_filter
 /**
  * \brief This class is used to execute functions within the thread that holds the OpenGL context.
  */
-class FilterJob
+
+class Job
 {
   public:
-    FilterJob (const boost::function<void ()>& exec)
-    : exec_ (exec)
-    , done_ (false)
+    Job ()
+    : done_ (false)
     {}
-    inline void wait () const;
-    inline void execute ();
-    inline void cancel ();
-  private:
-    boost::function<void ()> exec_;
+    virtual void wait () const;
+    virtual void execute () = 0;
+    virtual void cancel ();
+  protected:
     bool done_;
     mutable boost::condition_variable condition_;
     mutable boost::mutex mutex_;
 };
 
-void FilterJob::wait () const
+void Job::wait () const
 {
   boost::unique_lock<boost::mutex> lock (mutex_);
   while (!done_)
     condition_.wait (lock);
 }
 
-void FilterJob::execute ()
+void Job::cancel ()
+{
+  boost::unique_lock<boost::mutex> lock (mutex_);
+  done_ = true;
+  condition_.notify_all ();
+}
+
+template <typename ReturnType>
+class FilterJob : public Job
+{
+  public:
+    FilterJob (const boost::function<ReturnType ()>& exec)
+    : Job ()
+    , exec_ (exec)
+    {}
+    virtual void execute ();
+    const ReturnType& getResult () const;
+  private:
+    boost::function<ReturnType ()> exec_;
+    ReturnType result_;
+};
+
+template <typename ReturnType>
+void FilterJob<ReturnType>::execute ()
 {
   boost::unique_lock<boost::mutex> lock (mutex_);
   if (!done_) // not canceled !
-    exec_ ();
+    result_ = exec_ ();
 
   done_ = true;
   condition_.notify_all ();
 }
 
-void FilterJob::cancel ()
+template <typename ReturnType>
+const ReturnType& FilterJob<ReturnType>::getResult () const
 {
-  boost::unique_lock<boost::mutex> lock (mutex_);
-  done_ = true;
-  condition_.notify_all ();
+  return result_;
 }
+
+template <>
+class FilterJob<void> : public Job
+{
+  public:
+    FilterJob (const boost::function<void ()>& exec)
+    : Job ()
+    , exec_ (exec)
+    {}
+    virtual void execute ()
+    {
+      boost::unique_lock<boost::mutex> lock (mutex_);
+      if (!done_) // not canceled !
+        exec_ ();
+
+      done_ = true;
+      condition_.notify_all ();
+    }
+
+  private:
+    boost::function<void ()> exec_;
+};
+
 }
 #endif

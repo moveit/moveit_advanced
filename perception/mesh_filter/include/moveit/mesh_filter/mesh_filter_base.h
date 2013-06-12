@@ -54,7 +54,7 @@ namespace shapes
 namespace mesh_filter
 {
 
-class FilterJob;
+class Job;
 class GLMesh;
 
 typedef unsigned int MeshHandle;
@@ -204,13 +204,13 @@ class MeshFilterBase
      * \brief used within a Job to allow the main thread removing meshes
      * \param[in] handle the handle of the mesh to be removed
      */
-    void removeMeshHelper (MeshHandle handle);
+    bool removeMeshHelper (MeshHandle handle);
 
     /**
      * \brief add a Job for the main thread that needs to be executed there
      * \param[in] job the job object that has the function o be executed
      */
-    void addJob (const boost::shared_ptr<FilterJob> &job) const;
+    void addJob (const boost::shared_ptr<Job> &job) const;
 
   /**
    * \brief sets the size of the fram buffers
@@ -242,7 +242,7 @@ class MeshFilterBase
     mutable boost::mutex jobs_mutex_;
 
     /** \brief OpenGL job queue that need to be processed by the worker thread*/
-    mutable std::queue<boost::shared_ptr<FilterJob> > jobs_queue_;
+    mutable std::queue<boost::shared_ptr<Job> > jobs_queue_;
     
     /** \brief mutex for synchronization of updating filtered meshes */
     mutable boost::mutex meshes_mutex_;

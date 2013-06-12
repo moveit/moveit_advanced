@@ -135,7 +135,7 @@ mesh_filter::MeshFilterBase::~MeshFilterBase ()
   filter_thread_.join();
 }
 
-void mesh_filter::MeshFilterBase::addJob (const boost::shared_ptr<FilterJob> &job) const
+void mesh_filter::MeshFilterBase::addJob (const boost::shared_ptr<Job> &job) const
 {
   {
     unique_lock<mutex> _(jobs_mutex_);
@@ -173,7 +173,7 @@ mesh_filter::MeshHandle mesh_filter::MeshFilterBase::addMesh (const Mesh& mesh)
 {
   mutex::scoped_lock _(meshes_mutex_);
   
-  shared_ptr<FilterJob> job (new FilterJob (boost::bind (&MeshFilterBase::addMeshHelper, this, next_handle_, &mesh)));
+  shared_ptr<Job> job (new FilterJob<void> (boost::bind (&MeshFilterBase::addMeshHelper, this, next_handle_, &mesh)));
   addJob(job);
   job->wait ();
   mesh_filter::MeshHandle ret = next_handle_;
@@ -196,17 +196,20 @@ void mesh_filter::MeshFilterBase::addMeshHelper (MeshHandle handle, const Mesh *
 void mesh_filter::MeshFilterBase::removeMesh (MeshHandle handle)
 {
   mutex::scoped_lock _(meshes_mutex_);
-  shared_ptr<FilterJob> job (new FilterJob (boost::bind (&MeshFilterBase::removeMeshHelper, this, handle)));
+  FilterJob<bool>* remover = new FilterJob<bool> (boost::bind (&MeshFilterBase::removeMeshHelper, this, handle));
+  shared_ptr<Job> job (remover);
   addJob(job);
   job->wait ();
-}
 
-void mesh_filter::MeshFilterBase::removeMeshHelper (MeshHandle handle)
-{  
-  std::size_t erased = meshes_.erase (handle);
-  if (erased == 0)
+  if (!remover->getResult ())
     throw runtime_error ("Could not remove mesh. Mesh not found!");
   min_handle_ = std::min(handle, min_handle_);
+}
+
+bool mesh_filter::MeshFilterBase::removeMeshHelper (MeshHandle handle)
+{  
+  std::size_t erased = meshes_.erase (handle);
+  return (erased != 0);
 }
 
 void mesh_filter::MeshFilterBase::setShadowThreshold (float threshold)
@@ -216,15 +219,15 @@ void mesh_filter::MeshFilterBase::setShadowThreshold (float threshold)
 
 void mesh_filter::MeshFilterBase::getModelLabels (LabelType* labels) const
 {
-  shared_ptr<FilterJob> job (new FilterJob (boost::bind (&GLRenderer::getColorBuffer, mesh_renderer_.get(), (unsigned char*) labels)));
+  shared_ptr<Job> job (new FilterJob<void> (boost::bind (&GLRenderer::getColorBuffer, mesh_renderer_.get(), (unsigned char*) labels)));
   addJob(job);
   job->wait ();
 }
 
 void mesh_filter::MeshFilterBase::getModelDepth (float* depth) const
 {
-  shared_ptr<FilterJob> job1 (new FilterJob (boost::bind (&GLRenderer::getDepthBuffer, mesh_renderer_.get(), depth)));
-  shared_ptr<FilterJob> job2 (new FilterJob (boost::bind (&SensorModel::Parameters::transformModelDepthToMetricDepth, sensor_parameters_.get(), depth)));
+  shared_ptr<Job> job1 (new FilterJob<void> (boost::bind (&GLRenderer::getDepthBuffer, mesh_renderer_.get(), depth)));
+  shared_ptr<Job> job2 (new FilterJob<void> (boost::bind (&SensorModel::Parameters::transformModelDepthToMetricDepth, sensor_parameters_.get(), depth)));
   {
     unique_lock<mutex> lock (jobs_mutex_);
     jobs_queue_.push (job1);
@@ -237,8 +240,8 @@ void mesh_filter::MeshFilterBase::getModelDepth (float* depth) const
 
 void mesh_filter::MeshFilterBase::getFilteredDepth (float* depth) const
 {
-  shared_ptr<FilterJob> job1 (new FilterJob (boost::bind (&GLRenderer::getDepthBuffer, depth_filter_.get(), depth)));
-  shared_ptr<FilterJob> job2 (new FilterJob (boost::bind (&SensorModel::Parameters::transformFilteredDepthToMetricDepth, sensor_parameters_.get(), depth)));
+  shared_ptr<Job> job1 (new FilterJob<void> (boost::bind (&GLRenderer::getDepthBuffer, depth_filter_.get(), depth)));
+  shared_ptr<Job> job2 (new FilterJob<void> (boost::bind (&SensorModel::Parameters::transformFilteredDepthToMetricDepth, sensor_parameters_.get(), depth)));
   {
     unique_lock<mutex> lock (jobs_mutex_);
     jobs_queue_.push (job1);
@@ -251,7 +254,7 @@ void mesh_filter::MeshFilterBase::getFilteredDepth (float* depth) const
 
 void mesh_filter::MeshFilterBase::getFilteredLabels (LabelType* labels) const
 {
-  shared_ptr<FilterJob> job (new FilterJob (boost::bind (&GLRenderer::getColorBuffer, depth_filter_.get(), (unsigned char*) labels)));
+  shared_ptr<Job> job (new FilterJob<void> (boost::bind (&GLRenderer::getColorBuffer, depth_filter_.get(), (unsigned char*) labels)));
   addJob(job);
   job->wait ();
 }
@@ -271,7 +274,7 @@ void mesh_filter::MeshFilterBase::run (const string& render_vertex_shader, const
 
     if (!jobs_queue_.empty ())
     {
-      shared_ptr<FilterJob> job = jobs_queue_.front ();
+      shared_ptr<Job> job = jobs_queue_.front ();
       jobs_queue_.pop ();
       lock.unlock ();
       job->execute ();     
@@ -290,7 +293,7 @@ void mesh_filter::MeshFilterBase::filter (const void* sensor_data, GLushort type
     throw std::runtime_error (msg.str ());
   }
     
-  shared_ptr<FilterJob> job (new FilterJob (boost::bind (&MeshFilterBase::doFilter, this, sensor_data, type)));
+  shared_ptr<Job> job (new FilterJob<void> (boost::bind (&MeshFilterBase::doFilter, this, sensor_data, type)));
   addJob(job);
   if (wait)
     job->wait ();
