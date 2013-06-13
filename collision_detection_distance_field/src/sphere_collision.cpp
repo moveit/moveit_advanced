@@ -466,56 +466,6 @@ public:
   }
 };
 
-// Debug query.  Get list of all spheres in collision.
-class collision_detection::CollisionRobotDistanceField::CollisionGetSpheres
-{
-public:
-  static bool check(
-      const collision_detection::CollisionRobotDistanceField* crobot,
-      collision_detection::CollisionRobotDistanceField::WorkArea& work,
-      int a_idx,
-      int b_idx,
-      const Eigen::Vector3d& a_center,
-      const Eigen::Vector3d& b_center,
-      double a_radius,
-      double b_radius,
-      double dsq)
-  {
-    bool have_a = false;
-    bool have_b = false;
-    for (int i = 0 ; i < work.touching_centers_->size() ; ++i)
-    {
-      if (!have_a &&
-          (a_center - (*work.touching_centers_)[i]).squaredNorm() < std::numeric_limits<double>::epsilon() &&
-          a_radius == (*work.touching_radii_)[i])
-      {
-        have_a = true;
-        if (have_b)
-          return false;
-      }
-      if (!have_b &&
-          (b_center - (*work.touching_centers_)[i]).squaredNorm() < std::numeric_limits<double>::epsilon() &&
-          b_radius == (*work.touching_radii_)[i])
-      {
-        have_b = true;
-        if (have_a)
-          return false;
-      }
-    }
-    if (!have_a)
-    {
-      (*work.touching_centers_).push_back(a_center);
-      (*work.touching_radii_).push_back(a_radius);
-    }
-    if (!have_b)
-    {
-      (*work.touching_centers_).push_back(b_center);
-      (*work.touching_radii_).push_back(b_radius);
-    }
-    return false;
-  }
-};
-
 // General query.  Call checkSpherePairAll() to handle general case.
 class collision_detection::CollisionRobotDistanceField::CollisionAll
 {
@@ -606,29 +556,4 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
     logError("Conditional contacts not supported yet");
   }
 }
-
-#if 0
-void collision_detection::CollisionRobotDistanceField::getSelfCollisionLinkSpheres(
-        const CollisionRequest &req,
-        const robot_state::RobotState &state,
-        const AllowedCollisionMatrix *acm,
-        EigenSTL::vector_Vector3d& centers,
-        std::vector<double>& radii) const
-{
-  WorkArea& work = getWorkArea();
-  CollisionResult res;
-  initQuery(work, "getSelfCollisionLinkSpheres", &req, &res, &state, NULL, NULL, NULL, NULL, acm);
-  const SphereIndex *sphere_list = &*self_collide_list_.begin();
-
-  transformSpheres(*work.state1_, work);
-
-  centers.clear();
-  radii.clear();
-  work.touching_centers_ = &centers;
-  work.touching_radii_ = &radii;
-  work.res_->collision = checkSelfCollisionUsingSpheresLoop<CollisionGetSpheres>(work, sphere_list);
-  work.touching_centers_ = NULL;
-  work.touching_radii_ = NULL;
-}
-#endif
 

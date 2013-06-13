@@ -156,15 +156,6 @@ public: /* DEBUGGING functions */
                       bool resolution_relative = true) const;
 
 
-#if 0
-  void getSelfCollisionLinkSpheres(
-                      const CollisionRequest &req,
-                      const robot_state::RobotState &state,
-                      const AllowedCollisionMatrix *acm,
-                      EigenSTL::vector_Vector3d& centers,
-                      std::vector<double>& radii) const;
-#endif
-
 protected:
 
   virtual void updatedPaddingOrScaling(const std::vector<std::string> &links);
@@ -231,10 +222,6 @@ private:
 
     // true if any of the collisions we saw have a DecideContactFn
     bool found_conditional_contact_;
-
-    // used to return sphere info for debugging (getSelfCollisionLinkSpheres)
-    EigenSTL::vector_Vector3d* touching_centers_;
-    std::vector<double>* touching_radii_;
 
     // if this is non-NULL it will get ALL contacts detected
     std::vector<DFContact>* df_contacts_;
@@ -353,10 +340,8 @@ private:
                           double dsq) const;
   class CollisionBool;
   class CollisionAll;
-  class CollisionGetSpheres;
   friend class CollisionBool;
   friend class CollisionAll;
-  friend class CollisionGetSpheres;
 
   // helpers for when a sphere collision is detected
   AllowedCollision::Type getLinkPairAcmType(WorkArea& work,
