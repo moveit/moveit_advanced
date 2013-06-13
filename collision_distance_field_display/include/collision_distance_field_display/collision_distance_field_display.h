@@ -176,6 +176,9 @@ private:
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
   rviz::ColorProperty* colliding_link_color_property_;
+  rviz::BoolProperty* show_contact_points_property_;
+  rviz::ColorProperty* contact_points_color_property_;
+  rviz::FloatProperty* contact_points_size_property_;
   rviz::BoolProperty* show_colliding_spheres_property_;
   rviz::ColorProperty* colliding_sphere_color_property_;
   rviz::FloatProperty* colliding_sphere_alpha_property_;
@@ -200,7 +203,8 @@ private:
 
   bool saving_spheres_to_srdf_; // true to trigger saving spheres to SRDF
 
-  // for displaying colliding spheres 
+  // for displaying contact points and colliding spheres 
+  boost::shared_ptr<SpheresDisplay> contact_points_display_;
   boost::shared_ptr<SpheresDisplay> colliding_spheres_display_;
 };
 

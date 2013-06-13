@@ -132,6 +132,27 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       robot_state_category_,
                                       SLOT( robotVisualChanged() ),
                                       this);
+  show_contact_points_property_ = new rviz::BoolProperty(
+                                      "Show Contact Points",
+                                      false,
+                                      "Show collision contacts.",
+                                      robot_state_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  contact_points_color_property_ = new rviz::ColorProperty(
+                                      "Contact Points Color",
+                                      QColor( 140, 0, 255 ),
+                                      "Color to draw collision contact points.",
+                                      robot_state_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  contact_points_size_property_ = new rviz::FloatProperty(
+                                      "Contact Points Size",
+                                      0.02,
+                                      "Size of collision contact points (diameter of sphere marker).",
+                                      robot_state_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
   show_colliding_spheres_property_ = new rviz::BoolProperty(
                                       "Show Colliding Spheres",
                                       false,
@@ -155,6 +176,8 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       this);
   colliding_sphere_color_property_->setHidden(!show_colliding_spheres_property_->getBool());
   colliding_sphere_alpha_property_->setHidden(!show_colliding_spheres_property_->getBool());
+  contact_points_color_property_->setHidden(!show_contact_points_property_->getBool());
+  contact_points_size_property_->setHidden(!show_contact_points_property_->getBool());
   joint_violation_link_color_property_ = new rviz::ColorProperty(
                                       "Joint Violation Link Color",
                                       QColor( 255, 0, 255 ),
@@ -247,6 +270,8 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollidingSpheresChan
 {
   colliding_sphere_color_property_->setHidden(!show_colliding_spheres_property_->getBool());
   colliding_sphere_alpha_property_->setHidden(!show_colliding_spheres_property_->getBool());
+  contact_points_color_property_->setHidden(!show_contact_points_property_->getBool());
+  contact_points_size_property_->setHidden(!show_contact_points_property_->getBool());
   robot_visual_dirty_ = true;
 }
 
@@ -493,11 +518,15 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
   }
 
   colliding_spheres_display_.reset();
-  if (show_colliding_spheres_property_->getBool() && collision_method_property_->getStdString() == "DistanceField")
+  contact_points_display_.reset();
+  if ((show_colliding_spheres_property_->getBool() ||
+       show_contact_points_property_->getBool()) &&
+      collision_method_property_->getStdString() == "DistanceField")
   {
     const collision_detection::CollisionRobotDistanceField *crobot = getCollisionRobotDistanceField();
     if (crobot)
     {
+#if 0
       collision_detection::CollisionRequest req;
       EigenSTL::vector_Vector3d centers;
       std::vector<double> radii;
@@ -513,6 +542,36 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
           colliding_spheres_display_->addSphere(centers[i], radii[i]);
         }
       }
+#else
+      collision_detection::CollisionRequest req;
+      collision_detection::CollisionResult res;
+      std::vector<collision_detection::DFContact> df_contacts;
+      crobot->getSelfCollisionContacts(req, res, state, &getPlanningSceneRO()->getAllowedCollisionMatrix(), &df_contacts);
+
+      if (!df_contacts.empty() && show_colliding_spheres_property_->getBool())
+      {
+        colliding_spheres_display_.reset(new SpheresDisplay(planning_scene_node_,
+                                                            color_cast::getColorf(colliding_sphere_color_property_,
+                                                            colliding_sphere_alpha_property_)));
+        for ( int i = 0 ; i < df_contacts.size() ; ++i )
+        {
+          if (df_contacts[i].sphere_radius_1 > 0.0)
+            colliding_spheres_display_->addSphere(df_contacts[i].sphere_center_1, df_contacts[i].sphere_radius_1);
+          if (df_contacts[i].sphere_radius_2 > 0.0)
+            colliding_spheres_display_->addSphere(df_contacts[i].sphere_center_2, df_contacts[i].sphere_radius_2);
+        }
+      }
+
+      if (!df_contacts.empty() && show_contact_points_property_->getBool())
+      {
+        contact_points_display_.reset(new SpheresDisplay(planning_scene_node_,
+                                                            color_cast::getColorf(contact_points_color_property_)));
+        for ( int i = 0 ; i < df_contacts.size() ; ++i )
+        {
+          contact_points_display_->addSphere(df_contacts[i].pos, contact_points_size_property_->getFloat());
+        }
+      }
+#endif
     }
   }
 }
