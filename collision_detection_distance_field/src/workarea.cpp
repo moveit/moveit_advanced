@@ -45,6 +45,7 @@ collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection:
     work_area_.reset(new WorkArea);
     WorkArea& work = *work_area_;
     work.transformed_sphere_centers_.resize(sphere_centers_.size());
+    work.df_contacts_ = NULL;
   }
 
   WorkArea& work = *work_area_;
@@ -80,3 +81,19 @@ void collision_detection::CollisionRobotDistanceField::dumpQuery(const WorkArea&
     ss_acm.str().c_str());
 }
 
+void collision_detection::DFContact::copyFrom(const Contact& contact)
+{
+  pos = contact.pos;
+	normal = contact.normal;
+	depth = contact.depth;
+	body_name_1 = contact.body_name_1;
+	body_type_1 = contact.body_type_1;
+	body_name_2 = contact.body_name_2;
+	body_type_2 = contact.body_type_2;
+
+  sphere_radius_1 = 0;
+  sphere_radius_2 = 0;
+  sdf_1 = NULL;
+  sdf_2 = NULL;
+  eliminated_by_acm_function = false;
+}

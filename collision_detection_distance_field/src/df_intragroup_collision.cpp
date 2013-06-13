@@ -199,6 +199,9 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
     WorkArea& work,
     const DFLink * const *link_list) const
 {
+  DFContact dummy_dfcontact;
+  DFContact *dfcontact = &dummy_dfcontact;
+
   for (const DFLink * const *p_link_a = link_list ; p_link_a[1] ; ++p_link_a)
   {
     const DFLink *link_a = *p_link_a;
@@ -272,9 +275,9 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
           acm = NULL; // do not check again for this link pair
         }
 
-        collision_detection::Contact contact;
         if (acm_condition || work.req_->contacts)
         {
+          Contact contact;
           Eigen::Vector3d pos;
           link_a->df_.getCellPosition(entry.cell_id_, pos);
           contact.pos = lsa->getGlobalCollisionBodyTransform() * pos;
@@ -291,10 +294,25 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
           contact.body_type_1 = BodyTypes::ROBOT_LINK;
           contact.body_type_2 = BodyTypes::ROBOT_LINK;
 
+          // generate a DFContact for debugging?
+          if (work.df_contacts_)
+          {
+            work.df_contacts_->resize(work.df_contacts_->size()+1);
+            dfcontact = &work.df_contacts_->back();
+            dfcontact->copyFrom(contact);     // This clears all fields.
+            dfcontact->sdf_1 = &link_a->df_;
+            dfcontact->sphere_center_2 = c;
+            dfcontact->sphere_radius_2 = sphere_radii_[i];
+          }
+          
+
           if (acm_condition)
           {
             if (acm_condition(contact))
+            {
+              dfcontact->eliminated_by_acm_function = true;
               continue;
+            }
           }
 
           work.res_->collision = true;

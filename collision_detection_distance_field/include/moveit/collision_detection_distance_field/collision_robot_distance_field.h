@@ -111,6 +111,7 @@ public:
 
 public: /* Special features unique to DistanceField collision */
 
+  // Set what method to use.  Mainly for debugging.
   void getMethods(std::vector<std::string>& methods) const;
   void setMethod(const std::string& method);
 
@@ -123,16 +124,19 @@ public: /* DEBUGGING functions */
 
   void getSelfCollisionContacts(
                       const CollisionRequest &req,
+                      CollisionResult &res,
                       const robot_state::RobotState &state,
                       const AllowedCollisionMatrix *acm,
                       std::vector<DFContact>* df_contacts) const;
 
+#if 0
   void getSelfCollisionLinkSpheres(
                       const CollisionRequest &req,
                       const robot_state::RobotState &state,
                       const AllowedCollisionMatrix *acm,
                       EigenSTL::vector_Vector3d& centers,
                       std::vector<double>& radii) const;
+#endif
 
 protected:
 
@@ -204,6 +208,9 @@ private:
     // used to return sphere info for debugging (getSelfCollisionLinkSpheres)
     EigenSTL::vector_Vector3d* touching_centers_;
     std::vector<double>* touching_radii_;
+
+    // if this is non-NULL it will get ALL contacts detected
+    std::vector<DFContact>* df_contacts_;
   };
 
 

@@ -190,6 +190,34 @@ double collision_detection::CollisionRobotDistanceField::distanceOther(
   return 0.0;
 }
 
+void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
+    const CollisionRequest &req, 
+    CollisionResult &res,
+    const robot_state::RobotState &state, 
+    const AllowedCollisionMatrix *acm,
+    std::vector<DFContact>* df_contacts) const
+{
+  CollisionRequest req2;
+  WorkArea& work = getWorkArea();
+  initQuery(work, "getSelfCollisionContacts", &req, &res, &state, NULL, NULL, NULL, NULL, acm);
+
+  // force generation of contacts
+  if (df_contacts && !req.contacts)
+  {
+    req2 = req;
+    work.req_ = &req2;
+    req2.contacts = true;
+    req2.max_contacts = 1000;
+    req2.max_contacts_per_pair = 100;
+  }
+
+  work.df_contacts_ = df_contacts;
+  checkSelfCollision(work);
+  work.df_contacts_ = NULL;
+}
+
+
+
 void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
     const std::vector<std::string> &links)
 {

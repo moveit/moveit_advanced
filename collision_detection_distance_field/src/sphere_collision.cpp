@@ -410,6 +410,17 @@ void collision_detection::CollisionRobotDistanceField::addSphereContact(
   }
 
   work.res_->contact_count++;
+
+  if (work.df_contacts_)
+  {
+    work.df_contacts_->resize(work.df_contacts_->size()+1);
+    DFContact *dfcontact = &work.df_contacts_->back();
+    dfcontact->copyFrom(contact);  // This clears all fields.
+    dfcontact->sphere_center_1 = a_center;
+    dfcontact->sphere_radius_1 = a_radius;
+    dfcontact->sphere_center_2 = b_center;
+    dfcontact->sphere_radius_2 = b_radius;
+  }
 }
 
 // add cost of sphere-pair to work.req_->cost_sources
@@ -596,6 +607,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
   }
 }
 
+#if 0
 void collision_detection::CollisionRobotDistanceField::getSelfCollisionLinkSpheres(
         const CollisionRequest &req,
         const robot_state::RobotState &state,
@@ -618,4 +630,5 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionLinkSpher
   work.touching_centers_ = NULL;
   work.touching_radii_ = NULL;
 }
+#endif
 

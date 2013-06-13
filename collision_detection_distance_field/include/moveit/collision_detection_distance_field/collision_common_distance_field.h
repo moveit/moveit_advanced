@@ -43,18 +43,30 @@
 namespace collision_detection
 {
 
-extern const AllowedCollisionMatrix empty_acm;
+
+class StaticDistanceField;
 
 struct DFContact : public Contact
 {
-  int sphere_idx_1; // -1 if no sphere involved
-  Eigen::Vector3d sphere_center_1;
-  double sphere_radius_1;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  int sphere_idx_2; // -1 if no sphere involved
-  Eigen::Vector3d sphere_center_2;
-  double sphere_radius_2;
+  // clear all fields, then copy Contact part from <contact>
+  void copyFrom(const Contact& contact);
+
+
+  double sphere_radius_1;             // 0 if no sphere
+  Eigen::Vector3d sphere_center_1;    // valid if sphere_radius_1 != 0
+  const StaticDistanceField *sdf_1;   // valid if non-NULL
+
+  double sphere_radius_2;             // 0 if no sphere
+  Eigen::Vector3d sphere_center_2;    // valid if sphere_radius_1 != 0
+  const StaticDistanceField *sdf_2;   // valid if non-NULL
+
+  bool eliminated_by_acm_function;
 };
+
+
+extern const AllowedCollisionMatrix empty_acm;
 
 }
 
