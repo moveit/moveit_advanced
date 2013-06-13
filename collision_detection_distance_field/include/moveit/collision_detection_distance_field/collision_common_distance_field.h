@@ -45,6 +45,17 @@ namespace collision_detection
 
 extern const AllowedCollisionMatrix empty_acm;
 
+struct DFContact : public Contact
+{
+  int sphere_idx_1; // -1 if no sphere involved
+  Eigen::Vector3d sphere_center_1;
+  double sphere_radius_1;
+
+  int sphere_idx_2; // -1 if no sphere involved
+  Eigen::Vector3d sphere_center_2;
+  double sphere_radius_2;
+};
+
 }
 
 #endif
