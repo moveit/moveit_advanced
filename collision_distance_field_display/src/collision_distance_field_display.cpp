@@ -535,23 +535,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
     const collision_detection::CollisionRobotDistanceField *crobot = getCollisionRobotDistanceField();
     if (crobot)
     {
-#if 0
-      collision_detection::CollisionRequest req;
-      EigenSTL::vector_Vector3d centers;
-      std::vector<double> radii;
-      crobot->getSelfCollisionLinkSpheres(req, state, &getPlanningSceneRO()->getAllowedCollisionMatrix(), centers, radii);
-
-      if (!centers.empty())
-      {
-        colliding_spheres_display_.reset(new SpheresDisplay(planning_scene_node_,
-                                                            color_cast::getColorf(colliding_sphere_color_property_,
-                                                            colliding_sphere_alpha_property_)));
-        for ( int i = 0 ; i < centers.size() ; ++i )
-        {
-          colliding_spheres_display_->addSphere(centers[i], radii[i]);
-        }
-      }
-#else
       collision_detection::CollisionRequest req;
       collision_detection::CollisionResult res;
       std::vector<collision_detection::DFContact> df_contacts;
@@ -580,7 +563,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
           contact_points_display_->addSphere(df_contacts[i].pos, contact_points_size_property_->getFloat());
         }
       }
-#endif
     }
   }
 }
