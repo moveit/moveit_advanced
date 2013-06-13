@@ -62,6 +62,8 @@ enum {
   CD_DISTANCE_FIELD,
   CD_CNT
 };
+std::string moveit_rviz_plugin::CollisionDistanceFieldDisplay::COLLISION_METHOD_STRING_FCL = "FCL";
+std::string moveit_rviz_plugin::CollisionDistanceFieldDisplay::COLLISION_METHOD_STRING_DISTANCE_FIELD = "DistanceField";
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay()
   : PlanningSceneDisplay(true, false)
@@ -105,9 +107,9 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       robot_state_category_,
                                       SLOT( changedCollisionMethod() ),
                                       this );
-  collision_method_property_->addOption("FCL", CD_FCL);
-  collision_method_property_->addOption("DistanceField", CD_DISTANCE_FIELD);
-  collision_method_property_->setValue("FCL");
+  collision_method_property_->addOption(COLLISION_METHOD_STRING_FCL.c_str(), CD_FCL);
+  collision_method_property_->addOption(COLLISION_METHOD_STRING_DISTANCE_FIELD.c_str(), CD_DISTANCE_FIELD);
+  collision_method_property_->setValue(COLLISION_METHOD_STRING_FCL.c_str());
   active_group_property_ = new rviz::EditableEnumProperty(
                                       "Active Group",
                                       "",
@@ -132,52 +134,6 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       robot_state_category_,
                                       SLOT( robotVisualChanged() ),
                                       this);
-  show_contact_points_property_ = new rviz::BoolProperty(
-                                      "Show Contact Points",
-                                      false,
-                                      "Show collision contacts.",
-                                      robot_state_category_,
-                                      SLOT( showCollidingSpheresChanged() ),
-                                      this);
-  contact_points_color_property_ = new rviz::ColorProperty(
-                                      "Contact Points Color",
-                                      QColor( 140, 0, 255 ),
-                                      "Color to draw collision contact points.",
-                                      robot_state_category_,
-                                      SLOT( showCollidingSpheresChanged() ),
-                                      this);
-  contact_points_size_property_ = new rviz::FloatProperty(
-                                      "Contact Points Size",
-                                      0.02,
-                                      "Size of collision contact points (diameter of sphere marker).",
-                                      robot_state_category_,
-                                      SLOT( showCollidingSpheresChanged() ),
-                                      this);
-  show_colliding_spheres_property_ = new rviz::BoolProperty(
-                                      "Show Colliding Spheres",
-                                      false,
-                                      "Show spheres that are colliding with something.",
-                                      robot_state_category_,
-                                      SLOT( showCollidingSpheresChanged() ),
-                                      this);
-  colliding_sphere_color_property_ = new rviz::ColorProperty(
-                                      "Colliding Sphere Color",
-                                      QColor( 255, 0, 0 ),
-                                      "Color to draw spheres that are colliding with something.",
-                                      robot_state_category_,
-                                      SLOT( showCollidingSpheresChanged() ),
-                                      this);
-  colliding_sphere_alpha_property_ = new rviz::FloatProperty(
-                                      "Colliding Sphere Alpha",
-                                      0.3,
-                                      "0 is fully transparent, 1.0 is fully opaque.",
-                                      robot_state_category_,
-                                      SLOT( showCollidingSpheresChanged() ),
-                                      this);
-  colliding_sphere_color_property_->setHidden(!show_colliding_spheres_property_->getBool());
-  colliding_sphere_alpha_property_->setHidden(!show_colliding_spheres_property_->getBool());
-  contact_points_color_property_->setHidden(!show_contact_points_property_->getBool());
-  contact_points_size_property_->setHidden(!show_contact_points_property_->getBool());
   joint_violation_link_color_property_ = new rviz::ColorProperty(
                                       "Joint Violation Link Color",
                                       QColor( 255, 0, 255 ),
@@ -199,6 +155,59 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       robot_state_category_,
                                       SLOT( robotVisualChanged() ),
                                       this);
+
+  collision_detection_category_ = new rviz::Property(
+                                      "Collision Detection Info",
+                                      QVariant(),
+                                      "Info for visualizing and debugging distance field collision detection.",
+                                      robot_state_category_);
+  show_contact_points_property_ = new rviz::BoolProperty(
+                                      "Show Contact Points",
+                                      false,
+                                      "Show collision contacts.",
+                                      collision_detection_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  contact_points_color_property_ = new rviz::ColorProperty(
+                                      "Contact Points Color",
+                                      QColor( 140, 0, 255 ),
+                                      "Color to draw collision contact points.",
+                                      collision_detection_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  contact_points_size_property_ = new rviz::FloatProperty(
+                                      "Contact Points Size",
+                                      0.02,
+                                      "Size of collision contact points (diameter of sphere marker).",
+                                      collision_detection_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  show_colliding_spheres_property_ = new rviz::BoolProperty(
+                                      "Show Colliding Spheres",
+                                      false,
+                                      "Show spheres that are colliding with something.",
+                                      collision_detection_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  colliding_sphere_color_property_ = new rviz::ColorProperty(
+                                      "Colliding Sphere Color",
+                                      QColor( 255, 0, 0 ),
+                                      "Color to draw spheres that are colliding with something.",
+                                      collision_detection_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  colliding_sphere_alpha_property_ = new rviz::FloatProperty(
+                                      "Colliding Sphere Alpha",
+                                      0.3,
+                                      "0 is fully transparent, 1.0 is fully opaque.",
+                                      collision_detection_category_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  colliding_sphere_color_property_->setHidden(!show_colliding_spheres_property_->getBool());
+  colliding_sphere_alpha_property_->setHidden(!show_colliding_spheres_property_->getBool());
+  contact_points_color_property_->setHidden(!show_contact_points_property_->getBool());
+  contact_points_size_property_->setHidden(!show_contact_points_property_->getBool());
+
   sphere_gen_category_ = new rviz::Property(
                                       "Sphere Generation",
                                       QVariant(),
@@ -227,7 +236,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   robotVisualChanged();
 
   // add per-link data displays to show aspects of distance field
-  addPerLinkData(sphere_gen_category_);
+  addPerLinkData(collision_detection_category_, sphere_gen_category_);
 
   // create an interactive marker display used to display markers for interacting with the robot.
   delete int_marker_display_;
@@ -452,7 +461,7 @@ robot_state::RobotStateConstPtr moveit_rviz_plugin::CollisionDistanceFieldDispla
 const collision_detection::CollisionRobotDistanceField *moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollisionRobotDistanceField() const
 {
   planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
-  const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot("DistanceField");
+  const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot(COLLISION_METHOD_STRING_DISTANCE_FIELD);
   const collision_detection::CollisionRobotDistanceField* crobot_df =
     dynamic_cast<const collision_detection::CollisionRobotDistanceField*>(crobot);
 
@@ -467,7 +476,7 @@ const collision_detection::CollisionRobotDistanceField *moveit_rviz_plugin::Coll
 const collision_detection::CollisionWorldDistanceField *moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollisionWorldDistanceField() const
 {
   planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
-  const collision_detection::CollisionWorld* cworld = &*ps->getCollisionWorld("DistanceField");
+  const collision_detection::CollisionWorld* cworld = &*ps->getCollisionWorld(COLLISION_METHOD_STRING_DISTANCE_FIELD);
   const collision_detection::CollisionWorldDistanceField* cworld_df =
     dynamic_cast<const collision_detection::CollisionWorldDistanceField*>(cworld);
 
@@ -521,7 +530,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
   contact_points_display_.reset();
   if ((show_colliding_spheres_property_->getBool() ||
        show_contact_points_property_->getBool()) &&
-      collision_method_property_->getStdString() == "DistanceField")
+      collision_method_property_->getStdString() == COLLISION_METHOD_STRING_DISTANCE_FIELD)
   {
     const collision_detection::CollisionRobotDistanceField *crobot = getCollisionRobotDistanceField();
     if (crobot)

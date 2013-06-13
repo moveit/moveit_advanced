@@ -92,6 +92,15 @@ public:
   void updateLinkSphereGenPropertyValues();
   void updateAllSphereGenPropertyValues();
 
+  enum {
+    CD_UNKNOWN,
+    CD_FCL,
+    CD_DISTANCE_FIELD,
+    CD_CNT
+  };
+
+  static std::string COLLISION_METHOD_STRING_FCL;
+  static std::string COLLISION_METHOD_STRING_DISTANCE_FIELD;
 
 protected:
   virtual void onInitialize();
@@ -147,7 +156,7 @@ private:
   void saveSpheresToSrdf();
 
   // Add per link data displays.
-  void addPerLinkData(rviz::Property* parent_property);
+  void addPerLinkData(rviz::Property* df_collision_property, rviz::Property* parent_property);
   void addSphereGenProperties(rviz::Property* parent_property);
 
   // for drawing the robot
@@ -185,6 +194,7 @@ private:
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
+  rviz::Property* collision_detection_category_;
   rviz::Property* sphere_gen_category_;
   rviz::BoolProperty* save_to_srdf_property_;
   rviz::EnumProperty* sphere_gen_method_property_;
