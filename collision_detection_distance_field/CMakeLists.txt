@@ -72,6 +72,7 @@ add_library(
     src/params.cpp
     src/sphere_collision.cpp
     src/df_intragroup_collision.cpp
+    src/static_distance_field.cpp
 )
 
 # This is needed to ensure that messages are done being built before this is built

@@ -41,8 +41,10 @@
 void collision_detection::CollisionRobotDistanceField::initParams()
 {
   // The distance() queries will only be accurate up to this distance apart.
-  const static double MAX_ACCURATE_DISTANCE_CALCULATION = 0.25;
+  MAX_DISTANCE_ = 0.25;
 
-  max_df_distance_ = max_bounding_sphere_radius_ + MAX_ACCURATE_DISTANCE_CALCULATION;
+  SELF_COLLISION_RESOLUTION_ = 0.03;
+
+  method_ = METHOD_INTRA_DF;
 }
 

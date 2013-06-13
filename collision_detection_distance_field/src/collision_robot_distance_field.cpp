@@ -53,6 +53,21 @@ collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
   initialize();
 }
 
+inline void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
+    WorkArea& work) const
+{
+  switch(method_)
+  {
+  case METHOD_SPHERES:
+    checkSelfCollisionUsingSpheres(work);
+    break;
+  case METHOD_INTRA_DF:
+  default:
+    checkSelfCollisionUsingIntraDF(work);
+    break;
+  }
+}
+
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const CollisionRequest &req, 
     CollisionResult &res, 
@@ -60,9 +75,9 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const AllowedCollisionMatrix &acm) const
 {
   WorkArea& work = getWorkArea();
-  work.initQuery("checkSelfCollision1acm", &req, &res, &state, NULL, NULL, NULL, NULL, &acm);
+  initQuery(work, "checkSelfCollision1acm", &req, &res, &state, NULL, NULL, NULL, NULL, &acm);
 
-  checkSelfCollisionUsingSpheres(work);
+  checkSelfCollision(work);
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
@@ -71,9 +86,9 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const robot_state::RobotState &state) const
 {
   WorkArea& work = getWorkArea();
-  work.initQuery("checkSelfCollision1", &req, &res, &state, NULL, NULL, NULL, NULL, NULL);
+  initQuery(work, "checkSelfCollision1", &req, &res, &state, NULL, NULL, NULL, NULL, NULL);
 
-  checkSelfCollisionUsingSpheres(work);
+  checkSelfCollision(work);
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
@@ -196,6 +211,8 @@ const int collision_detection::CollisionRobotDistanceField::linkNameToIndex(cons
 
 void collision_detection::CollisionRobotDistanceField::initialize()
 {
+  initParams();
   initSpheres();
+  initLinkDF();
 }
 

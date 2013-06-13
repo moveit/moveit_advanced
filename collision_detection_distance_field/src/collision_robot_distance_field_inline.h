@@ -38,8 +38,10 @@
 #define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIELD_INLINE
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
+#include <algorithm>
 
-inline void collision_detection::CollisionRobotDistanceField::WorkArea::initQuery(
+inline void collision_detection::CollisionRobotDistanceField::initQuery(
+    WorkArea& work,
     const char *descrip,
     const CollisionRequest *req,
     CollisionResult *res,
@@ -48,42 +50,32 @@ inline void collision_detection::CollisionRobotDistanceField::WorkArea::initQuer
     const CollisionRobot *other_robot,
     const robot_state::RobotState *other_state1,
     const robot_state::RobotState *other_state2,
-    const AllowedCollisionMatrix *acm)
+    const AllowedCollisionMatrix *acm) const
 {
-  req_ = req;
-  res_ = res;
-  state1_ = state1;
-  state2_ = state2;
-  other_robot_ = other_robot;
-  other_state1_ = other_state1;
-  other_state2_ = other_state2;
-  acm_ = acm;
+  work.req_ = req;
+  work.res_ = res;
+  work.state1_ = state1;
+  work.state2_ = state2;
+  work.other_robot_ = other_robot;
+  work.other_state1_ = other_state1;
+  work.other_state2_ = other_state2;
+  work.acm_ = acm;
 
   // debug
-  if (1)
-  {
-    logInform("CollisionRobotDistanceField Query %s", descrip);
-
-    std::stringstream ss_cost;
-    ss_cost << ", cost(max=" << req->max_cost_sources << ", dens=" << req->min_cost_density << ")";
-    std::stringstream ss_contacts;
-    ss_contacts << ", contact(max=" << req->max_contacts << ", cpp=" << req->max_contacts_per_pair << ")";
-    std::stringstream ss_acm;
-    if (acm)
-    {
-      std::vector<std::string> names;
-      acm->getAllEntryNames(names);
-      ss_acm << ", acm(nnames=" << names.size() << ", sz=" << acm->getSize() << ")";
-    }
-    logInform("   request: result%s%s%s%s%s%s",
-      req->distance ? ", distance" : "",
-      req->cost ? ss_cost.str().c_str() : "",
-      req->contacts ? ss_contacts.str().c_str() : "",
-      req->is_done ? ", is_done-func" : "",
-      req->verbose ? ", VERBOSE" : "",
-      ss_acm.str().c_str());
-  }
+  if (1 || work.req_->verbose)
+    dumpQuery(work, descrip);
 }
+
+inline void collision_detection::CollisionRobotDistanceField::setCloseDistance(WorkArea& work, double distance) const
+{
+  work.res_->distance = std::min(work.res_->distance, distance);
+}
+
+inline bool collision_detection::CollisionRobotDistanceField::never_check_link_pair(const DFLink *link_a, const DFLink *link_b) const
+{
+  return link_a->acm_bits_.getBit(link_b->index_in_link_order_);
+}
+
 
 
 #endif

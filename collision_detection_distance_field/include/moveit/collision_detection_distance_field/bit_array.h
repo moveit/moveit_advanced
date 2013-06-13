@@ -34,49 +34,85 @@
 
 /* Author: Acorn Pooley */
 
-#include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
-#include <console_bridge/console.h>
-#include <cassert>
+#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__BIT_ARRAY
+#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__BIT_ARRAY
 
-collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection::CollisionRobotDistanceField::getWorkArea() const
+#include <stdint.h>
+#include <string>
+
+namespace collision_detection
 {
-  if (!work_area_.get())
+
+// very simple bit array with no bounds checking.
+class BitArray
+{
+public:
+  BitArray();
+  ~BitArray();
+
+  // Set how many bits there should be.
+  // All bits are set to <value>.
+  void reset(int nbits, bool value = false);
+
+  // set a bit
+  void setBit(int bit_index, bool value = true);
+
+  // clear a bit
+  void clrBit(int bit_index);
+
+  // get the value of a bit
+  bool getBit(int bit_index) const;
+
+private:
+  uint32_t *bits_;
+};
+
+}
+
+inline collision_detection::BitArray::BitArray()
+  : bits_(NULL)
+{
+}
+
+inline collision_detection::BitArray::~BitArray()
+{
+  delete[] bits_;
+}
+
+// Set how many bits there should be.
+// All bits are set to <value>.
+inline void collision_detection::BitArray::reset(int nbits, bool value)
+{
+  delete[] bits_;
+  bits_ = NULL;
+  if (nbits)
   {
-    work_area_.reset(new WorkArea);
-    WorkArea& work = *work_area_;
-    work.transformed_sphere_centers_.resize(sphere_centers_.size());
+    int nwords = (nbits + 0x1f) >> 5;
+    bits_ = new uint32_t[nwords];
+    std::memset(bits_, value ? 0xff : 0x00, sizeof(uint32_t) * nwords);
   }
-
-  WorkArea& work = *work_area_;
-  return work;
 }
 
-collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
+inline void collision_detection::BitArray::setBit(int bit_index, bool value)
 {
+  int idx = bit_index >> 5;
+  uint32_t bit = 1 << (bit_index & 0x1f);
+  if (value)
+    bits_[idx] |= bit;
+  else
+    bits_[idx] &= ~bit;
 }
 
-// show the state of the current query
-void collision_detection::CollisionRobotDistanceField::dumpQuery(const WorkArea& work, const char *descrip) const
+inline void collision_detection::BitArray::clrBit(int bit_index)
 {
-  logInform("CollisionRobotDistanceField Query %s", descrip);
-
-  std::stringstream ss_cost;
-  ss_cost << ", cost(max=" << work.req_->max_cost_sources << ", dens=" << work.req_->min_cost_density << ")";
-  std::stringstream ss_contacts;
-  ss_contacts << ", contact(max=" << work.req_->max_contacts << ", cpp=" << work.req_->max_contacts_per_pair << ")";
-  std::stringstream ss_acm;
-  if (work.acm_)
-  {
-    std::vector<std::string> names;
-    work.acm_->getAllEntryNames(names);
-    ss_acm << ", acm(nnames=" << names.size() << ", sz=" << work.acm_->getSize() << ")";
-  }
-  logInform("   request: result%s%s%s%s%s%s",
-    work.req_->distance ? ", distance" : "",
-    work.req_->cost ? ss_cost.str().c_str() : "",
-    work.req_->contacts ? ss_contacts.str().c_str() : "",
-    work.req_->is_done ? ", is_done-func" : "",
-    work.req_->verbose ? ", VERBOSE" : "",
-    ss_acm.str().c_str());
+  setBit(bit_index, false);
 }
 
+inline bool collision_detection::BitArray::getBit(int bit_index) const
+{
+  int idx = bit_index >> 5;
+  uint32_t bit = 1 << (bit_index & 0x1f);
+  return bits_[idx] & bit;
+}
+
+#endif

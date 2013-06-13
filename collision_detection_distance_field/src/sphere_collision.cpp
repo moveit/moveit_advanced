@@ -605,7 +605,7 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionLinkSpher
 {
   WorkArea& work = getWorkArea();
   CollisionResult res;
-  work.initQuery("getSelfCollisionLinkSpheres", &req, &res, &state, NULL, NULL, NULL, NULL, acm);
+  initQuery(work, "getSelfCollisionLinkSpheres", &req, &res, &state, NULL, NULL, NULL, NULL, acm);
   const SphereIndex *sphere_list = &*self_collide_list_.begin();
 
   transformSpheres(*work.state1_, work);

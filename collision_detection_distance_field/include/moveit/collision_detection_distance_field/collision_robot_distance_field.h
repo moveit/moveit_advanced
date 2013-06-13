@@ -34,10 +34,12 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIELD
-#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_COLLISION_ROBOT_DISTANCE_FIELD
+#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE__FIELD_COLLISION_ROBOT_DISTANCE_FIELD
+#define MOVEIT_COLLISION_DETECTION_DISTANCE__FIELD_COLLISION_ROBOT_DISTANCE_FIELD
 
 #include <moveit/collision_detection_distance_field/collision_common_distance_field.h>
+#include <moveit/collision_detection_distance_field/static_distance_field.h>
+#include <moveit/collision_detection_distance_field/bit_array.h>
 #include <boost/thread.hpp>
 
 namespace collision_detection
@@ -136,6 +138,28 @@ private:
   typedef uint16_t SphereIndex;
   typedef uint16_t LinkIndex;
 
+  // what method to use to check self collisions
+  enum Method
+  {
+    METHOD_SPHERES,
+    METHOD_INTRA_DF,
+  };
+
+  // per link internal info for IntraDF self collision checking
+  struct DFLink
+  {
+    const std::string* name_;
+    LinkIndex index_in_model_;
+    LinkIndex index_in_link_order_;
+    SphereIndex sphere_idx_begin_;
+    SphereIndex sphere_idx_end_;
+
+    // one bit per link in link_order_.  1=ignore collisions, 0=check collisions
+    BitArray acm_bits_;
+    
+    StaticDistanceField df_;
+  };
+
   //###########################################################################
   //############################### WORK AREA #################################
   //###########################################################################
@@ -145,19 +169,11 @@ private:
   // thread and used for all queries from that thread.
   struct WorkArea
   {
+  public:
     ~WorkArea();
 
-    // initialize query
-    void initQuery(const char* descrip,
-                   const CollisionRequest *req,
-                   CollisionResult *res,
-                   const robot_state::RobotState *state1,
-                   const robot_state::RobotState *state2,
-                   const CollisionRobot *other_robot,
-                   const robot_state::RobotState *other_state1,
-                   const robot_state::RobotState *other_state2,
-                   const AllowedCollisionMatrix *acm);
 
+  public:
     // place to store transformed copy of sphere_centers_
     EigenSTL::vector_Vector3d transformed_sphere_centers_;
 
@@ -227,14 +243,6 @@ private:
   //   -1 if link has no geometry or does not exist.
   const int linkNameToIndex(const std::string& link_name) const;
 
-#if 0
-  // number of links in robot
-  const std::size_t linkCount() const
-  {
-    return kmodel_->getLinkModels().size();
-  }
-#endif
-
   // find a link's collision spheres in the srdf
   const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link) const;
 
@@ -246,7 +254,39 @@ private:
   // initialize everything.  Called from constructors.
   void initialize();
 
+  // initialize parameters that affect collision checking.
+  // Parameters affect generation of spheres and distance fields, so this must
+  // be called before initSpheres() and initLinkDF().
   void initParams();
+
+  //###########################################################################
+  //############################### GENERAL ###################################
+  //###########################################################################
+
+  // common collision checking function.  Decides what method to use.
+  void checkSelfCollision(WorkArea& work) const;
+
+  // true if this link pair should never be checked for collision because it
+  // appears in an SRDF DisabledCollisionPair.
+  bool never_check_link_pair(const DFLink *link_a, const DFLink *link_b) const;
+
+  // accumulate distance into work.res_.distance
+  void setCloseDistance(WorkArea& work, double distance) const;
+
+  // initialize query
+  void initQuery(WorkArea& work,
+                 const char* descrip,
+                 const CollisionRequest *req,
+                 CollisionResult *res,
+                 const robot_state::RobotState *state1,
+                 const robot_state::RobotState *state2,
+                 const CollisionRobot *other_robot,
+                 const robot_state::RobotState *other_state1,
+                 const robot_state::RobotState *other_state2,
+                 const AllowedCollisionMatrix *acm) const;
+
+  // show info about query on logInform
+  void dumpQuery(const WorkArea& work, const char *descrip) const;
 
   //###########################################################################
   //############################### SPHERE COLLISION ##########################
@@ -308,6 +348,17 @@ private:
   //############################### INTRA GROUP DF COLLISION ##################
   //###########################################################################
 
+  // check self collision using individual static distance fields
+  void checkSelfCollisionUsingIntraDF(WorkArea& work) const;
+
+  // Does the work for checkSelfCollisionUsingIntraDF()
+  //   work - workarea and description of query
+  //   link_list - which links to check
+  void checkSelfCollisionUsingIntraDFLoop(WorkArea& work,
+                                          const DFLink * const *link_list) const;
+
+  // initialize IntraDF data structures
+  void initLinkDF();
 
 
   //###########################################################################
@@ -315,17 +366,28 @@ private:
   //###########################################################################
 
   //===========================================================================
-  // Configuration
+  // Configuration - set in params.cpp
   //===========================================================================
 
-  // This affects size and generation of distance fields.  Changing it requires
-  // recalculating all distance fields from scratch.
-  //
-  // This sets an upper bound on the size of sphere that can be checked with
-  // distance field calculation.
-  //
-  // This also sets an upper bound on results returned by distance*() queries.
-  double max_df_distance_;  
+  // This is used to decide how big to make the distance fields.
+  // It is roughly the max distance that will be returned by distance*() queries.
+  double MAX_DISTANCE_;
+
+  // This is the resolution used for self collision detection.  The accuracy of
+  // collision checks will be this plus the tolerance used to generate
+  // collision spheres.
+  double SELF_COLLISION_RESOLUTION_;
+
+  // what method to use for collision detection.
+  // TODO: replace this with a heuristic and/or make it configurable.
+  Method method_;
+
+  //===========================================================================
+  // Work area
+  //===========================================================================
+  
+  // mutable thread specific work area
+  mutable boost::thread_specific_ptr<WorkArea> work_area_;
 
   //===========================================================================
   // Sphere data
@@ -366,14 +428,20 @@ private:
   double max_bounding_sphere_radius_;
 
   //===========================================================================
-  // Work area
+  // DF data for self collision
   //===========================================================================
   
-  // mutable thread specific work area
-  mutable boost::thread_specific_ptr<WorkArea> work_area_;
+  // This is how much bigger distance fields must be compared to the objects they describe.
+  // This is also used as the max distance when calculating distance fields on the fly.
+  // The value is based on MAX_DISTANCE_ and the size of the largest link.
+  double max_df_distance_;  
+
+  std::vector<DFLink> links_;
+
+  // NULL terminated list of pointers, one for each link in links_
+  std::vector<DFLink*> all_links_;
 };
 
 }
-
 
 #endif

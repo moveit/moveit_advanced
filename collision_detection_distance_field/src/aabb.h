@@ -34,49 +34,68 @@
 
 /* Author: Acorn Pooley */
 
-#include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
-#include <console_bridge/console.h>
-#include <cassert>
+#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_AABB
+#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_AABB
 
-collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection::CollisionRobotDistanceField::getWorkArea() const
+namespace collision_detection
 {
-  if (!work_area_.get())
+
+template<class T>
+class basic_AABB
+{
+public:
+  typedef Eigen::Matrix<T, 3, 1> Vec3;
+  typedef std::vector<Vec3, Eigen::aligned_allocator<Vec3> > vector_Vec3;
+  basic_AABB()
   {
-    work_area_.reset(new WorkArea);
-    WorkArea& work = *work_area_;
-    work.transformed_sphere_centers_.resize(sphere_centers_.size());
+    clear();
   }
 
-  WorkArea& work = *work_area_;
-  return work;
-}
-
-collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
-{
-}
-
-// show the state of the current query
-void collision_detection::CollisionRobotDistanceField::dumpQuery(const WorkArea& work, const char *descrip) const
-{
-  logInform("CollisionRobotDistanceField Query %s", descrip);
-
-  std::stringstream ss_cost;
-  ss_cost << ", cost(max=" << work.req_->max_cost_sources << ", dens=" << work.req_->min_cost_density << ")";
-  std::stringstream ss_contacts;
-  ss_contacts << ", contact(max=" << work.req_->max_contacts << ", cpp=" << work.req_->max_contacts_per_pair << ")";
-  std::stringstream ss_acm;
-  if (work.acm_)
+  basic_AABB(const vector_Vec3& points)
   {
-    std::vector<std::string> names;
-    work.acm_->getAllEntryNames(names);
-    ss_acm << ", acm(nnames=" << names.size() << ", sz=" << work.acm_->getSize() << ")";
+    clear();
+    add(points);
   }
-  logInform("   request: result%s%s%s%s%s%s",
-    work.req_->distance ? ", distance" : "",
-    work.req_->cost ? ss_cost.str().c_str() : "",
-    work.req_->contacts ? ss_contacts.str().c_str() : "",
-    work.req_->is_done ? ", is_done-func" : "",
-    work.req_->verbose ? ", VERBOSE" : "",
-    ss_acm.str().c_str());
+
+  void add(const Vec3& point)
+  {
+    min_ = min_.array().min(point.array());
+    max_ = max_.array().max(point.array());
+  }
+
+  void add(const vector_Vec3& points)
+  {
+    for (typename vector_Vec3::const_iterator it = points.begin() ; it != points.end() ; ++it)
+      add(*it);
+  }
+
+  void clear()
+  {
+    min_.x() = std::numeric_limits<T>::max();
+    min_.y() = std::numeric_limits<T>::max();
+    min_.z() = std::numeric_limits<T>::max();
+    if (std::numeric_limits<T>::is_integer)
+    {
+      max_.x() = std::numeric_limits<T>::min();
+      max_.y() = std::numeric_limits<T>::min();
+      max_.z() = std::numeric_limits<T>::min();
+    }
+    else
+    {
+      max_.x() = -std::numeric_limits<T>::max();
+      max_.y() = -std::numeric_limits<T>::max();
+      max_.z() = -std::numeric_limits<T>::max();
+    }
+  }
+
+  Vec3 min_;
+  Vec3 max_;
+};
+
+typedef basic_AABB<double> AABB;
+typedef basic_AABB<int> AABBi;
+
 }
 
+
+#endif
