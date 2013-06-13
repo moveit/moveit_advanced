@@ -127,7 +127,7 @@ void collision_detection::StaticDistanceField::initialize(
         // propogation distance field has a bias of -1 on internal points
         dist = (dist <= -1.0) ? (dist+1.0) : dist;
 
-        entry.distance_ = d;
+        entry.distance_ = dist;
         entry.cell_id_ = getCellId(x,y,z);
         setCell(x, y, z, entry);
       }
