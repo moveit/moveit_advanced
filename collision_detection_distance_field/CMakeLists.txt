@@ -68,6 +68,7 @@ add_library(
     src/collision_common_distance_field.cpp
     src/collision_robot_distance_field.cpp
     src/collision_world_distance_field.cpp
+    src/access.cpp
     src/workarea.cpp
     src/params.cpp
     src/sphere_collision.cpp

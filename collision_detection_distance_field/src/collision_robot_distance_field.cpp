@@ -223,20 +223,6 @@ void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
 {
 }
 
-const int collision_detection::CollisionRobotDistanceField::linkNameToIndex(const std::string& link_name) const
-{
-  std::map<std::string,int>::const_iterator it = link_name_to_link_index_.find(link_name);
-  if (it != link_name_to_link_index_.end())
-  {
-    return it->second;
-  }
-  else
-  {
-    logError("linkNameToIndex() could not find nonexistant link %s",link_name.c_str());
-    return -1;
-  }
-}
-
 void collision_detection::CollisionRobotDistanceField::initialize()
 {
   initParams();

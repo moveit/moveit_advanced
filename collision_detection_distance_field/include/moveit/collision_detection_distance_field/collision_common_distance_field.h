@@ -54,6 +54,7 @@ struct DFContact : public Contact
   void copyFrom(const Contact& contact);
 
 
+  // sphere_centers are in planning frame coordinate system
   double sphere_radius_1;             // 0 if no sphere
   Eigen::Vector3d sphere_center_1;    // valid if sphere_radius_1 != 0
   const StaticDistanceField *sdf_1;   // valid if non-NULL

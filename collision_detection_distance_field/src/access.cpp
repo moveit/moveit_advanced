@@ -36,65 +36,65 @@
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 #include "collision_robot_distance_field_inline.h"
-#include <console_bridge/console.h>
-#include <cassert>
 
-collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection::CollisionRobotDistanceField::getWorkArea() const
+const int collision_detection::CollisionRobotDistanceField::linkNameToIndex(const std::string& link_name) const
 {
-  if (!work_area_.get())
+  std::map<std::string,int>::const_iterator it = link_name_to_link_index_.find(link_name);
+  if (it != link_name_to_link_index_.end())
   {
-    work_area_.reset(new WorkArea);
-    WorkArea& work = *work_area_;
-    work.transformed_sphere_centers_.resize(sphere_centers_.size());
-    work.df_contacts_ = NULL;
+    return it->second;
+  }
+  else
+  {
+    logError("linkNameToIndex() could not find nonexistant link %s",link_name.c_str());
+    return -1;
+  }
+}
+
+const collision_detection::StaticDistanceField* collision_detection::CollisionRobotDistanceField::getStaticDistanceField(
+                      const std::string& link_name) const
+{
+  const DFLink *link = linkNameToDFLink(link_name);
+  return link ? &link->df_ : NULL;
+}
+
+void collision_detection::CollisionRobotDistanceField::getStaticDistanceFieldPoints(
+      const std::string& link_name,
+      EigenSTL::vector_Vector3d& points,
+      double min_dist,
+      double max_dist,
+      bool resolution_relative) const
+{
+  points.clear();
+  const StaticDistanceField *df = getStaticDistanceField(link_name);
+  if (!df)
+    return;
+
+  if (resolution_relative)
+  {
+    min_dist *= df->getResolution(distance_field::DIM_X);
+    max_dist *= df->getResolution(distance_field::DIM_X);
   }
 
-  WorkArea& work = *work_area_;
-  return work;
-}
-
-collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
-{
-}
-
-// show the state of the current query
-void collision_detection::CollisionRobotDistanceField::dumpQuery(const WorkArea& work, const char *descrip) const
-{
-  logInform("CollisionRobotDistanceField Query %s", descrip);
-
-  std::stringstream ss_cost;
-  ss_cost << ", cost(max=" << work.req_->max_cost_sources << ", dens=" << work.req_->min_cost_density << ")";
-  std::stringstream ss_contacts;
-  ss_contacts << ", contact(max=" << work.req_->max_contacts << ", cpp=" << work.req_->max_contacts_per_pair << ")";
-  std::stringstream ss_acm;
-  if (work.acm_)
+  int xend = df->getNumCells(distance_field::DIM_X);
+  int yend = df->getNumCells(distance_field::DIM_X);
+  int zend = df->getNumCells(distance_field::DIM_X);
+  for (int z = 0 ; z < zend ; ++z)
   {
-    std::vector<std::string> names;
-    work.acm_->getAllEntryNames(names);
-    ss_acm << ", acm(nnames=" << names.size() << ", sz=" << work.acm_->getSize() << ")";
+    for (int y = 0 ; y < yend ; ++y)
+    {
+      for (int x = 0 ; x < xend ; ++x)
+      {
+        const collision_detection::DistPosEntry& entry = df->getCell(x,y,z);
+        if (entry.distance_ >= min_dist && entry.distance_ <= max_dist)
+        {
+          Eigen::Vector3d p;
+          df->gridToWorld(x, y, z, p.x(), p.y(), p.z());
+          points.push_back(p);
+        }
+      }
+    }
   }
-  logInform("   request: result%s%s%s%s%s%s",
-    work.req_->distance ? ", distance" : "",
-    work.req_->cost ? ss_cost.str().c_str() : "",
-    work.req_->contacts ? ss_contacts.str().c_str() : "",
-    work.req_->is_done ? ", is_done-func" : "",
-    work.req_->verbose ? ", VERBOSE" : "",
-    ss_acm.str().c_str());
 }
 
-void collision_detection::DFContact::copyFrom(const Contact& contact)
-{
-  pos = contact.pos;
-	normal = contact.normal;
-	depth = contact.depth;
-	body_name_1 = contact.body_name_1;
-	body_type_1 = contact.body_type_1;
-	body_name_2 = contact.body_name_2;
-	body_type_2 = contact.body_type_2;
 
-  sphere_radius_1 = 0;
-  sphere_radius_2 = 0;
-  sdf_1 = NULL;
-  sdf_2 = NULL;
-  eliminated_by_acm_function = false;
-}

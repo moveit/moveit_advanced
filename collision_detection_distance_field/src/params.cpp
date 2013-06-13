@@ -35,6 +35,7 @@
 /* Author: Acorn Pooley */
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
+#include "collision_robot_distance_field_inline.h"
 #include <console_bridge/console.h>
 #include <cassert>
 

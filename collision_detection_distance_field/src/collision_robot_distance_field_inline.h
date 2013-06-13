@@ -41,16 +41,16 @@
 #include <algorithm>
 
 inline void collision_detection::CollisionRobotDistanceField::initQuery(
-    WorkArea& work,
-    const char *descrip,
-    const CollisionRequest *req,
-    CollisionResult *res,
-    const robot_state::RobotState *state1,
-    const robot_state::RobotState *state2,
-    const CollisionRobot *other_robot,
-    const robot_state::RobotState *other_state1,
-    const robot_state::RobotState *other_state2,
-    const AllowedCollisionMatrix *acm) const
+      WorkArea& work,
+      const char *descrip,
+      const CollisionRequest *req,
+      CollisionResult *res,
+      const robot_state::RobotState *state1,
+      const robot_state::RobotState *state2,
+      const CollisionRobot *other_robot,
+      const robot_state::RobotState *other_state1,
+      const robot_state::RobotState *other_state2,
+      const AllowedCollisionMatrix *acm) const
 {
   work.req_ = req;
   work.res_ = res;
@@ -66,16 +66,75 @@ inline void collision_detection::CollisionRobotDistanceField::initQuery(
     dumpQuery(work, descrip);
 }
 
-inline void collision_detection::CollisionRobotDistanceField::setCloseDistance(WorkArea& work, double distance) const
+inline void collision_detection::CollisionRobotDistanceField::setCloseDistance(
+      WorkArea& work, 
+      double distance) const
 {
   work.res_->distance = std::min(work.res_->distance, distance);
 }
 
-inline bool collision_detection::CollisionRobotDistanceField::never_check_link_pair(const DFLink *link_a, const DFLink *link_b) const
+inline bool collision_detection::CollisionRobotDistanceField::never_check_link_pair(
+      const DFLink *link_a, 
+      const DFLink *link_b) const
 {
   return link_a->acm_bits_.getBit(link_b->index_in_link_order_);
 }
 
 
+// return the LinkModel for a link index
+inline const robot_model::LinkModel* collision_detection::CollisionRobotDistanceField::linkIndexToLinkModel(
+      int link_index) const
+{
+  assert(link_index >= 0 && link_index < link_order_.size());
+  return kmodel_->getLinkModels()[link_order_[link_index]];
+}
+
+// return the LinkState for a link index
+inline robot_state::LinkState* collision_detection::CollisionRobotDistanceField::linkIndexToLinkState(
+      int link_index,
+      const robot_state::RobotState* state) const
+{
+  assert(link_index >= 0 && link_index < link_order_.size());
+  return state->getLinkStateVector()[link_order_[link_index]];
+}
+
+// return name for a link index
+inline const std::string& collision_detection::CollisionRobotDistanceField::linkIndexToName(
+      int link_index) const
+{
+  return linkIndexToLinkModel(link_index)->getName();
+}
+
+
+
+
+// return the link_index of link owning sphere with sphere_index
+inline int collision_detection::CollisionRobotDistanceField::sphereIndexToLinkIndex(
+      int sphere_index) const
+{
+  assert(sphere_index >= 0 && sphere_index < sphere_idx_to_link_index_.size());
+  return sphere_idx_to_link_index_[sphere_index];
+}
+
+// return the LinkModel for a particular sphere index in sphere_centers_, sphere_radii_, or sphere_link_map_
+inline const robot_model::LinkModel* collision_detection::CollisionRobotDistanceField::sphereIndexToLinkModel(
+      int sphere_index) const
+{
+  return linkIndexToLinkModel(sphereIndexToLinkIndex(sphere_index));
+}
+
+inline const collision_detection::CollisionRobotDistanceField::DFLink* collision_detection::CollisionRobotDistanceField::linkNameToDFLink(
+      const std::string& link_name) const
+{
+  int idx = linkNameToIndex(link_name);
+  return idx == -1 ? NULL : &links_[idx];
+}
+
+inline collision_detection::CollisionRobotDistanceField::DFLink* collision_detection::CollisionRobotDistanceField::linkNameToDFLink(
+      const std::string& link_name)
+{
+  int idx = linkNameToIndex(link_name);
+  return idx == -1 ? NULL : &links_[idx];
+}
 
 #endif

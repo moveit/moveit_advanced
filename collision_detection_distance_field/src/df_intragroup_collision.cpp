@@ -361,4 +361,3 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
   checkSelfCollisionUsingIntraDFLoop(work, &all_links_.front());
 }
 
-

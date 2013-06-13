@@ -122,12 +122,39 @@ public: /* DEBUGGING functions */
                       EigenSTL::vector_Vector3d& centers,
                       std::vector<double>& radii) const;
 
+  // This is just like a call to checkSelfCollision() but all contacts are
+  // returned in df_contacts.
+  //
+  // if req.contacts is true then up to req.max_contacts will be returned.
+  // Otherwise up to 1000 will be returned.
   void getSelfCollisionContacts(
                       const CollisionRequest &req,
                       CollisionResult &res,
                       const robot_state::RobotState &state,
                       const AllowedCollisionMatrix *acm,
                       std::vector<DFContact>* df_contacts) const;
+
+  // return the static distance field associated with a link.  Only valid as
+  // long as the CollisionRobotDistanceField exists and does not have its field
+  // regenerated.
+  const StaticDistanceField* getStaticDistanceField(
+                      const std::string& link_name) const;
+
+  // Get a list of points showing the distance field.
+  // All points between min_dist and max_dist from the surface of
+  // the link are returned.
+  //
+  // If resolution_relative is true then min_dist/max_dist are a multiple of
+  // the distance field resolution.  Otherwise they are in meters.
+  //
+  // Points are in link collision frame.
+  void getStaticDistanceFieldPoints(
+                      const std::string& link_name,
+                      EigenSTL::vector_Vector3d& points,
+                      double min_dist = -1.0,
+                      double max_dist = 0.0,
+                      bool resolution_relative = true) const;
+
 
 #if 0
   void getSelfCollisionLinkSpheres(
@@ -222,48 +249,33 @@ private:
   //###########################################################################
 
   // return the LinkModel for a link index
-  const robot_model::LinkModel* linkIndexToLinkModel(int link_index) const
-  {
-    assert(link_index >= 0 && link_index < link_order_.size());
-    return kmodel_->getLinkModels()[link_order_[link_index]];
-  }
+  const robot_model::LinkModel* linkIndexToLinkModel(int link_index) const;
 
   // return the LinkState for a link index
-  robot_state::LinkState* linkIndexToLinkState(int link_index, const robot_state::RobotState* state) const
-  {
-    assert(link_index >= 0 && link_index < link_order_.size());
-    return state->getLinkStateVector()[link_order_[link_index]];
-  }
+  robot_state::LinkState* linkIndexToLinkState(int link_index, const robot_state::RobotState* state) const;
 
   // return name for a link index
-  const std::string& linkIndexToName(int link_index) const
-  {
-    return linkIndexToLinkModel(link_index)->getName();
-  }
+  const std::string& linkIndexToName(int link_index) const;
 
 
 
 
   // return the link_index of link owning sphere with sphere_index
-  int sphereIndexToLinkIndex(int sphere_index) const
-  {
-    assert(sphere_index >= 0 && sphere_index < sphere_idx_to_link_index_.size());
-    return sphere_idx_to_link_index_[sphere_index];
-  }
+  int sphereIndexToLinkIndex(int sphere_index) const;
 
   // return the LinkModel for a particular sphere index in sphere_centers_, sphere_radii_, or sphere_link_map_
-  const robot_model::LinkModel* sphereIndexToLinkModel(int sphere_index) const
-  {
-    return linkIndexToLinkModel(sphereIndexToLinkIndex(sphere_index));
-  }
+  const robot_model::LinkModel* sphereIndexToLinkModel(int sphere_index) const;
 
   // lookup index for a link. 
   //   -1 if link has no geometry or does not exist.
   const int linkNameToIndex(const std::string& link_name) const;
 
   // find a link's collision spheres in the srdf
-  const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link) const;
+  const srdf::Model::LinkSpheres *getSrdfLinkSpheres(const std::string& link_name) const;
 
+  // Look up DFLink by link name
+  const DFLink *linkNameToDFLink(const std::string& link_name) const;
+  DFLink       *linkNameToDFLink(const std::string& link_name);
 
   //###########################################################################
   //############################### INITIALIZATION ############################

@@ -122,7 +122,12 @@ void collision_detection::StaticDistanceField::initialize(
       for (int x = 0 ; x < df.getXNumCells() ; ++x)
       {
         DistPosEntry entry;
-        entry.distance_ = df.getDistance(x, y, z);
+        double dist = df.getDistance(x, y, z);
+
+        // propogation distance field has a bias of -1 on internal points
+        dist = (dist <= -1.0) ? (dist+1.0) : dist;
+
+        entry.distance_ = d;
         entry.cell_id_ = getCellId(x,y,z);
         setCell(x, y, z, entry);
       }
