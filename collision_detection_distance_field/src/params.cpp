@@ -48,3 +48,21 @@ void collision_detection::CollisionRobotDistanceField::initParams()
   method_ = METHOD_INTRA_DF;
 }
 
+void collision_detection::CollisionRobotDistanceField::getMethods(std::vector<std::string>& methods) const
+{
+  methods.clear();
+  methods.push_back("INTRA_DF");
+  methods.push_back("SPHERES");
+}
+
+void collision_detection::CollisionRobotDistanceField::setMethod(const std::string& method)
+{
+  if (method == "INTRA_DF")
+    method_ = METHOD_INTRA_DF;
+  else if (method == "SPHERES")
+    method_ = METHOD_SPHERES;
+  else
+  {
+    logError("CollisionRobotDistanceField::setMethod() - bad method %s",method.c_str());
+  }
+}

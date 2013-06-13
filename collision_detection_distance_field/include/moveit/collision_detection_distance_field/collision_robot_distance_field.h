@@ -109,12 +109,23 @@ public:
                                const robot_state::RobotState &other_state,
                                const AllowedCollisionMatrix &acm) const;
 
+public: /* Special features unique to DistanceField collision */
+
+  void getMethods(std::vector<std::string>& methods) const;
+  void setMethod(const std::string& method);
+
 public: /* DEBUGGING functions */
 
   // return the collision spheres for a link in link's collision geometry frame.
   void getLinkSpheres(const std::string& link_name,
                       EigenSTL::vector_Vector3d& centers,
                       std::vector<double>& radii) const;
+
+  void getSelfCollisionContacts(
+                      const CollisionRequest &req,
+                      const robot_state::RobotState &state,
+                      const AllowedCollisionMatrix *acm,
+                      std::vector<DFContact>* df_contacts) const;
 
   void getSelfCollisionLinkSpheres(
                       const CollisionRequest &req,
