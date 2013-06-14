@@ -107,6 +107,12 @@ public:
 
   const EigenSTL::vector_Vector3d& getPoints() const { return points_; }
 
+  // find all points on a regular grid that are inside the body
+  static void determineCollisionPoints(const bodies::Body& body,
+                                       double resolution,
+                                       EigenSTL::vector_Vector3d& points);
+
+
 private:
   EigenSTL::vector_Vector3d points_;
 };

@@ -41,6 +41,33 @@
 #include "aabb.h"
 #include <moveit/distance_field/distance_field_common.h>
 #include <moveit/distance_field/propagation_distance_field.h>
+#include <cmath>
+
+void collision_detection::StaticDistanceField::determineCollisionPoints(
+      const bodies::Body& body,
+      double resolution,
+      EigenSTL::vector_Vector3d& points)
+{
+  bodies::BoundingSphere sphere;
+  body.computeBoundingSphere(sphere);
+  double xval_s = std::floor((sphere.center.x() - sphere.radius - resolution) / resolution) * resolution;
+  double yval_s = std::floor((sphere.center.y() - sphere.radius - resolution) / resolution) * resolution;
+  double zval_s = std::floor((sphere.center.z() - sphere.radius - resolution) / resolution) * resolution;
+  double xval_e = sphere.center.x() + sphere.radius + resolution;
+  double yval_e = sphere.center.y() + sphere.radius + resolution;
+  double zval_e = sphere.center.z() + sphere.radius + resolution;
+  Eigen::Vector3d pt;
+  for(pt.x() = xval_s; pt.x() <= xval_e; pt.x() += resolution) {
+    for(pt.y() = yval_s; pt.y() <= yval_e; pt.y() += resolution) {
+      for(pt.z() = zval_s; pt.z() <= zval_e; pt.z() += resolution) {
+        if(body.containsPoint(pt)) {
+          points.push_back(pt);
+        }
+      }
+    }
+  }
+}
+
 
 void collision_detection::StaticDistanceField::initialize(
       const bodies::Body& body,
@@ -51,7 +78,12 @@ void collision_detection::StaticDistanceField::initialize(
   points_.clear();
 
   logInform("    create points at res=%f",resolution);
+#if 0
   EigenSTL::vector_Vector3d points = distance_field::determineCollisionPoints(&body, resolution);
+#else
+  EigenSTL::vector_Vector3d points;
+  determineCollisionPoints(body, resolution, points);
+#endif
 
   if (points.empty())
   {
@@ -88,9 +120,9 @@ void collision_detection::StaticDistanceField::initialize(
                               aabb.max_.y(),
                               aabb.max_.z());
     
-  aabb.min_.x() = floor(aabb.min_.x() / resolution) * resolution;
-  aabb.min_.y() = floor(aabb.min_.y() / resolution) * resolution;
-  aabb.min_.z() = floor(aabb.min_.z() / resolution) * resolution;
+  aabb.min_.x() = std::floor(aabb.min_.x() / resolution) * resolution;
+  aabb.min_.y() = std::floor(aabb.min_.y() / resolution) * resolution;
+  aabb.min_.z() = std::floor(aabb.min_.z() / resolution) * resolution;
 
   logInform("    DF: min=(%7.3f %7.3f %7.3f)  max=(%7.3f %7.3f %7.3f) (post-adjust)",
                               aabb.min_.x(),
@@ -143,6 +175,94 @@ void collision_detection::StaticDistanceField::initialize(
     getNumCells(distance_field::DIM_X) *
     getNumCells(distance_field::DIM_Y) *
     getNumCells(distance_field::DIM_Z));
+
+
+  int pdf_x,pdf_y,pdf_z;
+  int sdf_x,sdf_y,sdf_z;
+  Eigen::Vector3d pdf_p, sdf_p;
+  df.worldToGrid(aabb.min_.x(), aabb.min_.y(), aabb.min_.z(), pdf_x,pdf_y,pdf_z);
+  worldToGrid(aabb.min_.x(), aabb.min_.y(), aabb.min_.z(), sdf_x,sdf_y,sdf_z);
+  df.gridToWorld(pdf_x,pdf_y,pdf_z, pdf_p.x(), pdf_p.y(), pdf_p.z());
+  gridToWorld(sdf_x,sdf_y,sdf_z, sdf_p.x(), sdf_p.y(), sdf_p.z());
+  
+  logInform("    DF: min=(%10.6f %10.6f %10.6f)  quant->%3d %3d %3d  (pdf)",
+                              aabb.min_.x(),
+                              aabb.min_.y(),
+                              aabb.min_.z(),
+                              pdf_x,
+                              pdf_y,
+                              pdf_z);
+  logInform("    DF: min=(%10.6f %10.6f %10.6f)  quant<-%3d %3d %3d  (pdf)",
+                              pdf_p.x(),
+                              pdf_p.y(),
+                              pdf_p.z(),
+                              pdf_x,
+                              pdf_y,
+                              pdf_z);
+  logInform("    DF: min=(%10.6f %10.6f %10.6f)  quant<-%3d %3d %3d  (sdf)",
+                              sdf_p.x(),
+                              sdf_p.y(),
+                              sdf_p.z(),
+                              sdf_x,
+                              sdf_y,
+                              sdf_z);
+
+
+  df.worldToGrid(0,0,0, pdf_x,pdf_y,pdf_z);
+  worldToGrid(0,0,0, sdf_x,sdf_y,sdf_z);
+  df.gridToWorld(pdf_x,pdf_y,pdf_z, pdf_p.x(), pdf_p.y(), pdf_p.z());
+  gridToWorld(sdf_x,sdf_y,sdf_z, sdf_p.x(), sdf_p.y(), sdf_p.z());
+  
+  logInform("    DF: org=(%10.6f %10.6f %10.6f)  quant->%3d %3d %3d  (pdf)",
+                              0.0,
+                              0.0,
+                              0.0,
+                              pdf_x,
+                              pdf_y,
+                              pdf_z);
+  logInform("    DF: org=(%10.6f %10.6f %10.6f)  quant<-%3d %3d %3d  (pdf)",
+                              pdf_p.x(),
+                              pdf_p.y(),
+                              pdf_p.z(),
+                              pdf_x,
+                              pdf_y,
+                              pdf_z);
+  logInform("    DF: org=(%10.6f %10.6f %10.6f)  quant<-%3d %3d %3d  (sdf)",
+                              sdf_p.x(),
+                              sdf_p.y(),
+                              sdf_p.z(),
+                              sdf_x,
+                              sdf_y,
+                              sdf_z);
+
+
+  df.worldToGrid(points[0].x(), points[0].y(), points[0].z(), pdf_x,pdf_y,pdf_z);
+  worldToGrid(points[0].x(), points[0].y(), points[0].z(), sdf_x,sdf_y,sdf_z);
+  df.gridToWorld(pdf_x,pdf_y,pdf_z, pdf_p.x(), pdf_p.y(), pdf_p.z());
+  gridToWorld(sdf_x,sdf_y,sdf_z, sdf_p.x(), sdf_p.y(), sdf_p.z());
+  
+  logInform("    DF: p0 =(%10.6f %10.6f %10.6f)  quant->%3d %3d %3d  (pdf)",
+                              points[0].x(),
+                              points[0].y(),
+                              points[0].z(),
+                              pdf_x,
+                              pdf_y,
+                              pdf_z);
+  logInform("    DF: p0 =(%10.6f %10.6f %10.6f)  quant<-%3d %3d %3d  (pdf)",
+                              pdf_p.x(),
+                              pdf_p.y(),
+                              pdf_p.z(),
+                              pdf_x,
+                              pdf_y,
+                              pdf_z);
+  logInform("    DF: p0 =(%10.6f %10.6f %10.6f)  quant<-%3d %3d %3d  (sdf)",
+                              sdf_p.x(),
+                              sdf_p.y(),
+                              sdf_p.z(),
+                              sdf_x,
+                              sdf_y,
+                              sdf_z);
+
 
   for (int z = 0 ; z < df.getZNumCells() ; ++z)
   {
