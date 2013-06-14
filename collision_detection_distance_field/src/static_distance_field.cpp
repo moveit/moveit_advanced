@@ -45,8 +45,11 @@
 void collision_detection::StaticDistanceField::initialize(
       const bodies::Body& body,
       double resolution,
-      double space_around_body)
+      double space_around_body,
+      bool save_points)
 {
+  points_.clear();
+
   logInform("    create points at res=%f",resolution);
   EigenSTL::vector_Vector3d points = distance_field::determineCollisionPoints(&body, resolution);
 
@@ -115,6 +118,11 @@ void collision_detection::StaticDistanceField::initialize(
          aabb.min_.z(),
          default_entry);
 
+  logInform("    copy %d points.",
+    getNumCells(distance_field::DIM_X) *
+    getNumCells(distance_field::DIM_Y) *
+    getNumCells(distance_field::DIM_Z));
+
   for (int z = 0 ; z < df.getZNumCells() ; ++z)
   {
     for (int y = 0 ; y < df.getYNumCells() ; ++y)
@@ -123,15 +131,44 @@ void collision_detection::StaticDistanceField::initialize(
       {
         DistPosEntry entry;
         double dist = df.getDistance(x, y, z);
+        const distance_field::PropDistanceFieldVoxel& voxel = df.getCell(x,y,z);
 
-        // propogation distance field has a bias of -1 on internal points
-        dist = (dist <= -1.0) ? (dist+1.0) : dist;
+        if (dist < 0)
+        {
 
-        entry.distance_ = dist;
-        entry.cell_id_ = getCellId(x,y,z);
+          // propogation distance field has a bias of -1*resolution on points inside the object
+          if (dist <= -resolution)
+          {
+            dist += resolution;
+          }
+          else
+          {
+            logError("PropagationDistanceField returned distance=%f between 0 and -resolution=%f."
+                     "  Did someone fix it?"
+                     "  Need to remove workaround from static_distance_field.cpp",
+                     dist,-resolution);
+            dist = 0.0;
+          }
+          entry.distance_ = dist;
+          entry.cell_id_ = getCellId(
+                              voxel.closest_negative_point_.x(),
+                              voxel.closest_negative_point_.y(),
+                              voxel.closest_negative_point_.z());
+        }
+        else
+        {
+          entry.distance_ = dist;
+          entry.cell_id_ = getCellId(
+                              voxel.closest_point_.x(),
+                              voxel.closest_point_.y(),
+                              voxel.closest_point_.z());
+        }
         setCell(x, y, z, entry);
       }
     }
   }
+
+  if (save_points)
+    std::swap(points, points_);
 }
 

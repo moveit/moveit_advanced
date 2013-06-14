@@ -39,6 +39,7 @@
 
 #include <moveit/distance_field/voxel_grid.h>
 #include <Eigen/Geometry>
+#include <eigen_stl_containers/eigen_stl_vector_container.h>
 
 namespace bodies
 {
@@ -71,6 +72,14 @@ public:
 
   // get position given a cell id
   void getCellPosition(int cell_id, Eigen::Vector3d& point) const;
+
+  // get position given a cell id
+  const T& getCell(int cell_id) const;
+  T&       getCell(int cell_id);
+  using distance_field::VoxelGrid<T>::getCell;
+
+  // true if this is a valid cell id
+  bool isCellIdValid(int cell_id) const;
 };
 
 
@@ -93,7 +102,13 @@ public:
   //   space_around_body - how much extra space to include in the distance field outside the body.
   void initialize(const bodies::Body& body,
                   double resolution,
-                  double space_around_body);
+                  double space_around_body,
+                  bool save_points = false);
+
+  const EigenSTL::vector_Vector3d& getPoints() const { return points_; }
+
+private:
+  EigenSTL::vector_Vector3d points_;
 };
 
 }
@@ -117,16 +132,16 @@ inline const T& collision_detection::VoxelCellGrid<T>::operator()(const Eigen::V
 template <typename T>
 inline int collision_detection::VoxelCellGrid<T>::getCellId(int x, int y, int z) const
 {
-  return distance_field::VoxelGrid<T>::ref(x,y,z);
+  return this->ref(x,y,z);
 }
 
 template <typename T>
 inline void collision_detection::VoxelCellGrid<T>::getCellPosition(int cell_id, int& x, int& y, int& z) const
 {
-  x = cell_id / distance_field::VoxelGrid<T>::stride1_;
-  int tmp1 = cell_id % distance_field::VoxelGrid<T>::stride1_;
-  y = tmp1 / distance_field::VoxelGrid<T>::stride2_;
-  z = tmp1 % distance_field::VoxelGrid<T>::stride2_;
+  x = cell_id / this->stride1_;
+  int tmp1 = cell_id % this->stride1_;
+  y = tmp1 / this->stride2_;
+  z = tmp1 % this->stride2_;
 }
 
 template <typename T>
@@ -134,7 +149,7 @@ inline void collision_detection::VoxelCellGrid<T>::getCellPosition(int cell_id, 
 {
   int xi, yi, zi;
   getCellPosition(cell_id, xi, yi, zi);
-  distance_field::VoxelGrid<T>::gridToWorld(xi, yi, xi, x,y,z);
+  this->gridToWorld(xi, yi, zi, x,y,z);
 }
 
 template <typename T>
@@ -143,6 +158,24 @@ inline void collision_detection::VoxelCellGrid<T>::getCellPosition(int cell_id, 
   getCellPosition(cell_id, point.x(), point.y(), point.z());
 }
 
+template <typename T>
+inline bool collision_detection::VoxelCellGrid<T>::isCellIdValid(int cell_id) const
+{
+  int end = this->stride1_ * this->num_cells_[distance_field::DIM_X];
+  return cell_id >= 0 && cell_id < end;
+}
+
+template <typename T>
+inline const T& collision_detection::VoxelCellGrid<T>::getCell(int cell_id) const
+{
+  return isCellIdValid(cell_id) ? this->data_[cell_id] : this->default_object_;
+}
+
+template <typename T>
+inline T& collision_detection::VoxelCellGrid<T>::getCell(int cell_id)
+{
+  return isCellIdValid(cell_id) ? this->data_[cell_id] : this->default_object_;
+}
 
 
 #endif
