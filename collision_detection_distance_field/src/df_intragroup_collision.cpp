@@ -169,7 +169,8 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
       continue;
     }
 
-    link.df_.initialize(*body, SELF_COLLISION_RESOLUTION_, max_df_distance_);
+    #define DEBUG_SAVE_STATIC_DF_POINTS true
+    link.df_.initialize(*body, SELF_COLLISION_RESOLUTION_, max_df_distance_, DEBUG_SAVE_STATIC_DF_POINTS);
 
     delete body;
 
