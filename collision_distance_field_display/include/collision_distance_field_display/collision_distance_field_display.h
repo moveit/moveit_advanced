@@ -29,8 +29,8 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef COLLISION_DISTANCE_FIELD_DISPLAY_COLLISION_DISTANCE_FIELD_DISPLAY_H
-#define COLLISION_DISTANCE_FIELD_DISPLAY_COLLISION_DISTANCE_FIELD_DISPLAY_H
+#ifndef COLLISION_DISTANCE_FIELD_DISPLAY__COLLISION_DISTANCE_FIELD_DISPLAY
+#define COLLISION_DISTANCE_FIELD_DISPLAY__COLLISION_DISTANCE_FIELD_DISPLAY
 
 #include <moveit/planning_scene_rviz_plugin/planning_scene_display.h>
 
@@ -57,6 +57,7 @@ namespace collision_detection
 {
 class CollisionRobotDistanceField;
 class CollisionWorldDistanceField;
+class StaticDistanceField;
 }
 
 namespace robot_sphere_representation
@@ -102,6 +103,15 @@ public:
   static std::string COLLISION_METHOD_STRING_FCL;
   static std::string COLLISION_METHOD_STRING_DISTANCE_FIELD;
 
+  // if df_point_examine_ is enabled, show the point in this distance field
+  // Returns NULL or a newly allocated DFExamine which should be placed in a shared pointer.
+  class DFExamine;
+  DFExamine *examineDF(const char *descrip,
+                       const char *link_name,
+                       const collision_detection::StaticDistanceField *df,
+                       Ogre::SceneNode *node = NULL,
+                       const Eigen::Affine3d& transform_to_node = Eigen::Affine3d::Identity()) const;
+
 protected:
   virtual void onInitialize();
   virtual void onEnable();
@@ -119,6 +129,7 @@ private Q_SLOTS:
   void changedActiveGroup();
   void changedCollisionMethod();      // collision detection type (FCL, distance field, etc) changed
   void showCollidingSpheresChanged();
+  void dfPointExamineChanged();
 
   void changedSphereGenMethod();
   void changedSphereQualMethod();
@@ -202,6 +213,13 @@ private:
   rviz::FloatProperty* sphere_gen_resolution_property_;
   rviz::FloatProperty* sphere_gen_tolerance_property_;
   rviz::IntProperty* requested_nspheres_property_;
+  rviz::BoolProperty* df_point_examine_enable_;
+  rviz::IntProperty* df_point_examine_x_;
+  rviz::IntProperty* df_point_examine_y_;
+  rviz::IntProperty* df_point_examine_z_;
+  rviz::ColorProperty* df_point_examine_color_;
+  rviz::ColorProperty* df_point_examine_near_color_;
+  rviz::FloatProperty* df_point_examine_size_;
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;

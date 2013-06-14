@@ -208,6 +208,59 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   contact_points_color_property_->setHidden(!show_contact_points_property_->getBool());
   contact_points_size_property_->setHidden(!show_contact_points_property_->getBool());
 
+  df_point_examine_enable_ = new rviz::BoolProperty(
+                                      "Examine DF Point",
+                                      false,
+                                      "Examine DF point at this index (aka cell location). -1 to disable.",
+                                      collision_detection_category_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+  df_point_examine_x_ = new rviz::IntProperty(
+                                      "X index of point",
+                                      0,
+                                      "Which point to display -- X value.",
+                                      df_point_examine_enable_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+  df_point_examine_x_->setMin(0);
+  df_point_examine_y_ = new rviz::IntProperty(
+                                      "Y index of point",
+                                      0,
+                                      "Which point to display -- Y value.",
+                                      df_point_examine_enable_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+  df_point_examine_y_->setMin(0);
+  df_point_examine_z_ = new rviz::IntProperty(
+                                      "Z index of point",
+                                      0,
+                                      "Which point to display -- Z value.",
+                                      df_point_examine_enable_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+  df_point_examine_z_->setMin(0);
+  df_point_examine_color_ = new rviz::ColorProperty(
+                                      "Examine DF Point Color",
+                                      QColor( 0, 255, 0 ),
+                                      "Color to draw the current point in the distance field.",
+                                      df_point_examine_enable_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+  df_point_examine_near_color_ = new rviz::ColorProperty(
+                                      "Examine DF Nearby Point Color",
+                                      QColor( 0, 128, 0 ),
+                                      "Color to draw the point nearest the examined point.",
+                                      df_point_examine_enable_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+  df_point_examine_size_ = new rviz::FloatProperty(
+                                      "Examine DF Point Size",
+                                      0.005,
+                                      "Size of examine and nearby point (sphere diameter).",
+                                      df_point_examine_enable_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+
   sphere_gen_category_ = new rviz::Property(
                                       "Sphere Generation",
                                       QVariant(),
@@ -215,6 +268,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       robot_state_category_);
 
   robot_state_category_->expand();
+
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
@@ -242,6 +296,14 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   delete int_marker_display_;
   int_marker_display_ = context_->getDisplayFactory()->make("rviz/InteractiveMarkers");
   int_marker_display_->initialize(context_);
+
+#if 0
+// Show a unit sphere at origin to prove that radius=1.0 really shows a sphere with radius=1.0
+{
+  moveit_rviz_plugin::SpheresDisplay *sd = new moveit_rviz_plugin::SpheresDisplay(planning_scene_node_);
+  sd->addSphere(Eigen::Vector3d(0,0,0), 1.0, Eigen::Vector4f(1,1,0,0.5));
+}
+#endif
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onDisable()
@@ -273,6 +335,11 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
     // failed.  Set property string to actual active detector
     collision_method_property_->setStdString(getPlanningSceneRO()->getActiveCollisionDetectorName());
   }
+}
+
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::dfPointExamineChanged()
+{
+  per_link_objects_->update();
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollidingSpheresChanged()

@@ -36,6 +36,7 @@
 #include <collision_distance_field_display/spheres_display.h>
 #include <collision_distance_field_display/cylinders_display.h>
 #include <collision_distance_field_display/color_cast.h>
+#include "dfexamine.h"
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
 
@@ -165,6 +166,12 @@ namespace moveit_rviz_plugin
                                   0.005));
     }
 
+    virtual void changed()
+    {
+      df_examine_.reset();
+      PerLinkSubObjBase::changed();
+    }
+
     virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
     {
       robot_relative = false;
@@ -177,6 +184,51 @@ namespace moveit_rviz_plugin
         crobot->getStaticDistanceFieldPoints(
                         link_->getName(),
                         centers);
+        df_examine_.reset(link_->getDisplay()->examineDF("StaticDF for ",
+                                                         link_->getName().c_str(),
+                                                         crobot->getStaticDistanceField(link_->getName()),
+                                                         link_->getCollisionNode(),
+                                                         Eigen::Affine3d::Identity()));
+      }
+    }
+  private:
+    boost::shared_ptr<moveit_rviz_plugin::CollisionDistanceFieldDisplay::DFExamine> df_examine_;
+  };
+}
+
+namespace moveit_rviz_plugin
+{
+  // Draw link's static distance field points (points used to generate static DF)
+  class LinkObj_StaticDFPoints : public PerLinkSubObj
+  {
+  public:
+    LinkObj_StaticDFPoints(PerLinkObjBase *base, DFLink *link) :
+      PerLinkSubObj(base, link)
+    {}
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_StaticDFPoints>(
+                                  parent,
+                                  "Show Points in link used to generate Static Distance Field",
+                                  "Original points inside the link.",
+                                  QColor(255, 0, 0),
+                                  1.0,
+                                  PerLinkObjBase::POINTS,
+                                  0.006));
+    }
+
+    virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+    {
+      robot_relative = false;
+      radii.clear();
+      centers.clear();
+      const collision_detection::CollisionRobotDistanceField *crobot = link_->getDisplay()->getCollisionRobotDistanceField();
+      if (crobot)
+      {
+        const collision_detection::StaticDistanceField *df = crobot->getStaticDistanceField(link_->getName());
+        if (df)
+          centers = df->getPoints();
       }
     }
   };
@@ -189,6 +241,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
   per_link_objects_.reset(new PerLinkObjList());
 
   LinkObj_StaticDF::addSelf(df_collision_property, *per_link_objects_);
+  LinkObj_StaticDFPoints::addSelf(df_collision_property, *per_link_objects_);
 
   addSphereGenProperties(sphere_gen_propety);
 
