@@ -104,7 +104,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::DFExamine::DFExamine(
   {
     spheres_.addSphere(
                 transform_to_node * npt,
-                size * 0.5,
+                size * 0.5 + 0.001,
                 near_color);
   }
 }
