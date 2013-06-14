@@ -77,8 +77,8 @@ void collision_detection::CollisionRobotDistanceField::getStaticDistanceFieldPoi
   }
 
   int xend = df->getNumCells(distance_field::DIM_X);
-  int yend = df->getNumCells(distance_field::DIM_X);
-  int zend = df->getNumCells(distance_field::DIM_X);
+  int yend = df->getNumCells(distance_field::DIM_Y);
+  int zend = df->getNumCells(distance_field::DIM_Z);
   for (int z = 0 ; z < zend ; ++z)
   {
     for (int y = 0 ; y < yend ; ++y)
