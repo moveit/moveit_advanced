@@ -34,41 +34,68 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__COLLISION_COMMON_DISTANCE_FIELD
-#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__COLLISION_COMMON_DISTANCE_FIELD
-
-#include <moveit/collision_detection/world.h>
-#include <moveit/collision_detection/collision_world.h>
+#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_AABB
+#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD_AABB
 
 namespace collision_detection
 {
 
-
-class StaticDistanceField;
-
-struct DFContact : public Contact
+template<class T>
+class basic_AABB
 {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+public:
+  typedef Eigen::Matrix<T, 3, 1> Vec3;
+  typedef std::vector<Vec3, Eigen::aligned_allocator<Vec3> > vector_Vec3;
+  basic_AABB()
+  {
+    clear();
+  }
 
-  // clear all fields, then copy Contact part from <contact>
-  void copyFrom(const Contact& contact);
+  basic_AABB(const vector_Vec3& points)
+  {
+    clear();
+    add(points);
+  }
 
+  void add(const Vec3& point)
+  {
+    min_ = min_.array().min(point.array());
+    max_ = max_.array().max(point.array());
+  }
 
-  // sphere_centers are in planning frame coordinate system
-  double sphere_radius_1;             // 0 if no sphere
-  Eigen::Vector3d sphere_center_1;    // valid if sphere_radius_1 != 0
-  const StaticDistanceField *sdf_1;   // valid if non-NULL
+  void add(const vector_Vec3& points)
+  {
+    for (typename vector_Vec3::const_iterator it = points.begin() ; it != points.end() ; ++it)
+      add(*it);
+  }
 
-  double sphere_radius_2;             // 0 if no sphere
-  Eigen::Vector3d sphere_center_2;    // valid if sphere_radius_1 != 0
-  const StaticDistanceField *sdf_2;   // valid if non-NULL
+  void clear()
+  {
+    min_.x() = std::numeric_limits<T>::max();
+    min_.y() = std::numeric_limits<T>::max();
+    min_.z() = std::numeric_limits<T>::max();
+    if (std::numeric_limits<T>::is_integer)
+    {
+      max_.x() = std::numeric_limits<T>::min();
+      max_.y() = std::numeric_limits<T>::min();
+      max_.z() = std::numeric_limits<T>::min();
+    }
+    else
+    {
+      max_.x() = -std::numeric_limits<T>::max();
+      max_.y() = -std::numeric_limits<T>::max();
+      max_.z() = -std::numeric_limits<T>::max();
+    }
+  }
 
-  bool eliminated_by_acm_function;
+  Vec3 min_;
+  Vec3 max_;
 };
 
-
-extern const AllowedCollisionMatrix empty_acm;
+typedef basic_AABB<double> AABB;
+typedef basic_AABB<int> AABBi;
 
 }
+
 
 #endif

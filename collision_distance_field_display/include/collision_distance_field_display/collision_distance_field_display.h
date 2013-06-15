@@ -29,8 +29,8 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef COLLISION_DISTANCE_FIELD_DISPLAY_COLLISION_DISTANCE_FIELD_DISPLAY_H
-#define COLLISION_DISTANCE_FIELD_DISPLAY_COLLISION_DISTANCE_FIELD_DISPLAY_H
+#ifndef COLLISION_DISTANCE_FIELD_DISPLAY__COLLISION_DISTANCE_FIELD_DISPLAY
+#define COLLISION_DISTANCE_FIELD_DISPLAY__COLLISION_DISTANCE_FIELD_DISPLAY
 
 #include <moveit/planning_scene_rviz_plugin/planning_scene_display.h>
 
@@ -57,6 +57,7 @@ namespace collision_detection
 {
 class CollisionRobotDistanceField;
 class CollisionWorldDistanceField;
+class StaticDistanceField;
 }
 
 namespace robot_sphere_representation
@@ -68,6 +69,7 @@ namespace moveit_rviz_plugin
 {
 
 class PerLinkObjList;
+class SpheresDisplay;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -91,6 +93,24 @@ public:
   void updateLinkSphereGenPropertyValues();
   void updateAllSphereGenPropertyValues();
 
+  enum {
+    CD_UNKNOWN,
+    CD_FCL,
+    CD_DISTANCE_FIELD,
+    CD_CNT
+  };
+
+  static std::string COLLISION_METHOD_STRING_FCL;
+  static std::string COLLISION_METHOD_STRING_DISTANCE_FIELD;
+
+  // if df_point_examine_ is enabled, show the point in this distance field
+  // Returns NULL or a newly allocated DFExamine which should be placed in a shared pointer.
+  class DFExamine;
+  DFExamine *examineDF(const char *descrip,
+                       const char *link_name,
+                       const collision_detection::StaticDistanceField *df,
+                       Ogre::SceneNode *node = NULL,
+                       const Eigen::Affine3d& transform_to_node = Eigen::Affine3d::Identity()) const;
 
 protected:
   virtual void onInitialize();
@@ -108,6 +128,8 @@ private Q_SLOTS:
   void robotMarkerPositionsChanged(); // call when only the position of the markers needs to change
   void changedActiveGroup();
   void changedCollisionMethod();      // collision detection type (FCL, distance field, etc) changed
+  void showCollidingSpheresChanged();
+  void dfPointExamineChanged();
 
   void changedSphereGenMethod();
   void changedSphereQualMethod();
@@ -145,7 +167,7 @@ private:
   void saveSpheresToSrdf();
 
   // Add per link data displays.
-  void addPerLinkData(rviz::Property* parent_property);
+  void addPerLinkData(rviz::Property* df_collision_property, rviz::Property* parent_property);
   void addSphereGenProperties(rviz::Property* parent_property);
 
   // for drawing the robot
@@ -174,9 +196,16 @@ private:
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
   rviz::ColorProperty* colliding_link_color_property_;
+  rviz::BoolProperty* show_contact_points_property_;
+  rviz::ColorProperty* contact_points_color_property_;
+  rviz::FloatProperty* contact_points_size_property_;
+  rviz::BoolProperty* show_colliding_spheres_property_;
+  rviz::ColorProperty* colliding_sphere_color_property_;
+  rviz::FloatProperty* colliding_sphere_alpha_property_;
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
+  rviz::Property* collision_detection_category_;
   rviz::Property* sphere_gen_category_;
   rviz::BoolProperty* save_to_srdf_property_;
   rviz::EnumProperty* sphere_gen_method_property_;
@@ -184,6 +213,13 @@ private:
   rviz::FloatProperty* sphere_gen_resolution_property_;
   rviz::FloatProperty* sphere_gen_tolerance_property_;
   rviz::IntProperty* requested_nspheres_property_;
+  rviz::BoolProperty* df_point_examine_enable_;
+  rviz::IntProperty* df_point_examine_x_;
+  rviz::IntProperty* df_point_examine_y_;
+  rviz::IntProperty* df_point_examine_z_;
+  rviz::ColorProperty* df_point_examine_color_;
+  rviz::ColorProperty* df_point_examine_near_color_;
+  rviz::FloatProperty* df_point_examine_size_;
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;
@@ -194,6 +230,10 @@ private:
   bool unsetting_property_;  // true to skip callback when a property changes
 
   bool saving_spheres_to_srdf_; // true to trigger saving spheres to SRDF
+
+  // for displaying contact points and colliding spheres 
+  boost::shared_ptr<SpheresDisplay> contact_points_display_;
+  boost::shared_ptr<SpheresDisplay> colliding_spheres_display_;
 };
 
 }
