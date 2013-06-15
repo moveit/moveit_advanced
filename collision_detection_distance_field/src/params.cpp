@@ -39,6 +39,29 @@
 #include <console_bridge/console.h>
 #include <cassert>
 
+collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
+    const robot_model::RobotModelConstPtr &kmodel,
+    double padding,
+    double scale)
+  : CollisionRobot(kmodel, padding, scale)
+{
+  initialize();
+}
+
+collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
+    const CollisionRobotDistanceField &other)
+  : CollisionRobot(other)
+{
+  initialize();
+}
+
+void collision_detection::CollisionRobotDistanceField::initialize()
+{
+  initParams();
+  initSpheres();
+  initLinkDF();
+}
+
 void collision_detection::CollisionRobotDistanceField::initParams()
 {
   // The distance() queries will only be accurate up to this distance apart.
@@ -67,3 +90,10 @@ void collision_detection::CollisionRobotDistanceField::setMethod(const std::stri
     logError("CollisionRobotDistanceField::setMethod() - bad method %s",method.c_str());
   }
 }
+
+
+void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
+    const std::vector<std::string> &links)
+{
+}
+
