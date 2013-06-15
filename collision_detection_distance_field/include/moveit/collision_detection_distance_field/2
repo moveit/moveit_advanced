@@ -34,41 +34,85 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__COLLISION_COMMON_DISTANCE_FIELD
-#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__COLLISION_COMMON_DISTANCE_FIELD
+#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__BIT_ARRAY
+#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__BIT_ARRAY
 
-#include <moveit/collision_detection/world.h>
-#include <moveit/collision_detection/collision_world.h>
+#include <stdint.h>
+#include <string>
 
 namespace collision_detection
 {
 
-
-class StaticDistanceField;
-
-struct DFContact : public Contact
+// very simple bit array with no bounds checking.
+class BitArray
 {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+public:
+  BitArray();
+  ~BitArray();
 
-  // clear all fields, then copy Contact part from <contact>
-  void copyFrom(const Contact& contact);
+  // Set how many bits there should be.
+  // All bits are set to <value>.
+  void reset(int nbits, bool value = false);
 
+  // set a bit
+  void setBit(int bit_index, bool value = true);
 
-  // sphere_centers are in planning frame coordinate system
-  double sphere_radius_1;             // 0 if no sphere
-  Eigen::Vector3d sphere_center_1;    // valid if sphere_radius_1 != 0
-  const StaticDistanceField *sdf_1;   // valid if non-NULL
+  // clear a bit
+  void clrBit(int bit_index);
 
-  double sphere_radius_2;             // 0 if no sphere
-  Eigen::Vector3d sphere_center_2;    // valid if sphere_radius_1 != 0
-  const StaticDistanceField *sdf_2;   // valid if non-NULL
+  // get the value of a bit
+  bool getBit(int bit_index) const;
 
-  bool eliminated_by_acm_function;
+private:
+  uint32_t *bits_;
 };
 
+}
 
-extern const AllowedCollisionMatrix empty_acm;
+inline collision_detection::BitArray::BitArray()
+  : bits_(NULL)
+{
+}
 
+inline ~collision_detection::BitArray::BitArray()
+{
+  delete[] bits_;
+}
+
+// Set how many bits there should be.
+// All bits are set to <value>.
+inline void collision_detection::BitArray::reset(int nbits, bool value)
+{
+  delete[] bits_;
+  bits_ = NULL;
+  if (nbits)
+  {
+    int nwords = (nbits + 0x1f) >> 5;
+    bits_ = new[nwords];
+    std::memset(bits_, value ? 0xff : 0x00, sizeof(uint32_t) * nwords);
+  }
+}
+
+inline void collision_detection::BitArray::setBit(int bit_index, bool value)
+{
+  int idx = bit_index >> 5;
+  uint32_t bit = 1 << (bit_index & 0x1f);
+  if (value)
+    bits_[idx] |= bit;
+  else
+    bits_[idx] &= ~bit;
+}
+
+inline void collision_detection::BitArray::clrBit(int bit_index)
+{
+  setBit(bit_index, false);
+}
+
+inline bool collision_detection::BitArray::getBit(int bit_index) const
+{
+  int idx = bit_index >> 5;
+  uint32_t bit = 1 << (bit_index & 0x1f);
+  return bits_[idx] & bit;
 }
 
 #endif

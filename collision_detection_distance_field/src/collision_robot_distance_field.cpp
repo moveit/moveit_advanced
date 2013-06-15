@@ -35,6 +35,7 @@
 /* Author: Acorn Pooley */
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
+#include "collision_robot_distance_field_inline.h"
 
 collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
     const robot_model::RobotModelConstPtr &kmodel,
@@ -52,49 +53,18 @@ collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
   initialize();
 }
 
-inline void collision_detection::CollisionRobotDistanceField::WorkArea::initQuery(
-    const char *descrip,
-    const CollisionRequest *req,
-    CollisionResult *res,
-    const robot_state::RobotState *state1,
-    const robot_state::RobotState *state2,
-    const CollisionRobot *other_robot,
-    const robot_state::RobotState *other_state1,
-    const robot_state::RobotState *other_state2,
-    const AllowedCollisionMatrix *acm)
+inline void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
+    WorkArea& work) const
 {
-  req_ = req;
-  res_ = res;
-  state1_ = state1;
-  state2_ = state2;
-  other_robot_ = other_robot;
-  other_state1_ = other_state1;
-  other_state2_ = other_state2;
-  acm_ = acm;
-
-  // debug
-  if (1)
+  switch(method_)
   {
-    logInform("CollisionRobotDistanceField Query %s", descrip);
-
-    std::stringstream ss_cost;
-    ss_cost << ", cost(max=" << req->max_cost_sources << ", dens=" << req->min_cost_density << ")";
-    std::stringstream ss_contacts;
-    ss_contacts << ", contact(max=" << req->max_contacts << ", cpp=" << req->max_contacts_per_pair << ")";
-    std::stringstream ss_acm;
-    if (acm)
-    {
-      std::vector<std::string> names;
-      acm->getAllEntryNames(names);
-      ss_acm << ", acm(nnames=" << names.size() << ", sz=" << acm->getSize() << ")";
-    }
-    logInform("   request: result%s%s%s%s%s%s",
-      req->distance ? ", distance" : "",
-      req->cost ? ss_cost.str().c_str() : "",
-      req->contacts ? ss_contacts.str().c_str() : "",
-      req->is_done ? ", is_done-func" : "",
-      req->verbose ? ", VERBOSE" : "",
-      ss_acm.str().c_str());
+  case METHOD_SPHERES:
+    checkSelfCollisionUsingSpheres(work);
+    break;
+  case METHOD_INTRA_DF:
+  default:
+    checkSelfCollisionUsingIntraDF(work);
+    break;
   }
 }
 
@@ -105,9 +75,9 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const AllowedCollisionMatrix &acm) const
 {
   WorkArea& work = getWorkArea();
-  work.initQuery("checkSelfCollision1acm", &req, &res, &state, NULL, NULL, NULL, NULL, &acm);
+  initQuery(work, "checkSelfCollision1acm", &req, &res, &state, NULL, NULL, NULL, NULL, &acm);
 
-  checkSelfCollisionUsingSpheres(work);
+  checkSelfCollision(work);
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
@@ -116,9 +86,9 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     const robot_state::RobotState &state) const
 {
   WorkArea& work = getWorkArea();
-  work.initQuery("checkSelfCollision1", &req, &res, &state, NULL, NULL, NULL, NULL, NULL);
+  initQuery(work, "checkSelfCollision1", &req, &res, &state, NULL, NULL, NULL, NULL, NULL);
 
-  checkSelfCollisionUsingSpheres(work);
+  checkSelfCollision(work);
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
@@ -220,35 +190,43 @@ double collision_detection::CollisionRobotDistanceField::distanceOther(
   return 0.0;
 }
 
+void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
+    const CollisionRequest &req, 
+    CollisionResult &res,
+    const robot_state::RobotState &state, 
+    const AllowedCollisionMatrix *acm,
+    std::vector<DFContact>* df_contacts) const
+{
+  CollisionRequest req2;
+  WorkArea& work = getWorkArea();
+  initQuery(work, "getSelfCollisionContacts", &req, &res, &state, NULL, NULL, NULL, NULL, acm);
+
+  // force generation of contacts
+  if (df_contacts && !req.contacts)
+  {
+    req2 = req;
+    work.req_ = &req2;
+    req2.contacts = true;
+    req2.max_contacts = 1000;
+    req2.max_contacts_per_pair = 100;
+  }
+
+  work.df_contacts_ = df_contacts;
+  checkSelfCollision(work);
+  work.df_contacts_ = NULL;
+}
+
+
+
 void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
     const std::vector<std::string> &links)
 {
 }
 
-const int collision_detection::CollisionRobotDistanceField::linkNameToIndex(const std::string& link_name) const
-{
-  std::map<std::string,LinkIndex>::const_iterator it = link_name_to_index_map_.find(link_name);
-  if (it != link_name_to_index_map_.end())
-    return it->second;
-  else
-    return -1;
-}
-
 void collision_detection::CollisionRobotDistanceField::initialize()
 {
-  initLinkNames();
+  initParams();
   initSpheres();
-}
-
-void collision_detection::CollisionRobotDistanceField::initLinkNames()
-{
-  link_name_to_index_map_.clear();
-
-  std::vector<const robot_model::LinkModel*>::const_iterator lm = kmodel_->getLinkModels().begin();
-  std::vector<const robot_model::LinkModel*>::const_iterator lm_end = kmodel_->getLinkModels().end();
-  for ( int idx = 0 ; lm != lm_end ; ++lm, ++idx )
-  {
-    link_name_to_index_map_.insert( std::pair<std::string,LinkIndex>((*lm)->getName(), idx) );
-  }
+  initLinkDF();
 }
 

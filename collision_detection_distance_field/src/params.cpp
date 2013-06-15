@@ -34,41 +34,36 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__COLLISION_COMMON_DISTANCE_FIELD
-#define MOVEIT_COLLISION_DETECTION_DISTANCE_FIELD__COLLISION_COMMON_DISTANCE_FIELD
+#include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
+#include "collision_robot_distance_field_inline.h"
+#include <console_bridge/console.h>
+#include <cassert>
 
-#include <moveit/collision_detection/world.h>
-#include <moveit/collision_detection/collision_world.h>
-
-namespace collision_detection
+void collision_detection::CollisionRobotDistanceField::initParams()
 {
+  // The distance() queries will only be accurate up to this distance apart.
+  MAX_DISTANCE_ = 0.25;
 
+  SELF_COLLISION_RESOLUTION_ = 0.03;
 
-class StaticDistanceField;
-
-struct DFContact : public Contact
-{
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  // clear all fields, then copy Contact part from <contact>
-  void copyFrom(const Contact& contact);
-
-
-  // sphere_centers are in planning frame coordinate system
-  double sphere_radius_1;             // 0 if no sphere
-  Eigen::Vector3d sphere_center_1;    // valid if sphere_radius_1 != 0
-  const StaticDistanceField *sdf_1;   // valid if non-NULL
-
-  double sphere_radius_2;             // 0 if no sphere
-  Eigen::Vector3d sphere_center_2;    // valid if sphere_radius_1 != 0
-  const StaticDistanceField *sdf_2;   // valid if non-NULL
-
-  bool eliminated_by_acm_function;
-};
-
-
-extern const AllowedCollisionMatrix empty_acm;
-
+  method_ = METHOD_INTRA_DF;
 }
 
-#endif
+void collision_detection::CollisionRobotDistanceField::getMethods(std::vector<std::string>& methods) const
+{
+  methods.clear();
+  methods.push_back("INTRA_DF");
+  methods.push_back("SPHERES");
+}
+
+void collision_detection::CollisionRobotDistanceField::setMethod(const std::string& method)
+{
+  if (method == "INTRA_DF")
+    method_ = METHOD_INTRA_DF;
+  else if (method == "SPHERES")
+    method_ = METHOD_SPHERES;
+  else
+  {
+    logError("CollisionRobotDistanceField::setMethod() - bad method %s",method.c_str());
+  }
+}
