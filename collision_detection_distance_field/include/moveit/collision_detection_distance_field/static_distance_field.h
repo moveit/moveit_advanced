@@ -132,7 +132,7 @@ inline collision_detection::VoxelCellGrid<T>::~VoxelCellGrid()
 template <typename T>
 inline const T& collision_detection::VoxelCellGrid<T>::operator()(const Eigen::Vector3d& point) const
 {
-  this->operator()(point.x(), point.y(), point.z());
+  return this->operator()(point.x(), point.y(), point.z());
 }
 
 template <typename T>
