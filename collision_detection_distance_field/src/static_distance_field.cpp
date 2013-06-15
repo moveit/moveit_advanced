@@ -78,12 +78,8 @@ void collision_detection::StaticDistanceField::initialize(
   points_.clear();
 
   logInform("    create points at res=%f",resolution);
-#if 0
-  EigenSTL::vector_Vector3d points = distance_field::determineCollisionPoints(&body, resolution);
-#else
   EigenSTL::vector_Vector3d points;
   determineCollisionPoints(body, resolution, points);
-#endif
 
   if (points.empty())
   {
