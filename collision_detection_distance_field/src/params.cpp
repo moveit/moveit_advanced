@@ -39,6 +39,35 @@
 #include <console_bridge/console.h>
 #include <cassert>
 
+collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
+    const robot_model::RobotModelConstPtr &kmodel,
+    double padding,
+    double scale)
+  : CollisionRobot(kmodel, padding, scale)
+{
+  initialize();
+}
+
+collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
+    const CollisionRobotDistanceField &other)
+  : CollisionRobot(other)
+{
+  initialize();
+}
+
+void collision_detection::CollisionRobotDistanceField::initialize()
+{
+  initParams();
+  initLinks();
+}
+
+void collision_detection::CollisionRobotDistanceField::initLinks()
+{
+  initSpheres();
+  initLinkDF();
+}
+
+
 void collision_detection::CollisionRobotDistanceField::initParams()
 {
   // The distance() queries will only be accurate up to this distance apart.
@@ -67,3 +96,32 @@ void collision_detection::CollisionRobotDistanceField::setMethod(const std::stri
     logError("CollisionRobotDistanceField::setMethod() - bad method %s",method.c_str());
   }
 }
+
+
+void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
+    const std::vector<std::string> &links)
+{
+  bool dirty = false;
+
+  std::vector<std::string>::const_iterator link_it = links.begin();
+  std::vector<std::string>::const_iterator link_end = links.end();
+  for ( ; link_it != link_end ; ++link_it)
+  {
+    DFLink *dflink = linkNameToDFLink(*link_it);
+    if (dflink)
+    {
+      std::map<std::string, double>::const_iterator scale_it = link_scale_.find(*link_it);
+      if (scale_it != link_scale_.end() && scale_it->second != dflink->scale_)
+        dirty = true;
+
+      dflink->padding_ = 0.0;
+      std::map<std::string, double>::const_iterator padding_it = link_padding_.find(*link_it);
+      if (padding_it != link_padding_.end())
+        dflink->padding_ = padding_it->second;
+    }
+  }
+
+  if (dirty)
+    initLinks();
+}
+

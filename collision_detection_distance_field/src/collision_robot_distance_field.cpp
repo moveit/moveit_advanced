@@ -37,22 +37,6 @@
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 #include "collision_robot_distance_field_inline.h"
 
-collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
-    const robot_model::RobotModelConstPtr &kmodel,
-    double padding,
-    double scale)
-  : CollisionRobot(kmodel, padding, scale)
-{
-  initialize();
-}
-
-collision_detection::CollisionRobotDistanceField::CollisionRobotDistanceField(
-    const CollisionRobotDistanceField &other)
-  : CollisionRobot(other)
-{
-  initialize();
-}
-
 inline void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     WorkArea& work) const
 {
@@ -216,17 +200,4 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
   work.df_contacts_ = NULL;
 }
 
-
-
-void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
-    const std::vector<std::string> &links)
-{
-}
-
-void collision_detection::CollisionRobotDistanceField::initialize()
-{
-  initParams();
-  initSpheres();
-  initLinkDF();
-}
 

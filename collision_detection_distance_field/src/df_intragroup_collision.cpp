@@ -124,8 +124,21 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
     link.index_in_link_order_ = i;
     link.index_in_model_ = link_order_[i];
 
+    // initialize collision matrix
     link.acm_bits_.reset(link_order_.size(), false);
     link.acm_bits_.setBit(i);
+
+    // set padding
+    link.padding_ = 0.0;
+    std::map<std::string, double>::const_iterator padding_it = link_padding_.find(*link.name_);
+    if (padding_it != link_padding_.end())
+      link.padding_ = padding_it->second;
+
+    // set scale
+    link.scale_ = 1.0;
+    std::map<std::string, double>::const_iterator scale_it = link_scale_.find(*link.name_);
+    if (scale_it != link_scale_.end())
+      link.scale_ = scale_it->second;
 
     // find list of spheres for this link
     link.sphere_idx_begin_ = 0;
@@ -169,6 +182,8 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
       continue;
     }
 
+    body->setScale(link.scale_);
+
     #define DEBUG_SAVE_STATIC_DF_POINTS true
     link.df_.initialize(*body, SELF_COLLISION_RESOLUTION_, max_df_distance_, DEBUG_SAVE_STATIC_DF_POINTS);
 
@@ -202,6 +217,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
 {
   DFContact dummy_dfcontact;
   DFContact *dfcontact = &dummy_dfcontact;
+  
 
   for (const DFLink * const *p_link_a = link_list ; p_link_a[1] ; ++p_link_a)
   {
@@ -217,13 +233,15 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
       if (never_check_link_pair(link_a, link_b))
         continue;
 
+      double padding = link_a->df_.getResolution() + link_a->padding_ + link_b->padding_;
+
       robot_state::LinkState *lsb = work.state1_->getLinkStateVector()[link_b->index_in_model_];
       Eigen::Affine3d linkb_to_linka = pf_to_linka * lsb->getGlobalCollisionBodyTransform();
 
       Eigen::Vector3d bsphere_center = linkb_to_linka * bounding_sphere_centers_[link_b->index_in_link_order_];
 
       const DistPosEntry& bs_entry = link_a->df_(bsphere_center);
-      double dist = bs_entry.distance_ - bounding_sphere_radii_[link_b->index_in_link_order_];
+      double dist = bs_entry.distance_ - bounding_sphere_radii_[link_b->index_in_link_order_] - padding;
 
       if (dist > 0)
       {
@@ -241,7 +259,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
         Eigen::Vector3d center = linkb_to_linka * sphere_centers_[i];
 
         const DistPosEntry& entry = link_a->df_(center);
-        dist = entry.distance_ - sphere_radii_[i];
+        dist = entry.distance_ - sphere_radii_[i] - padding;
 
         if (dist > 0)
         {
