@@ -190,8 +190,14 @@ private:
     // one bit per link in link_order_.  1=ignore collisions, 0=check collisions
     BitArray acm_bits_;
     
+    // distance field representing link in link collision frame
     StaticDistanceField df_;
+
+    // scale and padding for this link.
+    double padding_;
+    double scale_;
   };
+
 
   //###########################################################################
   //############################### WORK AREA #################################
@@ -275,6 +281,9 @@ private:
   // Parameters affect generation of spheres and distance fields, so this must
   // be called before initSpheres() and initLinkDF().
   void initParams();
+
+  // initialize info about each link.  When scale changes this is re-run.
+  void initLinks();
 
   //###########################################################################
   //############################### GENERAL ###################################

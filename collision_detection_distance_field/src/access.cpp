@@ -72,8 +72,8 @@ void collision_detection::CollisionRobotDistanceField::getStaticDistanceFieldPoi
 
   if (resolution_relative)
   {
-    min_dist *= df->getResolution(distance_field::DIM_X);
-    max_dist *= df->getResolution(distance_field::DIM_X);
+    min_dist *= df->getResolution();
+    max_dist *= df->getResolution();
   }
 
   int xend = df->getNumCells(distance_field::DIM_X);

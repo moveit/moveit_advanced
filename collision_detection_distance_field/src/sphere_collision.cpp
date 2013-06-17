@@ -147,7 +147,22 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
     shapes::computeShapeBoundingSphere(shape.get(), bounding_center, bounding_radius);
     if (bounding_radius <= std::numeric_limits<double>::epsilon())
       continue;
-    
+
+    double scale = 1.0;
+    std::map<std::string, double>::const_iterator scale_it = link_scale_.find((*lm)->getName());
+    if (scale_it != link_scale_.end())
+      scale = scale_it->second;
+
+    if (scale <= std::numeric_limits<double>::epsilon())
+    {
+      logError("Scale=%f <= 0 for link %s.", scale, (*lm)->getName().c_str());
+      continue;
+    }
+    if (scale < 1.0)
+    {
+      logWarn("Scale=%f < 1.0 for link %s.", scale, (*lm)->getName().c_str());
+    }
+
     // If srdf_model has any spheres:
     //   Use them.  Eliminate all spheres with radius<=0.  If none are left then
     //   this link has no collidable geometry and will not be considered for
@@ -166,8 +181,8 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
           Eigen::Vector3d center(sp->center_x_,
                                  sp->center_y_,
                                  sp->center_z_);
-          sphere_centers_.push_back(center);
-          sphere_radii_.push_back(sp->radius_);
+          sphere_centers_.push_back(center * scale);
+          sphere_radii_.push_back(sp->radius_ * scale);
           sphere_idx_to_link_index_.push_back(link_index);
           sphere_cnt++;
         }
@@ -192,10 +207,10 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
       link_name_to_link_index_[(*lm)->getName()] = link_index;
       link_order_.push_back(link_model_index);
 
-      bounding_sphere_centers_.push_back(bounding_center);
-      bounding_sphere_radii_.push_back(bounding_radius);
+      bounding_sphere_centers_.push_back(bounding_center * scale);
+      bounding_sphere_radii_.push_back(bounding_radius * scale);
 
-      max_bounding_sphere_radius_ = std::max(max_bounding_sphere_radius_, bounding_radius);
+      max_bounding_sphere_radius_ = std::max(max_bounding_sphere_radius_, bounding_radius * scale);
     }
   }
 
