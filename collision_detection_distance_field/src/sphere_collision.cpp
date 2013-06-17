@@ -72,6 +72,24 @@ void collision_detection::CollisionRobotDistanceField::getLinkSpheres(
   }
 }
 
+void collision_detection::CollisionRobotDistanceField::getLinkBoundingSphere(
+      const std::string& link_name,
+      Eigen::Vector3d& center,
+      double& radius) const
+{
+  int link_idx = linkNameToIndex(link_name);
+  if (link_idx >= 0)
+  {
+    center = bounding_sphere_centers_[link_idx];
+    radius = bounding_sphere_radii_[link_idx];
+  }
+  else
+  {
+    center = Eigen::Vector3d(0,0,0);
+    radius = 0;
+  }
+}
+
 void collision_detection::CollisionRobotDistanceField::initSpheres()
 {
   int sphere_cnt = 0;

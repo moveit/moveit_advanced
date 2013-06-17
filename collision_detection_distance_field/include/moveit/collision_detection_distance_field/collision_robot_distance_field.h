@@ -122,17 +122,10 @@ public: /* DEBUGGING functions */
                       EigenSTL::vector_Vector3d& centers,
                       std::vector<double>& radii) const;
 
-  // This is just like a call to checkSelfCollision() but all contacts are
-  // returned in df_contacts.
-  //
-  // if req.contacts is true then up to req.max_contacts will be returned.
-  // Otherwise up to 1000 will be returned.
-  void getSelfCollisionContacts(
-                      const CollisionRequest &req,
-                      CollisionResult &res,
-                      const robot_state::RobotState &state,
-                      const AllowedCollisionMatrix *acm,
-                      std::vector<DFContact>* df_contacts) const;
+  // return the collision spheres for a link in link's collision geometry frame.
+  void getLinkBoundingSphere(const std::string& link_name,
+                      Eigen::Vector3d& center,
+                      double& radii) const;
 
   // return the static distance field associated with a link.  Only valid as
   // long as the CollisionRobotDistanceField exists and does not have its field
@@ -154,6 +147,21 @@ public: /* DEBUGGING functions */
                       double min_dist = -1.0,
                       double max_dist = 0.0,
                       bool resolution_relative = true) const;
+
+
+
+
+  // This is just like a call to checkSelfCollision() but all contacts are
+  // returned in df_contacts.
+  //
+  // if req.contacts is true then up to req.max_contacts will be returned.
+  // Otherwise up to 1000 will be returned.
+  void getSelfCollisionContacts(
+                      const CollisionRequest &req,
+                      CollisionResult &res,
+                      const robot_state::RobotState &state,
+                      const AllowedCollisionMatrix *acm,
+                      std::vector<DFContact>* df_contacts) const;
 
 
 protected:
