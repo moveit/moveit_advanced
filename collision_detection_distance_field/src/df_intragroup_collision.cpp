@@ -248,6 +248,14 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
         setCloseDistance(work, dist);
         continue;
       }
+
+logInform(" BSphere %s - %s pad=%f + %f + %f = %f",
+link_a->name_->c_str(),
+link_b->name_->c_str(),
+link_a->df_.getResolution(),
+link_a->padding_,
+link_b->padding_,
+padding);
       
 
       const AllowedCollisionMatrix *acm = work.acm_;
@@ -260,6 +268,9 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
 
         const DistPosEntry& entry = link_a->df_(center);
         dist = entry.distance_ - sphere_radii_[i] - padding;
+
+logInform("    sph[%3d] d=%f r=%f d-r-pad=%f",
+i,entry.distance_,sphere_radii_[i],dist);
 
         if (dist > 0)
         {
