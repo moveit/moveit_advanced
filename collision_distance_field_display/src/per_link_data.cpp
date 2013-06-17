@@ -62,7 +62,7 @@ namespace moveit_rviz_plugin
     {
       per_link_objects.addVisObject(new PerLinkObj<LinkObj_ModelLinkSpheres>(
                                   parent,
-                                  "Show Current SRDF sphere representation",
+                                  "Show Link Collision Spheres",
                                   "Show spheres used for DistanceField collision detection as stored in the SRDF.",
                                   QColor(0, 0, 255),
                                   0.5,
@@ -73,6 +73,37 @@ namespace moveit_rviz_plugin
     {
       robot_relative = false;
       link_->getLinkSpheres(centers, radii);
+    }
+  };
+}
+
+namespace moveit_rviz_plugin
+{
+  // Draw Link Spheres from model
+  class LinkObj_ModelLinkBSpheres : public PerLinkSubObj
+  {
+  public:
+    LinkObj_ModelLinkBSpheres(PerLinkObjBase *base, DFLink *link) :
+      PerLinkSubObj(base, link)
+    {}
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_ModelLinkBSpheres>(
+                                  parent,
+                                  "Show Link Bounding Sphere",
+                                  "Show Link's single Bounding Sphere.",
+                                  QColor(128, 128, 255),
+                                  0.5,
+                                  PerLinkObjBase::SPHERES));
+    }
+
+    virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+    {
+      robot_relative = false;
+      centers.resize(1);
+      radii.resize(1);
+      link_->getLinkBoundingSphere(centers[0], radii[0]);
     }
   };
 }
@@ -158,8 +189,8 @@ namespace moveit_rviz_plugin
     {
       per_link_objects.addVisObject(new PerLinkObj<LinkObj_StaticDF>(
                                   parent,
-                                  "Show Static Distance Field Points",
-                                  "Show surface as described by distance field points on or just inside the surface..",
+                                  "Show Static Distance Field",
+                                  "Show surface as described by distance field points on or just inside the surface.",
                                   QColor(255, 255, 0),
                                   1.0,
                                   PerLinkObjBase::POINTS,
@@ -242,12 +273,13 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
 
   LinkObj_StaticDF::addSelf(df_collision_property, *per_link_objects_);
   LinkObj_StaticDFPoints::addSelf(df_collision_property, *per_link_objects_);
+  LinkObj_ModelLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_ModelLinkBSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
 
   addSphereGenProperties(sphere_gen_propety);
 
   LinkObj_RepLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_BCyl::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_ModelLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
 
 }
 

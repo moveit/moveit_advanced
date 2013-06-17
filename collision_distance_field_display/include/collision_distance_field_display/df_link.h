@@ -74,6 +74,7 @@ public:
   robot_sphere_representation::LinkSphereRepresentation* getSphereRep() const { return sphere_rep_; }
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
+  void getLinkBoundingSphere(Eigen::Vector3d& center, double& radius) const;
 
   // update displayed property values based on current getSphereRep() values.
   void updatePropertyValues();

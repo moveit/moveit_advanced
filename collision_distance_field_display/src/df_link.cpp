@@ -101,6 +101,20 @@ void moveit_rviz_plugin::DFLink::getLinkSpheres(
   }
 }
 
+void moveit_rviz_plugin::DFLink::getLinkBoundingSphere(
+      Eigen::Vector3d& center, 
+      double& radius) const
+{
+  const collision_detection::CollisionRobotDistanceField *crobot_df = display_->getCollisionRobotDistanceField();
+  if (crobot_df)
+    crobot_df->getLinkBoundingSphere( getName(), center, radius );
+  else
+  {
+    center = Eigen::Vector3d(0,0,0);
+    radius = 0;
+  }
+}
+
 
 
 moveit_rviz_plugin::DFLinkFactory::DFLinkFactory(CollisionDistanceFieldDisplay *display)
