@@ -111,6 +111,12 @@ public:
 
 public: /* Special features unique to DistanceField collision */
 
+  // set max distance we want to know about.
+  // The distance*() queries and other queries with
+  // CollisionRequest::distance==true will only return distances up to this
+  // value.
+  void setMaxDistance(double distance);
+
   // Set what method to use.  Mainly for debugging.
   void getMethods(std::vector<std::string>& methods) const;
   void setMethod(const std::string& method);
@@ -161,7 +167,8 @@ public: /* DEBUGGING functions */
                       CollisionResult &res,
                       const robot_state::RobotState &state,
                       const AllowedCollisionMatrix *acm,
-                      std::vector<DFContact>* df_contacts) const;
+                      std::vector<DFContact>* df_contacts = NULL,
+                      DFContact *df_distance = NULL) const;
 
 
 protected:
@@ -239,6 +246,9 @@ private:
 
     // if this is non-NULL it will get ALL contacts detected
     std::vector<DFContact>* df_contacts_;
+
+    // if this is non-null it will contain info about the closest (or deepest) contact
+    DFContact *df_distance_;
   };
 
 
@@ -304,8 +314,10 @@ private:
   // appears in an SRDF DisabledCollisionPair.
   bool never_check_link_pair(const DFLink *link_a, const DFLink *link_b) const;
 
+#if 0
   // accumulate distance into work.res_.distance
   void setCloseDistance(WorkArea& work, double distance) const;
+#endif
 
   // initialize query
   void initQuery(WorkArea& work,
@@ -392,6 +404,16 @@ private:
   // initialize IntraDF data structures
   void initLinkDF();
 
+  // fill in contact with info about a collision
+  void createContact(
+      Contact &contact,
+      DFContact *df_contact,
+      const DFLink& link_a,
+      const DFLink& link_b
+      const DistPosEntry& df_entry_a,
+      double dist,
+      const Eigen::Vector3d& sphere_center_b,
+      double radius_b);
 
   //###########################################################################
   //############################### DATA ######################################
@@ -401,9 +423,13 @@ private:
   // Configuration - set in params.cpp
   //===========================================================================
 
+  // Distance queries will return this value or smaller.
   // This is used to decide how big to make the distance fields.
-  // It is roughly the max distance that will be returned by distance*() queries.
   double MAX_DISTANCE_;
+
+  // This is the value for MAX_DISTANCE_ that was used for initialization.
+  // MAX_DISTANCE_ can be less then this but nmot more than this.
+  double MAX_DISTANCE_FOR_INIT_;
 
   // This is the resolution used for self collision detection.  The accuracy of
   // collision checks will be this plus the tolerance used to generate

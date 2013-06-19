@@ -211,13 +211,48 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
   }
 }
 
+void collision_detection::CollisionRobotDistanceField::createContact(
+      Contact &contact,
+      DFContact *df_contact,
+      const DFLink& link_a,
+      const DFLink& link_b
+      const DistPosEntry& df_entry_a,
+      double dist,
+      const Eigen::Vector3d& sphere_center_b,
+      double radius_b)
+{
+  Eigen::Vector3d pos;
+  link_a.df_.getCellPosition(df_entry_a.cell_id_, pos);
+  robot_state::LinkState *lsa = work.state1_->getLinkStateVector()[link_a.index_in_model_];
+  contact.pos = lsa->getGlobalCollisionBodyTransform() * pos;
+
+  Eigen::Vector3d c = lsa->getGlobalCollisionBodyTransform() * center;
+  contact.normal = c - pos;
+  if (contact.normal.squaredNorm() > std::numeric_limits<double>::epsilon())
+  {
+    contact.normal.normalize();
+  }
+  contact.depth = -dist;
+  contact.body_name_1 = *link_a.name_;
+  contact.body_name_2 = *link_b.name_;
+  contact.body_type_1 = BodyTypes::ROBOT_LINK;
+  contact.body_type_2 = BodyTypes::ROBOT_LINK;
+
+  if (df_contact)
+  {
+    df_contact->copyFrom(contact);     // This clears all fields.
+    df_contact->sdf_1 = &link_a.df_;
+    df_contact->sphere_center_2 = sphere_center_b;
+    df_contact->sphere_radius_2 = radius_b;
+  }
+}
+
 void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIntraDFLoop(
     WorkArea& work,
     const DFLink * const *link_list) const
 {
-  DFContact dummy_dfcontact;
-  DFContact *dfcontact = &dummy_dfcontact;
-  
+  work.res_->distance = MAX_DISTANCE_;
+  std::size_t remaining_contact_cnt = work.req_->contacts ? work.req_->max_contacts : 0;
 
   for (const DFLink * const *p_link_a = link_list ; p_link_a[1] ; ++p_link_a)
   {
@@ -245,8 +280,8 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
 
       if (dist > 0)
       {
-        setCloseDistance(work, dist);
-        continue;
+        if (!work.req_.distance || dist > work.res_->distance)
+          continue;
       }
 
 logInform(" BSphere %s - %s pad=%f + %f + %f = %f",
@@ -258,9 +293,36 @@ link_b->padding_,
 padding);
       
 
-      const AllowedCollisionMatrix *acm = work.acm_;
       collision_detection::DecideContactFn acm_condition;
+
+      if (work.acm_)
+      {
+        AllowedCollision::Type allowed_collision;
+        if (work.acm_->getAllowedCollision(*link_a->name_, *link_b->name_, allowed_collision))
+        {
+          if (allowed_collision == collision_detection::AllowedCollision::NEVER)
+          {
+            // nothing to do here.  This is the common case so it is first.
+          }
+          else if (allowed_collision == collision_detection::AllowedCollision::ALWAYS)
+          {
+            continue;
+          }
+          else if (allowed_collision == collision_detection::AllowedCollision::CONDITIONAL)
+          {
+            if (!work.acm_->getAllowedCollision(*link_a->name_, *link_b->name_, acm_condition))
+            {
+              logWarn("collision type conditional but no function for links '%s' <--> '%s'",
+                  link_a->name_->c_str(),
+                  link_b->name_->c_str());
+              acm_condition = 0;
+            }
+          }
+        }
+      }
+
       std::vector<Contact>* pair_contacts = NULL;
+      std::size_t remaining_pair_contact_cnt = std::min(work.req_->max_contacts_per_pair, remaining_contact_cnt);
 
       for (int i = link_b->sphere_idx_begin_ ; i != link_b->sphere_idx_end_ ; ++i)
       {
@@ -274,82 +336,82 @@ i,entry.distance_,sphere_radii_[i],dist);
 
         if (dist > 0)
         {
-          setCloseDistance(work, dist);
-          continue;
-        }
+          if (!work.req_.distance || dist > work.res_->distance)
+            continue;
 
-        if (acm)
-        {
-          AllowedCollision::Type allowed_collision;
-          if (acm->getAllowedCollision(*link_a->name_, *link_b->name_, allowed_collision))
+          if (acm_condition)
           {
-            if (allowed_collision == collision_detection::AllowedCollision::NEVER)
-            {
-              // nothing to do here.  This is the common case so it is first.
-            }
-            else if (allowed_collision == collision_detection::AllowedCollision::ALWAYS)
-            {
-              goto next_link;  // collisions allowed between this link pair, so break out to next link.
-            }
-            else if (allowed_collision == collision_detection::AllowedCollision::CONDITIONAL)
-            {
-              if (!acm->getAllowedCollision(*link_a->name_, *link_b->name_, acm_condition))
-              {
-                logWarn("collision type conditional but no function for links '%s' <--> '%s'",
-                    link_a->name_->c_str(),
-                    link_b->name_->c_str());
-                acm_condition = 0;
-              }
-            }
+            Contact contact;
+            createContact(contact,
+                          NULL,
+                          *link_a,
+                          *link_b,
+                          entry,
+                          dist,
+                          center,
+                          sphere_radii_[i]);
+            if (acm_condition(contact))
+              continue;
           }
-          acm = NULL; // do not check again for this link pair
+
+          work.res_->distance = dist;
+
+          // record info about closest distance
+          if (work.df_distance_)
+          {
+            Contact contact;
+            createContact(contact,
+                          work.df_distance_,
+                          *link_a,
+                          *link_b,
+                          entry,
+                          dist,
+                          center,
+                          sphere_radii_[i]);
+          }
+
+          continue;
         }
 
         if (acm_condition || work.req_->contacts)
         {
           Contact contact;
-          Eigen::Vector3d pos;
-          link_a->df_.getCellPosition(entry.cell_id_, pos);
-          contact.pos = lsa->getGlobalCollisionBodyTransform() * pos;
+          DFContact df_contact0;
+          DFContact *df_contact = work.df_distance_ ? df_contact0 : NULL;
 
-          Eigen::Vector3d c = lsa->getGlobalCollisionBodyTransform() * center;
-          contact.normal = c - pos;
-          if (contact.normal.squaredNorm() > std::numeric_limits<double>::epsilon())
-          {
-            contact.normal.normalize();
-          }
-          contact.depth = -dist;
-          contact.body_name_1 = *link_a->name_;
-          contact.body_name_2 = *link_b->name_;
-          contact.body_type_1 = BodyTypes::ROBOT_LINK;
-          contact.body_type_2 = BodyTypes::ROBOT_LINK;
-
-          // generate a DFContact for debugging?
+          // save DFConstact for debugging?
           if (work.df_contacts_)
           {
             work.df_contacts_->resize(work.df_contacts_->size()+1);
-            dfcontact = &work.df_contacts_->back();
-            dfcontact->copyFrom(contact);     // This clears all fields.
-            dfcontact->sdf_1 = &link_a->df_;
-            dfcontact->sphere_center_2 = c;
-            dfcontact->sphere_radius_2 = sphere_radii_[i];
+            df_contact = &work.df_contacts_->back();
           }
-          
 
-          if (acm_condition)
+          createContact(contact,
+                        df_contact,
+                        *link_a,
+                        *link_b,
+                        entry,
+                        dist,
+                        center,
+                        sphere_radii_[i]);
+
+          if (acm_condition && acm_condition(contact))
           {
-            if (acm_condition(contact))
-            {
-              dfcontact->eliminated_by_acm_function = true;
-              continue;
-            }
+            if (df_contact)
+              df_contact->eliminated_by_acm_function = true;
+            continue;
           }
-
-          work.res_->collision = true;
-          setCloseDistance(work, dist);
 
           // contact occurred
-          if (work.req_->contacts)
+          work.res_->collision = true;
+          if (dist < work.res_->distance)
+          {
+            work.res_->distance = dist;
+            if (work.df_distance_)
+              *work.df_distance_ = *df_contact;
+          }
+
+          if (remaining_pair_contact_cnt)
           {
             if (!pair_contacts)
             {
@@ -358,27 +420,33 @@ i,entry.distance_,sphere_radii_[i],dist);
             }
             else
             {
-              if (contact.depth > pair_contacts->front().depth)
-                std::swap(contact, pair_contacts->front());
-
-              if (pair_contacts->size() < work.req_->max_contacts_per_pair)
-              {
-                pair_contacts->push_back(contact);
-                work.res_->contact_count++;
-                if (work.res_->contact_count >= work.req_->max_contacts)
-                  return;
-              }
+              pair_contacts->push_back(contact);
+              if (pair_contacts->back().depth > pair_contacts->front().depth)
+                std::swap(pair_contacts->back(), pair_contacts->front());
             }
+
+            work.res_->contact_count++;
+            remaining_contact_cnt--;
+            remaining_pair_contact_cnt--;
+
+            if (remaining_contact_cnt == 0 && !work.req_.distance)
+              return;
+          }
+          else if (pair_contacts)
+          {
+            if (contact.depth > pair_contacts->front().depth)
+              std::swap(contact, pair_contacts->front());
           }
         }
         else
         {
+          // contact occurred
           work.res_->collision = true;
-          setCloseDistance(work, dist);
+          if (!work.req_->distance)
+            return;
+          work.res_->distance = std::min(work.res_->distance, dist);
         }
       }
-      next_link:
-      (void)0;
     }
   }
 }

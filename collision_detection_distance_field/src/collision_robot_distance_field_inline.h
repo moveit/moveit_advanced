@@ -66,12 +66,14 @@ inline void collision_detection::CollisionRobotDistanceField::initQuery(
     dumpQuery(work, descrip);
 }
 
+#if 0
 inline void collision_detection::CollisionRobotDistanceField::setCloseDistance(
       WorkArea& work, 
       double distance) const
 {
   work.res_->distance = std::min(work.res_->distance, distance);
 }
+#endif
 
 inline bool collision_detection::CollisionRobotDistanceField::never_check_link_pair(
       const DFLink *link_a, 

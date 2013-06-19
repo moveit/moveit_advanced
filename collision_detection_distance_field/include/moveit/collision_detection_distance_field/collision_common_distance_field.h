@@ -46,6 +46,7 @@ namespace collision_detection
 
 class StaticDistanceField;
 
+// information about a contact detected by distance field
 struct DFContact : public Contact
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

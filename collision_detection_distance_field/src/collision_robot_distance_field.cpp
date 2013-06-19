@@ -144,15 +144,29 @@ double collision_detection::CollisionRobotDistanceField::distanceSelf(
     const robot_state::RobotState &state,
     const AllowedCollisionMatrix &acm) const
 {
-  logError("CollisionRobotDistanceField::distanceSelf 1a not yet implemented");
-  return 0.0;
+  WorkArea& work = getWorkArea();
+  CollisionResult res;
+  CollisionRequest req;
+  req.distance = true;
+  initQuery(work, "distanceSelf1acm", &req, &res, &state, NULL, NULL, NULL, NULL, &acm);
+
+  checkSelfCollision(work);
+
+  return res.distance;
 }
 
 double collision_detection::CollisionRobotDistanceField::distanceSelf(
     const robot_state::RobotState &state) const
 {
-  logError("CollisionRobotDistanceField::distanceSelf 1b not yet implemented");
-  return 0.0;
+  WorkArea& work = getWorkArea();
+  CollisionResult res;
+  CollisionRequest req;
+  req.distance = true;
+  initQuery(work, "distanceSelf1acm", &req, &res, &state, NULL, NULL, NULL, NULL, NULL);
+
+  checkSelfCollision(work);
+
+  return res.distance;
 }
 
 double collision_detection::CollisionRobotDistanceField::distanceOther(
@@ -179,25 +193,32 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
     CollisionResult &res,
     const robot_state::RobotState &state, 
     const AllowedCollisionMatrix *acm,
-    std::vector<DFContact>* df_contacts) const
+    std::vector<DFContact>* df_contacts,
+    DFContact *df_distance) const
 {
-  CollisionRequest req2;
+  CollisionRequest req2 = req;
   WorkArea& work = getWorkArea();
-  initQuery(work, "getSelfCollisionContacts", &req, &res, &state, NULL, NULL, NULL, NULL, acm);
+  initQuery(work, "getSelfCollisionContacts", &req2, &res, &state, NULL, NULL, NULL, NULL, acm);
 
   // force generation of contacts
-  if (df_contacts && !req.contacts)
+  if (df_contacts && !req2.contacts)
   {
-    req2 = req;
-    work.req_ = &req2;
     req2.contacts = true;
     req2.max_contacts = 1000;
     req2.max_contacts_per_pair = 100;
   }
 
+  // force generation of contacts
+  if (df_distance)
+  {
+    req2.distance = true;
+  }
+
   work.df_contacts_ = df_contacts;
+  work.df_distance_ = df_distance;
   checkSelfCollision(work);
   work.df_contacts_ = NULL;
+  work.df_distance_ = NULL;
 }
 
 
