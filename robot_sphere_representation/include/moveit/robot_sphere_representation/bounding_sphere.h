@@ -41,9 +41,41 @@
 
 namespace robot_sphere_representation
 {
-  void generateBoundingSphere(const EigenSTL::vector_Vector3d& points,
-                              Eigen::Vector3d& center,
-                              double &radius);
+  // generate a sphere that tightly bounds all the points.
+  void generateBoundingSphere(
+        const EigenSTL::vector_Vector3d& points,
+        Eigen::Vector3d& center,
+        double &radius);
+
+  // generate a sphere whose diameter is the 2 points
+  void robot_sphere_representation::findSphereTouching2Points(
+        Eigen::Vector3d& center,
+        double& radius,
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b);
+
+  // Generate a sphere touching 3 points.  The center of the sphere will be on
+  // the same plane as the 3 points.  If the points are colinear then one of
+  // the 3 input points may be inside the sphere and/or the radius may be very large.
+  void robot_sphere_representation::findSphereTouching3Points(
+        Eigen::Vector3d& center,
+        double& radius,
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b,
+        const Eigen::Vector3d& c);
+
+  // Generate the unique sphere that touches the 4 points.
+  // If the 4 points are coplanar then the sphere may contain some of the input
+  // points and/or the radius may be very large.
+  void robot_sphere_representation::findSphereTouching3Points(
+  void robot_sphere_representation::findSphereTouching4Points(
+        Eigen::Vector3d& center,
+        double& radius,
+        const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b,
+        const Eigen::Vector3d& c,
+        const Eigen::Vector3d& d);
+
 }
 
 

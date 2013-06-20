@@ -36,167 +36,223 @@
 
 #include <moveit/robot_sphere_representation/bounding_sphere.h>
 #include <console_bridge/console.h>
+#include <Eigen/LU>
 
-void robot_sphere_representation::findCircleTouching2Points(
-      const Eigen::Vector3d& a,
-      const Eigen::Vector3d& b,
+void robot_sphere_representation::findSphereTouching2Points(
       Eigen::Vector3d& center,
-      double& radius)
+      double& radius,
+      const Eigen::Vector3d& a,
+      const Eigen::Vector3d& b)
 {
   center = (a + b) * 0.5;
   radius = (center - a).norm();
 }
 
-
-// generate the circle that touches first 3 points of boundary_
-// normal is the normal to the plane of the circle -- NOT a unit normal.
-// If points are colinear is set to true and normal=0,0,0.  Else colinear=false.
-void robot_sphere_representation::findCircleTouching3Points(
+static void robot_sphere_representation::findSphereTouching3PointsColinear(
+      Eigen::Vector3d& center,
+      double& radius,
       const Eigen::Vector3d& a,
       const Eigen::Vector3d& b,
       const Eigen::Vector3d& c,
-      Eigen::Vector3d& center,
-      double& radius,
-      Eigen::Vector3d& normal,
-      bool colinear)
+      double ab_lensq,
+      double bc_lensq,
+      double ac_lensq)
 {
-  Eigen::Vector3d ab = b-a;
-  Eigen::Vector3d bc = c-b;
-  Eigen::Vector3d n = ab.cross(bc);
-
-  // points are colinear?
-  if (n.squaredNorm() <= std::numeric_limits<double>::epsilon())
+  if (ab_lensq > ac_lensq)
   {
-    Eigen::Vector3d ca = a-c;
-    double ab_sq = ab.squaredNorm();
-    double bc_sq = bc.squaredNorm();
-    double ca_sq = ca.squaredNorm();
-    if (bc_sq > ab_sq)
-    {
-      if (ca_sq > bc_sq)
-        findCircleTouching2Points(a, c, center, radius);
-      else
-        findCircleTouching2Points(b, c, center, radius);
-    }
-    else if (ca_sq > ab_sq)
-      findCircleTouching2Points(a, c, center, radius);
+    if (ab_lensq > bc_lensq)
+      findSphereTouching2Points(center, radius, a, b);
     else
-      findCircleTouching2Points(a, b, center, radius);
-    
-    normal = Eigen::Vector3d::Zero();
-    colinear = true;
-    return;
-  }
-
-  colinear = false;
-
-  // define 2D coordinate system in plane of tri with a at origin and b at 1,0
-  normal = n;
-  Eigen::Vector3d& x = ab;
-  Eigen::Vector3d y = n.cross(x);
-
-  double x0 = x.dot(a);
-  double y0 = y.dot(a);
-  double z0 = z.dot(a);
-
-  Eigen::Vector2d fa(0.0, 0.0);
-  Eigen::Vector2d fb(1.0, 0.0);
-  Eigen::Vector2d fc(x.dot(c) - x0, y.dot(c) - y0);
-
-  Eigen::Vector2d fac_mid = fc * 0.5;   // (fc - fa)/2
-  Eigen::Vector2d fac_dir(-fc.y(), fc.x());
-
-  // perpendicular bisector of ab is vertical at x=0.5
-  // perpendicular bisectory of ac is fac_mid + t * fac_dir
-  // intersection of perpendicular bisectors:
-  //    x=0.5  y= fac_mid.y + (0.5 - fac_mid.x) * fac_dir.y / fac_dir.x
-  double fcenter_y;
-  if (fac_dir.x() <= std::numeric_limits<double>::epsilon())
-  {
-    fcenter_y = fac_mid.y();
+      findSphereTouching2Points(center, radius, b, c);
   }
   else
   {
-    fcenter_y = fac_mid.y + (0.5 - fac_mid.x) * fac_dir.y / fac_dir.x;
+    if (ac_lensq > bc_lensq)
+      findSphereTouching2Points(center, radius, a, c);
+    else
+      findSphereTouching2Points(center, radius, b, c);
   }
-
-  // center of circle is at (0.5, fcenter_y) in 2D coord sys.  Put back into 3d coords
-  center = (x * (0.5 + x0)) +
-           (y * (fcenter_y + y0)) + 
-           (n * z0);
-  radius = (center - a).norm();
 }
 
+void robot_sphere_representation::findSphereTouching3Points(
+      Eigen::Vector3d& center,
+      double& radius,
+      const Eigen::Vector3d& a,
+      const Eigen::Vector3d& b,
+      const Eigen::Vector3d& c)
+{
+  Eigen::Vector3d ab = b - a;
+  Eigen::Vector3d ac = c - a;
+  Eigen::Vector3d n = ab.cross(ac);
+
+  double ab_lensq = ab.squaredNorm();
+  double ac_lensq = ab.squaredNorm();
+  double n_lensq = n.squaredNorm();
+
+  // points are colinear?
+  if (n_lensq <= std::numeric_limits<double>::epsilon())
+  {
+    findSphereTouching3PointsColinear(
+          center,
+          radius,
+          a,
+          b,
+          c,
+          ab_lensq,
+          (c - b).squaredNorm(),
+          ac_lensq);
+    return;
+  }
+
+  Eigen::Vector3d c = ((bc_lensq * n.cross(ab) + ab_lensq * bc.cross(n)) / (2.0 * n_lensq));
+  radius = c.normSquared();
+  center = c + a;
+}
+
+static void robot_sphere_representation::findSphereTouching4PointsCoplanar(
+      Eigen::Vector3d& center,
+      double& radius,
+      const Eigen::Vector3d& a,
+      const Eigen::Vector3d& b,
+      const Eigen::Vector3d& c,
+      const Eigen::Vector3d& d)
+{
+  findSphereTouching3Points(center, radius, a, b, c);
+  if ((center - d).squaredNorm() <= radius)
+    return;
+  findSphereTouching3Points(center, radius, a, b, d);
+  if ((center - c).squaredNorm() <= radius)
+    return;
+  findSphereTouching3Points(center, radius, a, c, d);
+  if ((center - b).squaredNorm() <= radius)
+    return;
+  findSphereTouching3Points(center, radius, b, c, d);
+}
+
+void robot_sphere_representation::findSphereTouching4Points(
+      Eigen::Vector3d& center,
+      double& radius,
+      const Eigen::Vector3d& a,
+      const Eigen::Vector3d& b,
+      const Eigen::Vector3d& c,
+      const Eigen::Vector3d& d)
+{
+  Eigen::Matrix3d m;
+  m.col(0) = b - a;
+  m.col(1) = c - a;
+  m.col(2) = d - a;
+
+  double det = m.determinant();
+
+  // points are coplanar?
+  if (det <= std::numeric_limits<double>::epsilon())
+  {
+    findSphereTouching4PointsCoplanar(center, radius, a,b,c,d);
+    return;
+  }
+  
+  double ab_lensq = m.col(0).squaredNorm();
+  double ac_lensq = m.col(1).squaredNorm();
+  double ad_lensq = m.col(2).squaredNorm();
+  Eigen::Vector3d c = (ad_lensq * m.col(0).cross(m.col(1)) +
+                       ac_lensq * m.col(2).cross(m.col(0)) +
+                       ab_lensq * m.col(1).cross(m.col(2))) / (2.0 * det);
+
+  radius = c.normSquared();
+  center = c + a;
+}
 
 namespace
 {
 // calculate sphere bounding points using Emo Welzl's move-to-front algorithm.
 struct SphereInfo
 {
+  SphereInfo(const EigenSTL::vector_Vector3d& points);
+  findSphere(int npoints, int nbound);
+
   std::vector<Eigen::Vector3d*> list_;
-  std::vector<Eigen::Vector3d*> boundary_;
   Eigen::Vector3d center_;
   double radius_;
-
-  SphereInfo(const EigenSTL::vector_Vector3d& points);
-  genSphere(int nbound);
-  findSphere(int npoints, int nbound);
 };
 }
 
 void SphereInfo::SphereInfo(
       const EigenSTL::vector_Vector3d& points)
+  : center_(0,0,0)
+  , radius_(0)
 {
   int npoints = points.size();
   list_.resize(npoints);
-  boundary_.resize(4);
   for (int i = 0 ; i < npoints ; i++)
     list_[i] = &points[i];
 }
 
-void SphereInfo::genCircle(
-      Eigen::Vector3d& center,
-      Eigen::Vector3d& normal,
-      double& radius,
-      bool colinear)
-{
 
-
-void SphereInfo::genSphere(
-      int nbound)
-{
-  switch(nbound)
-  {
-  case 0:
-    radius_ = 0;
-    center_ = Eigen::Vector3d(0,0,0);
-    break;
-  case 1:
-    radius_ = 0;
-    center_ = boundary_[0];
-    break;
-  case 2:
-    center_ = (boundary_[0] + boundary_[1]) * 0.5;
-    radius_ = (boundary_[0] - center_).norm();
-    break;
-  case 3:
-  case 4:
-  default:
-    logError("Bad nbound=%d for genSphere",nbound);
-    radius_ = 0;
-    center_ = Eigen::Vector3d(0,0,0);
-    break;
-  }
-  
-}
-
+// find the tightest bounding sphere.
+// Recursive.
+// The first nbound points in list_ are on the boundary.  The rest are inside (or need to be checked).
 void SphereInfo::findSphere(
       int npoints,
       int nbound)
 {
+  // increase radius by this much to avoid flipping between points that are
+  // equal distance from center.
+  static const double radius_expand = std::numeric_limits<float>::epsilon() * 1000.0;
 
+  switch(nbound)
+  {
+  case 0:
+    center_ = Eigen::Vector3d::Zero();
+    radius_ = 0;
+    break;
+  case 1:
+    center_ = *list_[0];
+    radius_ = radius_expand;
+    break;
+  case 2:
+    void robot_sphere_representation::findSphereTouching2Points(
+            center_,
+            radius_,
+            *list_[0],
+            *list_[1]);
+    radius_ += radius_expand;
+    break;
+  case 3:
+    void robot_sphere_representation::findSphereTouching3Points(
+            center_,
+            radius_,
+            *list[0],
+            *list[1],
+            *list[2]);
+    radius_ += radius_expand;
+    break;
+  default:
+    logError("Bad nbound=%d for findSphere",nbound);
+  case 4:
+    void robot_sphere_representation::findSphereTouching4Points(
+            center_,
+            radius_,
+            *list[0],
+            *list[1],
+            *list[2],
+            *list[3]);
+    return;
+  }
+
+  for (int i = nbound ; i < npoints ; ++i)
+  {
+    if ((*list[i] - center_) > radius_)
+    {
+      // entry i is a troublemaker, so move it to head of list (i.e. to list_[nbound])
+      Eigen::Vector3d *p = list_[i];
+      memmove(&list_[nbound+1], &list_[i], sizeof(Eigen::Vector3d*) * (i - nbound));
+      list_[nbound] = p;
+
+      // find a sphere that fits the new set of boundary points.
+      findSphere(i, nbound + 1);
+    }
+  }
 }
-
 
 void robot_sphere_representation::generateBoundingSphere(
       const EigenSTL::vector_Vector3d& points,
@@ -205,7 +261,7 @@ void robot_sphere_representation::generateBoundingSphere(
 {
   SphereInfo info(points);
 
-  info.findSphere(points.size(), 0);
+  info.findSphere(&info.list_[0], points.size(), 0);
 
   center = info.center;
   radius = info.radius;
