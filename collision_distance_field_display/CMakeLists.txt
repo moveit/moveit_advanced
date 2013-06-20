@@ -91,6 +91,7 @@ add_library(
     src/cylinders_display.cpp
     src/spheres_display.cpp
     src/points_display.cpp
+    src/arrows_display.cpp
     src/color_cast.cpp
     ${MOC_SOURCES}
 )

@@ -70,6 +70,7 @@ namespace moveit_rviz_plugin
 
 class PerLinkObjList;
 class SpheresDisplay;
+class ArrowsDisplay;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -196,12 +197,16 @@ private:
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
   rviz::ColorProperty* colliding_link_color_property_;
-  rviz::BoolProperty* show_contact_points_property_;
+  rviz::BoolProperty* contact_points_enable_property_;
   rviz::ColorProperty* contact_points_color_property_;
   rviz::FloatProperty* contact_points_size_property_;
-  rviz::BoolProperty* show_colliding_spheres_property_;
+  rviz::BoolProperty* colliding_spheres_enable_property_;
   rviz::ColorProperty* colliding_sphere_color_property_;
   rviz::FloatProperty* colliding_sphere_alpha_property_;
+  rviz::BoolProperty* closest_distance_enable_property_;
+  rviz::FloatProperty* closest_distance_value_property_;
+  rviz::ColorProperty* closest_distance_color_property_;
+  rviz::FloatProperty* closest_distance_alpha_property_;
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
@@ -234,6 +239,8 @@ private:
   // for displaying contact points and colliding spheres 
   boost::shared_ptr<SpheresDisplay> contact_points_display_;
   boost::shared_ptr<SpheresDisplay> colliding_spheres_display_;
+  boost::shared_ptr<SpheresDisplay> distance_spheres_display_;
+  boost::shared_ptr<ArrowsDisplay> distance_arrows_display_;
 };
 
 }
