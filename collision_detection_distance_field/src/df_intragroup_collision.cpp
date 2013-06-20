@@ -212,22 +212,23 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
 }
 
 void collision_detection::CollisionRobotDistanceField::createContact(
+      WorkArea& work,
       Contact &contact,
       DFContact *df_contact,
       const DFLink& link_a,
-      const DFLink& link_b
+      const DFLink& link_b,
+      const robot_state::LinkState& lsa,
       const DistPosEntry& df_entry_a,
       double dist,
-      const Eigen::Vector3d& sphere_center_b,
-      double radius_b)
+      const Eigen::Vector3d& sphere_center_b_in_link_a_coord_frame,
+      double radius_b) const
 {
   Eigen::Vector3d pos;
   link_a.df_.getCellPosition(df_entry_a.cell_id_, pos);
-  robot_state::LinkState *lsa = work.state1_->getLinkStateVector()[link_a.index_in_model_];
-  contact.pos = lsa->getGlobalCollisionBodyTransform() * pos;
+  contact.pos = lsa.getGlobalCollisionBodyTransform() * pos;
 
-  Eigen::Vector3d c = lsa->getGlobalCollisionBodyTransform() * center;
-  contact.normal = c - pos;
+  Eigen::Vector3d center = lsa.getGlobalCollisionBodyTransform() * sphere_center_b_in_link_a_coord_frame;
+  contact.normal = center - pos;
   if (contact.normal.squaredNorm() > std::numeric_limits<double>::epsilon())
   {
     contact.normal.normalize();
@@ -240,9 +241,9 @@ void collision_detection::CollisionRobotDistanceField::createContact(
 
   if (df_contact)
   {
-    df_contact->copyFrom(contact);     // This clears all fields.
+    df_contact->copyFrom(contact);     // This clears/sets all fields.
     df_contact->sdf_1 = &link_a.df_;
-    df_contact->sphere_center_2 = sphere_center_b;
+    df_contact->sphere_center_2 = center;
     df_contact->sphere_radius_2 = radius_b;
   }
 }
@@ -280,7 +281,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
 
       if (dist > 0)
       {
-        if (!work.req_.distance || dist > work.res_->distance)
+        if (!work.req_->distance || dist > work.res_->distance)
           continue;
       }
 
@@ -336,16 +337,18 @@ i,entry.distance_,sphere_radii_[i],dist);
 
         if (dist > 0)
         {
-          if (!work.req_.distance || dist > work.res_->distance)
+          if (!work.req_->distance || dist > work.res_->distance)
             continue;
 
           if (acm_condition)
           {
             Contact contact;
-            createContact(contact,
+            createContact(work,
+                          contact,
                           NULL,
                           *link_a,
                           *link_b,
+                          *lsa,
                           entry,
                           dist,
                           center,
@@ -360,10 +363,12 @@ i,entry.distance_,sphere_radii_[i],dist);
           if (work.df_distance_)
           {
             Contact contact;
-            createContact(contact,
+            createContact(work,
+                          contact,
                           work.df_distance_,
                           *link_a,
                           *link_b,
+                          *lsa,
                           entry,
                           dist,
                           center,
@@ -377,7 +382,7 @@ i,entry.distance_,sphere_radii_[i],dist);
         {
           Contact contact;
           DFContact df_contact0;
-          DFContact *df_contact = work.df_distance_ ? df_contact0 : NULL;
+          DFContact *df_contact = work.df_distance_ ? &df_contact0 : NULL;
 
           // save DFConstact for debugging?
           if (work.df_contacts_)
@@ -386,10 +391,12 @@ i,entry.distance_,sphere_radii_[i],dist);
             df_contact = &work.df_contacts_->back();
           }
 
-          createContact(contact,
+          createContact(work,
+                        contact,
                         df_contact,
                         *link_a,
                         *link_b,
+                        *lsa,
                         entry,
                         dist,
                         center,
@@ -429,7 +436,7 @@ i,entry.distance_,sphere_radii_[i],dist);
             remaining_contact_cnt--;
             remaining_pair_contact_cnt--;
 
-            if (remaining_contact_cnt == 0 && !work.req_.distance)
+            if (remaining_contact_cnt == 0 && !work.req_->distance)
               return;
           }
           else if (pair_contacts)

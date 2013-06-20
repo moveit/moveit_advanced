@@ -46,11 +46,16 @@ collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection:
     work_area_.reset(new WorkArea);
     WorkArea& work = *work_area_;
     work.transformed_sphere_centers_.resize(sphere_centers_.size());
-    work.df_contacts_ = NULL;
   }
 
   WorkArea& work = *work_area_;
   return work;
+}
+
+collision_detection::CollisionRobotDistanceField::WorkArea::WorkArea()
+  : df_contacts_(NULL)
+  , df_distance_(NULL)
+{
 }
 
 collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()

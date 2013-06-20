@@ -224,6 +224,7 @@ private:
   struct WorkArea
   {
   public:
+    WorkArea();
     ~WorkArea();
 
 
@@ -404,16 +405,19 @@ private:
   // initialize IntraDF data structures
   void initLinkDF();
 
-  // fill in contact with info about a collision
+  // Fill in <contact> with info about a collision.
+  // If <df_contact> is not NULL fill it in too.
   void createContact(
-      Contact &contact,
-      DFContact *df_contact,
-      const DFLink& link_a,
-      const DFLink& link_b
-      const DistPosEntry& df_entry_a,
-      double dist,
-      const Eigen::Vector3d& sphere_center_b,
-      double radius_b);
+      WorkArea& work,
+      Contact &contact,                 // this gets filled in.
+      DFContact *df_contact,            // this gets filled in if not NULL
+      const DFLink& link_a,                       // the link with the distance field
+      const DFLink& link_b,                       // the link with the sphere
+      const robot_state::LinkState& lsa,          // LinkState for link_a
+      const DistPosEntry& df_entry_a,             // distance field entry
+      double dist,                                // collision distance (aka -depth)
+      const Eigen::Vector3d& sphere_center_b_in_link_a_coord_frame,  // the sphere center in link_a's coord frame
+      double radius_b) const;                     // sphere radius
 
   //###########################################################################
   //############################### DATA ######################################
