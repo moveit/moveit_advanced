@@ -212,6 +212,12 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
   if (df_distance)
   {
     req2.distance = true;
+    if (!req2.contacts)
+    {
+      req2.max_contacts = 0;
+      req2.max_contacts_per_pair = 0;
+    }
+    req2.contacts = true;
     df_distance->clear();
   }
 
