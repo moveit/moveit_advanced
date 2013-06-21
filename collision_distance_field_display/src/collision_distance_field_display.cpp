@@ -301,6 +301,16 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "Settings for generating a sphere representation of the robot.  See also per-link settings under Links.",
                                       robot_state_category_);
 
+  debug_iteration_ = new rviz::IntProperty(
+                                      "Debug Iteration",
+                                      -1,
+                                      "Used for internal debugging.",
+                                      sphere_gen_category_,
+                                      SLOT( dfPointExamineChanged() ),
+                                      this);
+  debug_iteration_->setMin(-1);
+  
+
   robot_state_category_->expand();
 
 }
@@ -366,6 +376,11 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::dfPointExamineChanged()
 {
   per_link_objects_->update();
+}
+
+int moveit_rviz_plugin::CollisionDistanceFieldDisplay::getDebugIteration() const
+{
+  return debug_iteration_->getInt();
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollidingSpheresChanged()

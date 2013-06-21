@@ -111,6 +111,9 @@ public:
                        Ogre::SceneNode *node = NULL,
                        const Eigen::Affine3d& transform_to_node = Eigen::Affine3d::Identity()) const;
 
+  // debug iteration property value
+  int getDebugIteration() const;
+
 protected:
   virtual void onInitialize();
   virtual void onEnable();
@@ -223,6 +226,8 @@ private:
   rviz::ColorProperty* df_point_examine_color_;
   rviz::ColorProperty* df_point_examine_near_color_;
   rviz::FloatProperty* df_point_examine_size_;
+
+  rviz::IntProperty* debug_iteration_;
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;

@@ -270,9 +270,9 @@ namespace moveit_rviz_plugin
   class LinkObj_SDFBSphere : public PerLinkSubObj
   {
   public:
-    LinkObj_SDFBSphere(PerLinkObjBase *base, DFLink *link) :
-      PerLinkSubObj(base, link)
-    {}
+    LinkObj_SDFBSphere(PerLinkObjBase *base, DFLink *link)
+      : PerLinkSubObj(base, link)
+    { }
 
     static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
     {
@@ -310,11 +310,38 @@ namespace moveit_rviz_plugin
 
           Eigen::Vector3d center;
           double radius;
+#if 0 // REGULAR (NON-DEBUG) VERSION
           robot_sphere_representation::generateBoundingSphere(
             points,
             center,
             radius);
           shapes_->addSphere(center, radius);
+#endif
+
+#if 1 // DEBUG VERSION
+          EigenSTL::vector_Vector3d corners;
+          EigenSTL::vector_Vector3d accounted;
+          Eigen::Vector3d last_pt;
+          int used_mask = 0;
+          robot_sphere_representation::generateBoundingSphereDebug(
+            points,
+            center,
+            radius,
+            link_->getDisplay()->getDebugIteration(),
+            &used_mask,
+            &corners,
+            &accounted,
+            &last_pt);
+          shapes_->addSphere(center, radius, Eigen::Vector4f(0,1,0,0.3));
+logInform("corners: %d",int(corners.size()));
+          shapes_->addSpheres(accounted, 0.005, Eigen::Vector4f(0,1,1,1.0));
+          if (corners.size()>=1) shapes_->addSphere(corners[0], (used_mask&1) ? 0.02 : 0.01, Eigen::Vector4f(1,0,0,0.7));
+          if (corners.size()>=2) shapes_->addSphere(corners[1], (used_mask&2) ? 0.02 : 0.01, Eigen::Vector4f(0,1,0,0.7));
+          if (corners.size()>=3) shapes_->addSphere(corners[2], (used_mask&4) ? 0.02 : 0.01, Eigen::Vector4f(0,0,1,0.7));
+          if (corners.size()>=4) shapes_->addSphere(corners[3], (used_mask&8) ? 0.02 : 0.01, Eigen::Vector4f(1,1,1,0.7));
+          shapes_->addSphere(last_pt, 0.025, Eigen::Vector4f(1,1,0,0.5));
+#endif
+
 
 #if 0
           robot_sphere_representation::findSphereTouching2Points(
@@ -374,7 +401,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
   LinkObj_RepLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_BCyl::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_SDFBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
-
 }
 
 
