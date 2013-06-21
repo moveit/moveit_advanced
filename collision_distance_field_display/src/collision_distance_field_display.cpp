@@ -34,7 +34,7 @@
 #include <collision_distance_field_display/color_cast.h>
 #include <collision_distance_field_display/per_link_object.h>
 #include <collision_distance_field_display/spheres_display.h>
-#include <collision_distance_field_display/arrows_display.h>
+#include <collision_distance_field_display/shapes_display.h>
 
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
@@ -671,8 +671,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
     }
   }
 
-  distance_spheres_display_.reset();
-  distance_arrows_display_.reset();
+  distance_display_.reset();
 
   if (closest_distance_enable_property_->getBool())
   {
@@ -691,10 +690,8 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
     }
   }
 
-  distance_spheres_display_.reset(new SpheresDisplay(planning_scene_node_,
-                                                     color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
-  distance_arrows_display_.reset(new ArrowsDisplay(planning_scene_node_,
-                                                     color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
+  distance_display_.reset(new ShapesDisplay(planning_scene_node_,
+                                            color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
 
   Eigen::Vector3d pta(0,0,0);
   Eigen::Vector3d ptb(1,1,1);
@@ -705,10 +702,10 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
   if (lsb)
     ptb = lsb->getGlobalCollisionBodyTransform().translation();
 
-  distance_arrows_display_->addArrow(pta, ptb);
+  distance_display_->addArrow(pta, ptb);
 
   Eigen::Vector3d ptc = (pta + ptb) * 0.5;
-  distance_spheres_display_->addSphere(ptc, 0.2);
+  distance_display_->addSphere(ptc, 0.2);
 }
 
 // Update the robot visual appearance based on attributes.

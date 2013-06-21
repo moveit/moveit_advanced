@@ -71,6 +71,7 @@ namespace moveit_rviz_plugin
 class PerLinkObjList;
 class SpheresDisplay;
 class ArrowsDisplay;
+class ShapesDisplay;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -239,8 +240,12 @@ private:
   // for displaying contact points and colliding spheres 
   boost::shared_ptr<SpheresDisplay> contact_points_display_;
   boost::shared_ptr<SpheresDisplay> colliding_spheres_display_;
+#if 0
   boost::shared_ptr<SpheresDisplay> distance_spheres_display_;
   boost::shared_ptr<ArrowsDisplay> distance_arrows_display_;
+#else
+  boost::shared_ptr<ShapesDisplay> distance_display_;
+#endif
 };
 
 }
