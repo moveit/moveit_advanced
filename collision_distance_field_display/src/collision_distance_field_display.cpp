@@ -684,17 +684,22 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
       if (!df_distance.body_name_1.empty() || !df_distance.body_name_2.empty())
       {
+        Eigen::Vector4f color = color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_);
         distance_display_.reset(new ShapesDisplay(planning_scene_node_,
                                                   color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
         if (df_distance.sphere_radius_1 > 0.0)
         {
           distance_display_->addSphere(df_distance.sphere_center_1, df_distance.sphere_radius_1);
-          distance_display_->addArrow(df_distance.pos, df_distance.sphere_center_1);
+          distance_display_->addArrow(df_distance.pos,
+                                      df_distance.sphere_center_1,
+                                      df_distance.depth > 0.0 ? Eigen::Vector4f(1,0,0,color.w()) : color);
         }
         if (df_distance.sphere_radius_2 > 0.0)
         {
           distance_display_->addSphere(df_distance.sphere_center_2, df_distance.sphere_radius_2);
-          distance_display_->addArrow(df_distance.pos, df_distance.sphere_center_2);
+          distance_display_->addArrow(df_distance.pos,
+                                      df_distance.sphere_center_2,
+                                      df_distance.depth > 0.0 ? Eigen::Vector4f(1,0,0,color.w()) : color);
         }
       }
     }
