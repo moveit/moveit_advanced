@@ -88,10 +88,6 @@ add_library(
     src/sphere_rep_properties.cpp
     src/per_link_object.cpp
     src/dfexamine.cpp
-    src/cylinders_display.cpp
-    src/spheres_display.cpp
-    src/points_display.cpp
-    src/arrows_display.cpp
     src/shapes_display.cpp
     src/color_cast.cpp
     ${MOC_SOURCES}

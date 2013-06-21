@@ -31,9 +31,7 @@
 
 #include <collision_distance_field_display/per_link_object.h>
 #include <collision_distance_field_display/df_link.h>
-#include <collision_distance_field_display/points_display.h>
-#include <collision_distance_field_display/spheres_display.h>
-#include <collision_distance_field_display/cylinders_display.h>
+#include <collision_distance_field_display/shapes_display.h>
 #include <collision_distance_field_display/color_cast.h>
 
 #include <rviz/properties/color_property.h>
@@ -188,9 +186,7 @@ moveit_rviz_plugin::PerLinkSubObjBase::PerLinkSubObjBase(PerLinkObjBase *base, r
 
 void moveit_rviz_plugin::PerLinkSubObjBase::changed()
 {
-  points_.reset();
-  spheres_.reset();
-  cylinders_.reset();
+  shapes_.reset();
   centers_.clear();
   radii_.clear();
 
@@ -202,38 +198,20 @@ void moveit_rviz_plugin::PerLinkSubObjBase::changed()
   if (centers_.empty())
     return;
 
-  Eigen::Vector4f color = base_->getColor();
+  shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
 
-  if (centers_.size() == radii_.size())
+  if (centers_.size() == radii_.size() || radii_.size() == 1)
   {
-    spheres_.reset(new SpheresDisplay(getSceneNode()));
-    for (size_t i = 0 ; i < centers_.size() ; i++)
-      spheres_->addSphere(centers_[i], radii_[i], color);
+    shapes_->addSpheres(centers_, radii_);
     base_->setStyle(PerLinkObjBase::SPHERES);
-
-  }
-  else if (radii_.size() == 1)
-  {
-    spheres_.reset(new SpheresDisplay(getSceneNode()));
-    for (size_t i = 0 ; i < centers_.size() ; i++)
-      spheres_->addSphere(centers_[i], radii_[0], color);
-    base_->setStyle(PerLinkObjBase::SPHERES);
-
   }
   else if (base_->getStyle() == PerLinkObjBase::SPHERES)
   {
-    double size = base_->getSize();
-    spheres_.reset(new SpheresDisplay(getSceneNode()));
-    for (size_t i = 0 ; i < centers_.size() ; i++)
-      spheres_->addSphere(centers_[i], size, color);
-
+    shapes_->addSpheres(centers_, base_->getSize() * 0.5);
   }
   else
   {
-    double size = base_->getSize();
-    points_.reset(new PointsDisplay(getSceneNode(), color, size));
-    for (size_t i = 0 ; i < centers_.size() ; i++)
-      points_->addPoint(centers_[i], color);
+    shapes_->addPoints(centers_);
   }
 }
 

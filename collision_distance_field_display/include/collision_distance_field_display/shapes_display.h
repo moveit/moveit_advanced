@@ -100,6 +100,15 @@ public:
                   std::vector<double> radii,
                   const Eigen::Vector4f& color);
 
+  // add several spheres with the same radius
+  void addSpheres(const EigenSTL::vector_Vector3d& centers,
+                  double radius);
+
+  // add several spheres with color
+  void addSpheres(const EigenSTL::vector_Vector3d& centers,
+                  double radius,
+                  const Eigen::Vector4f& color);
+
   // BOXES
 
   // add a box.

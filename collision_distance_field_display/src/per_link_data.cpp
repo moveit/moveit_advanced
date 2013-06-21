@@ -32,9 +32,7 @@
 #include <collision_distance_field_display/collision_distance_field_display.h>
 #include <collision_distance_field_display/per_link_object.h>
 #include <collision_distance_field_display/df_link.h>
-#include <collision_distance_field_display/points_display.h>
-#include <collision_distance_field_display/spheres_display.h>
-#include <collision_distance_field_display/cylinders_display.h>
+#include <collision_distance_field_display/shapes_display.h>
 #include <collision_distance_field_display/color_cast.h>
 #include "dfexamine.h"
 
@@ -160,17 +158,17 @@ namespace moveit_rviz_plugin
 
     virtual void changed()
     {
-      cylinders_.reset();
+      shapes_.reset();
       if (!getBool())
         return;
 
       robot_relative_ = false;
-      cylinders_.reset(new CylindersDisplay(getSceneNode(), base_->getColor()));
+      shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor()));
 
       bodies::BoundingCylinder cylinder;
       link_->getSphereRep()->getBoundingCylinder(cylinder);
       if (cylinder.radius > 0.0)
-        cylinders_->addZCylinder(cylinder.pose, cylinder.radius, cylinder.length);
+        shapes_->addZCylinder(cylinder.pose, cylinder.radius, cylinder.length);
     }
   };
 }

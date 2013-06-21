@@ -32,9 +32,6 @@
 #include <collision_distance_field_display/collision_distance_field_display.h>
 #include <collision_distance_field_display/per_link_object.h>
 #include <collision_distance_field_display/df_link.h>
-#include <collision_distance_field_display/points_display.h>
-#include <collision_distance_field_display/spheres_display.h>
-#include <collision_distance_field_display/cylinders_display.h>
 #include <collision_distance_field_display/color_cast.h>
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>

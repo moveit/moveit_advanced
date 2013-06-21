@@ -67,10 +67,7 @@ class RobotSphereRepresentation;
 
 namespace moveit_rviz_plugin
 {
-
 class PerLinkObjList;
-class SpheresDisplay;
-class ArrowsDisplay;
 class ShapesDisplay;
 
 // Visualise collision distance field info.
@@ -238,14 +235,9 @@ private:
   bool saving_spheres_to_srdf_; // true to trigger saving spheres to SRDF
 
   // for displaying contact points and colliding spheres 
-  boost::shared_ptr<SpheresDisplay> contact_points_display_;
-  boost::shared_ptr<SpheresDisplay> colliding_spheres_display_;
-#if 0
-  boost::shared_ptr<SpheresDisplay> distance_spheres_display_;
-  boost::shared_ptr<ArrowsDisplay> distance_arrows_display_;
-#else
+  boost::shared_ptr<ShapesDisplay> contact_points_display_;
+  boost::shared_ptr<ShapesDisplay> colliding_spheres_display_;
   boost::shared_ptr<ShapesDisplay> distance_display_;
-#endif
 };
 
 }

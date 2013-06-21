@@ -176,6 +176,16 @@ void moveit_rviz_plugin::ShapesDisplay::addSpheres(
   }
 }
 
+void moveit_rviz_plugin::ShapesDisplay::addSpheres(
+      const EigenSTL::vector_Vector3d& centers,
+      double radius,
+      const Eigen::Vector4f& color)
+{
+  std::size_t cnt = centers.size();
+  for (std::size_t i = 0 ; i < cnt ; ++i)
+    addSphere(centers[i], radius, color);
+}
+
 void moveit_rviz_plugin::ShapesDisplay::addSphere(
     const Eigen::Vector3d& center,
     double radius)
@@ -188,6 +198,13 @@ void moveit_rviz_plugin::ShapesDisplay::addSpheres(
       std::vector<double> radii)
 {
   addSpheres(centers, radii, color_);
+}
+
+void moveit_rviz_plugin::ShapesDisplay::addSpheres(
+      const EigenSTL::vector_Vector3d& centers,
+      double radius)
+{
+  addSpheres(centers, radius, color_);
 }
 
 void moveit_rviz_plugin::ShapesDisplay::addCube(

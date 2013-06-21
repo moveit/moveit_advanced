@@ -52,9 +52,7 @@ namespace moveit_rviz_plugin
 {
 
 class DFLink;
-class PointsDisplay;
-class SpheresDisplay;
-class CylindersDisplay;
+class ShapesDisplay;
 class PerLinkObjBase;
 class PerLinkSubObjBase;
 
@@ -196,21 +194,19 @@ protected:
   // call from getGeom to set the geometry to a cylinder
   void setCylinder(const Eigen::Affine3d& pose, double radius, double length);
 
+private Q_SLOTS:
+  // some property changed.
+  void changedSlot();
+  void changedEnableSlot();
+
+protected:
   EigenSTL::vector_Vector3d centers_;
   std::vector<double> radii_;
   PerLinkObjBase *base_;
   bool robot_relative_;
 
-  // Display a set of shapes.  Only one of these gets used, depending on what
-  // getGeom does
-  boost::shared_ptr<PointsDisplay> points_;
-  boost::shared_ptr<SpheresDisplay> spheres_;
-  boost::shared_ptr<CylindersDisplay> cylinders_;
-
-private Q_SLOTS:
-  // some property changed.
-  void changedSlot();
-  void changedEnableSlot();
+  // Display a set of shapes.  Set up in the changed() method.
+  boost::shared_ptr<ShapesDisplay> shapes_;
 };
 
 

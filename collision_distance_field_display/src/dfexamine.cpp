@@ -30,7 +30,7 @@
 /* Author: Acorn Pooley */
 
 #include <collision_distance_field_display/collision_distance_field_display.h>
-#include <collision_distance_field_display/spheres_display.h>
+#include <collision_distance_field_display/shapes_display.h>
 #include <collision_distance_field_display/color_cast.h>
 #include "dfexamine.h"
 

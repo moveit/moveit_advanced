@@ -33,7 +33,6 @@
 #include <collision_distance_field_display/df_link.h>
 #include <collision_distance_field_display/color_cast.h>
 #include <collision_distance_field_display/per_link_object.h>
-#include <collision_distance_field_display/spheres_display.h>
 #include <collision_distance_field_display/shapes_display.h>
 
 #include <OGRE/OgreSceneNode.h>
@@ -331,14 +330,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   delete int_marker_display_;
   int_marker_display_ = context_->getDisplayFactory()->make("rviz/InteractiveMarkers");
   int_marker_display_->initialize(context_);
-
-#if 0
-// Show a unit sphere at origin to prove that radius=1.0 really shows a sphere with radius=1.0
-{
-  moveit_rviz_plugin::SpheresDisplay *sd = new moveit_rviz_plugin::SpheresDisplay(planning_scene_node_);
-  sd->addSphere(Eigen::Vector3d(0,0,0), 1.0, Eigen::Vector4f(1,1,0,0.5));
-}
-#endif
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onDisable()
@@ -647,9 +638,9 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
       if (!df_contacts.empty() && colliding_spheres_enable_property_->getBool())
       {
-        colliding_spheres_display_.reset(new SpheresDisplay(planning_scene_node_,
-                                                            color_cast::getColorf(colliding_sphere_color_property_,
-                                                            colliding_sphere_alpha_property_)));
+        colliding_spheres_display_.reset(new ShapesDisplay(planning_scene_node_,
+                                                           color_cast::getColorf(colliding_sphere_color_property_,
+                                                           colliding_sphere_alpha_property_)));
         for ( int i = 0 ; i < df_contacts.size() ; ++i )
         {
           if (df_contacts[i].sphere_radius_1 > 0.0)
@@ -661,11 +652,11 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
       if (!df_contacts.empty() && contact_points_enable_property_->getBool())
       {
-        contact_points_display_.reset(new SpheresDisplay(planning_scene_node_,
-                                                            color_cast::getColorf(contact_points_color_property_)));
+        contact_points_display_.reset(new ShapesDisplay(planning_scene_node_,
+                                                        color_cast::getColorf(contact_points_color_property_)));
         for ( int i = 0 ; i < df_contacts.size() ; ++i )
         {
-          contact_points_display_->addSphere(df_contacts[i].pos, contact_points_size_property_->getFloat());
+          contact_points_display_->addSphere(df_contacts[i].pos, contact_points_size_property_->getFloat() * 0.5);
         }
       }
     }
