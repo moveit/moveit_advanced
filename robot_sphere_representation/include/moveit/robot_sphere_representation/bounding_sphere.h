@@ -48,7 +48,7 @@ namespace robot_sphere_representation
         double &radius);
 
   // generate a sphere whose diameter is the 2 points
-  void robot_sphere_representation::findSphereTouching2Points(
+  void findSphereTouching2Points(
         Eigen::Vector3d& center,
         double& radius,
         const Eigen::Vector3d& a,
@@ -56,8 +56,9 @@ namespace robot_sphere_representation
 
   // Generate a sphere touching 3 points.  The center of the sphere will be on
   // the same plane as the 3 points.  If the points are colinear then one of
-  // the 3 input points may be inside the sphere and/or the radius may be very large.
-  void robot_sphere_representation::findSphereTouching3Points(
+  // the 3 input points may be inside the sphere and/or the radius may be very
+  // large.
+  void findSphereTouching3Points(
         Eigen::Vector3d& center,
         double& radius,
         const Eigen::Vector3d& a,
@@ -67,8 +68,7 @@ namespace robot_sphere_representation
   // Generate the unique sphere that touches the 4 points.
   // If the 4 points are coplanar then the sphere may contain some of the input
   // points and/or the radius may be very large.
-  void robot_sphere_representation::findSphereTouching3Points(
-  void robot_sphere_representation::findSphereTouching4Points(
+  void findSphereTouching4Points(
         Eigen::Vector3d& center,
         double& radius,
         const Eigen::Vector3d& a,
