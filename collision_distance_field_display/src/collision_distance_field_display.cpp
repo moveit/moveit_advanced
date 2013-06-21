@@ -677,10 +677,30 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
     if (crobot_df)
     {
-      // TODO
+      collision_detection::CollisionRequest req;
+      collision_detection::CollisionResult res;
+      collision_detection::DFContact df_distance;
+      crobot_df->getSelfCollisionContacts(req, res, state, &getPlanningSceneRO()->getAllowedCollisionMatrix(), NULL, &df_distance);
+
+      if (!df_distance.body_name_1.empty() || !df_distance.body_name_2.empty())
+      {
+        distance_display_.reset(new ShapesDisplay(planning_scene_node_,
+                                                  color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
+        if (df_distance.sphere_radius_1 > 0.0)
+        {
+          distance_display_->addSphere(df_distance.sphere_center_1, df_distance.sphere_radius_1);
+          distance_display_->addArrow(df_distance.pos, df_distance.sphere_center_1);
+        }
+        if (df_distance.sphere_radius_2 > 0.0)
+        {
+          distance_display_->addSphere(df_distance.sphere_center_2, df_distance.sphere_radius_2);
+          distance_display_->addArrow(df_distance.pos, df_distance.sphere_center_2);
+        }
+      }
     }
   }
 
+#if 0
   distance_display_.reset(new ShapesDisplay(planning_scene_node_,
                                             color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
 
@@ -697,6 +717,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
   Eigen::Vector3d ptc = (pta + ptb) * 0.5;
   distance_display_->addSphere(ptc, 0.2);
+#endif
 }
 
 // Update the robot visual appearance based on attributes.
