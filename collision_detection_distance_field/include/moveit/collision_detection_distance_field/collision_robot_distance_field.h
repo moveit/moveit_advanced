@@ -123,23 +123,32 @@ public: /* Special features unique to DistanceField collision */
 
 public: /* DEBUGGING functions */
 
-  // return the collision spheres for a link in link's collision geometry frame.
+  /// return the collision spheres for a link in link's collision geometry frame.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
   void getLinkSpheres(const std::string& link_name,
                       EigenSTL::vector_Vector3d& centers,
                       std::vector<double>& radii) const;
 
-  // return the collision spheres for a link in link's collision geometry frame.
+  /// return the collision spheres for a link in link's collision geometry frame.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
   void getLinkBoundingSphere(const std::string& link_name,
                       Eigen::Vector3d& center,
                       double& radii) const;
 
-  // return the static distance field associated with a link.  Only valid as
+  /// return the static distance field associated with a link.  Only valid as
   // long as the CollisionRobotDistanceField exists and does not have its field
   // regenerated.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
   const StaticDistanceField* getStaticDistanceField(
                       const std::string& link_name) const;
 
-  // Get a list of points showing the distance field.
+  /// Get a list of points showing the distance field.
   // All points between min_dist and max_dist from the surface of
   // the link are returned.
   //
@@ -147,6 +156,9 @@ public: /* DEBUGGING functions */
   // the distance field resolution.  Otherwise they are in meters.
   //
   // Points are in link collision frame.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
   void getStaticDistanceFieldPoints(
                       const std::string& link_name,
                       EigenSTL::vector_Vector3d& points,
@@ -314,11 +326,6 @@ private:
   // true if this link pair should never be checked for collision because it
   // appears in an SRDF DisabledCollisionPair.
   bool never_check_link_pair(const DFLink *link_a, const DFLink *link_b) const;
-
-#if 0
-  // accumulate distance into work.res_.distance
-  void setCloseDistance(WorkArea& work, double distance) const;
-#endif
 
   // initialize query
   void initQuery(WorkArea& work,

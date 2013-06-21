@@ -212,6 +212,7 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
   if (df_distance)
   {
     req2.distance = true;
+    df_distance->clear();
   }
 
   work.df_contacts_ = df_contacts;

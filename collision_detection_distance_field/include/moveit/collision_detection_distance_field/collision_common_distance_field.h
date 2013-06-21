@@ -54,6 +54,9 @@ struct DFContact : public Contact
   // clear all fields, then copy Contact part from <contact>
   void copyFrom(const Contact& contact);
 
+  // clear all fields
+  void clear();
+
 
   // sphere_centers are in planning frame coordinate system
   double sphere_radius_1;             // 0 if no sphere

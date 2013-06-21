@@ -103,3 +103,22 @@ void collision_detection::DFContact::copyFrom(const Contact& contact)
   sdf_2 = NULL;
   eliminated_by_acm_function = false;
 }
+
+void collision_detection::DFContact::clear()
+{
+  pos = Eigen::Vector3d::Zero();
+	normal = Eigen::Vector3d::Zero();
+	depth = std::numeric_limits<double>::max();
+	body_name_1.clear();
+	body_name_2.clear();
+	body_type_1 = BodyTypes::ROBOT_LINK;
+	body_type_2 = BodyTypes::ROBOT_LINK;
+
+  sphere_radius_1 = 0;
+  sphere_radius_2 = 0;
+  sdf_1 = NULL;
+  sdf_2 = NULL;
+  eliminated_by_acm_function = false;
+}
+
+
