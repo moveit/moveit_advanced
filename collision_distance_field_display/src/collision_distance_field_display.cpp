@@ -704,25 +704,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
       }
     }
   }
-
-#if 0
-  distance_display_.reset(new ShapesDisplay(planning_scene_node_,
-                                            color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
-
-  Eigen::Vector3d pta(0,0,0);
-  Eigen::Vector3d ptb(1,1,1);
-  const robot_state::LinkState *lsa = state.getLinkState("l_gripper_l_finger_tip_link");
-  const robot_state::LinkState *lsb = state.getLinkState("r_gripper_r_finger_tip_link");
-  if (lsa)
-    pta = lsa->getGlobalCollisionBodyTransform().translation();
-  if (lsb)
-    ptb = lsb->getGlobalCollisionBodyTransform().translation();
-
-  distance_display_->addArrow(pta, ptb);
-
-  Eigen::Vector3d ptc = (pta + ptb) * 0.5;
-  distance_display_->addSphere(ptc, 0.2);
-#endif
 }
 
 // Update the robot visual appearance based on attributes.
