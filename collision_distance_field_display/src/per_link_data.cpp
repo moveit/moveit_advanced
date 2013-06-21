@@ -37,6 +37,7 @@
 #include "dfexamine.h"
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
+#include <moveit/robot_sphere_representation/bounding_sphere.h>
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 
@@ -263,6 +264,100 @@ namespace moveit_rviz_plugin
   };
 }
 
+namespace moveit_rviz_plugin
+{
+  // Draw link's bounding sphere based on df points
+  class LinkObj_SDFBSphere : public PerLinkSubObj
+  {
+  public:
+    LinkObj_SDFBSphere(PerLinkObjBase *base, DFLink *link) :
+      PerLinkSubObj(base, link)
+    {}
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_SDFBSphere>(
+                                  parent,
+                                  "Show tight bounding sphere around df points",
+                                  "This demonstrates the tight bounding sphere code",
+                                  QColor(255, 0, 0),
+                                  0.5,
+                                  PerLinkObjBase::SPHERES));
+    }
+
+    virtual void changed()
+    {
+      shapes_.reset();
+      centers_.clear();
+      radii_.clear();
+
+      if (!getBool())
+        return;
+
+      robot_relative_ = false;
+      shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+
+      const collision_detection::CollisionRobotDistanceField *crobot = link_->getDisplay()->getCollisionRobotDistanceField();
+      if (crobot)
+      {
+        const collision_detection::StaticDistanceField *df = crobot->getStaticDistanceField(link_->getName());
+        if (df)
+        {
+          EigenSTL::vector_Vector3d points;
+          crobot->getStaticDistanceFieldPoints(
+                          link_->getName(),
+                          points);
+
+          Eigen::Vector3d center;
+          double radius;
+          robot_sphere_representation::generateBoundingSphere(
+            points,
+            center,
+            radius);
+          shapes_->addSphere(center, radius);
+
+#if 0
+          robot_sphere_representation::findSphereTouching2Points(
+            center,
+            radius,
+            points[0],
+            points[1]);
+          shapes_->addSphere(center, radius, Eigen::Vector4f(0,1,0,0.5));
+          shapes_->addSphere(points[0], 0.01, Eigen::Vector4f(0,1,0,0.5));
+          shapes_->addSphere(points[1], 0.01, Eigen::Vector4f(0,1,0,0.5));
+
+          robot_sphere_representation::findSphereTouching3Points(
+            center,
+            radius,
+            points[2],
+            points[5],
+            points[15]);
+          shapes_->addSphere(center, radius, Eigen::Vector4f(0,1,1,0.5));
+          shapes_->addSphere(points[2], 0.01, Eigen::Vector4f(0,1,1,0.5));
+          shapes_->addSphere(points[5], 0.01, Eigen::Vector4f(0,1,1,0.5));
+          shapes_->addSphere(points[15], 0.01, Eigen::Vector4f(0,1,1,0.5));
+
+          robot_sphere_representation::findSphereTouching4Points(
+            center,
+            radius,
+            points[20],
+            points[25],
+            points[30],
+            points[35]);
+          shapes_->addSphere(center, radius, Eigen::Vector4f(0,0,1,0.5));
+          shapes_->addSphere(points[20], 0.01, Eigen::Vector4f(0,0,1,0.5));
+          shapes_->addSphere(points[25], 0.01, Eigen::Vector4f(0,0,1,0.5));
+          shapes_->addSphere(points[30], 0.01, Eigen::Vector4f(0,0,1,0.5));
+          shapes_->addSphere(points[35], 0.01, Eigen::Vector4f(0,0,1,0.5));
+
+#endif
+
+        }
+      }
+    }
+  };
+}
+
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Property* df_collision_property,
                                                                        rviz::Property* sphere_gen_propety)
@@ -278,6 +373,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
 
   LinkObj_RepLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_BCyl::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_SDFBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
 
 }
 
