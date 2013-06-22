@@ -310,74 +310,11 @@ namespace moveit_rviz_plugin
 
           Eigen::Vector3d center;
           double radius;
-#if 0 // REGULAR (NON-DEBUG) VERSION
           robot_sphere_representation::generateBoundingSphere(
             points,
             center,
             radius);
           shapes_->addSphere(center, radius);
-#endif
-
-#if 1 // DEBUG VERSION
-          EigenSTL::vector_Vector3d corners;
-          EigenSTL::vector_Vector3d accounted;
-          Eigen::Vector3d last_pt;
-          int used_mask = 0;
-          robot_sphere_representation::generateBoundingSphereDebug(
-            points,
-            center,
-            radius,
-            link_->getDisplay()->getDebugIteration(),
-            &used_mask,
-            &corners,
-            &accounted,
-            &last_pt);
-          shapes_->addSphere(center, radius, Eigen::Vector4f(0,1,0,0.3));
-logInform("corners: %d",int(corners.size()));
-          shapes_->addSpheres(accounted, 0.005, Eigen::Vector4f(0,1,1,1.0));
-          if (corners.size()>=1) shapes_->addSphere(corners[0], (used_mask&1) ? 0.02 : 0.01, Eigen::Vector4f(1,0,0,0.7));
-          if (corners.size()>=2) shapes_->addSphere(corners[1], (used_mask&2) ? 0.02 : 0.01, Eigen::Vector4f(0,1,0,0.7));
-          if (corners.size()>=3) shapes_->addSphere(corners[2], (used_mask&4) ? 0.02 : 0.01, Eigen::Vector4f(0,0,1,0.7));
-          if (corners.size()>=4) shapes_->addSphere(corners[3], (used_mask&8) ? 0.02 : 0.01, Eigen::Vector4f(1,1,1,0.7));
-          shapes_->addSphere(last_pt, 0.025, Eigen::Vector4f(1,1,0,0.5));
-#endif
-
-
-#if 0
-          robot_sphere_representation::findSphereTouching2Points(
-            center,
-            radius,
-            points[0],
-            points[1]);
-          shapes_->addSphere(center, radius, Eigen::Vector4f(0,1,0,0.5));
-          shapes_->addSphere(points[0], 0.01, Eigen::Vector4f(0,1,0,0.5));
-          shapes_->addSphere(points[1], 0.01, Eigen::Vector4f(0,1,0,0.5));
-
-          robot_sphere_representation::findSphereTouching3Points(
-            center,
-            radius,
-            points[2],
-            points[5],
-            points[15]);
-          shapes_->addSphere(center, radius, Eigen::Vector4f(0,1,1,0.5));
-          shapes_->addSphere(points[2], 0.01, Eigen::Vector4f(0,1,1,0.5));
-          shapes_->addSphere(points[5], 0.01, Eigen::Vector4f(0,1,1,0.5));
-          shapes_->addSphere(points[15], 0.01, Eigen::Vector4f(0,1,1,0.5));
-
-          robot_sphere_representation::findSphereTouching4Points(
-            center,
-            radius,
-            points[20],
-            points[25],
-            points[30],
-            points[35]);
-          shapes_->addSphere(center, radius, Eigen::Vector4f(0,0,1,0.5));
-          shapes_->addSphere(points[20], 0.01, Eigen::Vector4f(0,0,1,0.5));
-          shapes_->addSphere(points[25], 0.01, Eigen::Vector4f(0,0,1,0.5));
-          shapes_->addSphere(points[30], 0.01, Eigen::Vector4f(0,0,1,0.5));
-          shapes_->addSphere(points[35], 0.01, Eigen::Vector4f(0,0,1,0.5));
-
-#endif
 
         }
       }

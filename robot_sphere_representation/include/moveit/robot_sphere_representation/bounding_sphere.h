@@ -76,15 +76,6 @@ namespace robot_sphere_representation
         const Eigen::Vector3d& c,
         const Eigen::Vector3d& d);
 
-  void generateBoundingSphereDebug(
-        const EigenSTL::vector_Vector3d& points,
-        Eigen::Vector3d& center,
-        double &radius,
-        int iteration = -1,
-        int* used_mask = NULL,
-        EigenSTL::vector_Vector3d* corners = NULL,
-        EigenSTL::vector_Vector3d* accounted = NULL,
-        Eigen::Vector3d* last_pt = NULL);
 }
 
 

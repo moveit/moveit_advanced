@@ -92,44 +92,6 @@ logWarn("COLINEAR 3-point");
                                                              b,
                                                              c);
   }
-
-//TODO remove this sanity cheeck
-if ((a-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching3PointsColinear ERROR: a is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   a=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    a.x(),
-    a.y(),
-    a.z(),
-    (a-center).norm());
-}
-if ((b-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching3PointsColinear ERROR: b is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   b=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    b.x(),
-    b.y(),
-    b.z(),
-    (b-center).norm());
-}
-if ((c-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching3PointsColinear ERROR: c is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   c=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    c.x(),
-    c.y(),
-    c.z(),
-    (c-center).norm());
-}
 }
 
 void robot_sphere_representation::findSphereTouching3Points(
@@ -167,46 +129,6 @@ void robot_sphere_representation::findSphereTouching3Points(
                                (2.0 * n_lensq);
   radius = rel_center.norm();
   center = rel_center + a;
-
-
-
-//TODO remove this sanity cheeck
-if ((a-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching3Points ERROR: a is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   a=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    a.x(),
-    a.y(),
-    a.z(),
-    (a-center).norm());
-}
-if ((b-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching3Points ERROR: b is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   b=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    b.x(),
-    b.y(),
-    b.z(),
-    (b-center).norm());
-}
-if ((c-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching3Points ERROR: c is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   c=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    c.x(),
-    c.y(),
-    c.z(),
-    (c-center).norm());
-}
 }
 
 static void findSphereTouching4PointsCoplanar(
@@ -217,7 +139,7 @@ static void findSphereTouching4PointsCoplanar(
       const Eigen::Vector3d& c,
       const Eigen::Vector3d& d)
 {
-//logWarn("COPLANAR 4-point");
+logWarn("COPLANAR 4-point");
   robot_sphere_representation::findSphereTouching3Points(center,
                                                          radius,
                                                          a,
@@ -244,55 +166,6 @@ static void findSphereTouching4PointsCoplanar(
                                                          b,
                                                          c,
                                                          d);
-//TODO remove this sanity cheeck
-if ((a-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4PointsCoplanar ERROR: a is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   a=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    a.x(),
-    a.y(),
-    a.z(),
-    (a-center).norm());
-}
-if ((b-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4PointsCoplanar ERROR: b is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   b=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    b.x(),
-    b.y(),
-    b.z(),
-    (b-center).norm());
-}
-if ((c-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4PointsCoplanar ERROR: c is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   c=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    c.x(),
-    c.y(),
-    c.z(),
-    (c-center).norm());
-}
-if ((d-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4PointsCoplanar ERROR: d is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   d=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    d.x(),
-    d.y(),
-    d.z(),
-    (d-center).norm());
-}
 }
 
 void robot_sphere_representation::findSphereTouching4Points(
@@ -327,104 +200,36 @@ void robot_sphere_representation::findSphereTouching4Points(
 
   radius = rel_center.norm();
   center = rel_center + a;
-
-
-
-
-//TODO remove this sanity cheeck
-if ((a-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4Points ERROR: a is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   a=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    a.x(),
-    a.y(),
-    a.z(),
-    (a-center).norm());
-}
-if ((b-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4Points ERROR: b is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   b=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    b.x(),
-    b.y(),
-    b.z(),
-    (b-center).norm());
-}
-if ((c-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4Points ERROR: c is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   c=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    c.x(),
-    c.y(),
-    c.z(),
-    (c-center).norm());
-}
-if ((d-center).squaredNorm() > radius*radius + 0.00001)
-{
-  logError("findSphereTouching4Points ERROR: d is out of bounds c=%7.3f %7.3f %7.3f   r=%7.3f   d=%7.3f %7.3f %7.3f  d=%7.3f",
-    center.x(),
-    center.y(),
-    center.z(),
-    radius,
-    d.x(),
-    d.y(),
-    d.z(),
-    (d-center).norm());
-}
-
 }
 
 namespace
 {
-// calculate sphere bounding points using Emo Welzl's move-to-front algorithm.
-struct SphereInfo
-{
-  SphereInfo(const EigenSTL::vector_Vector3d& points);
-  void findSphere(int npoints, int nbound);
+  // calculate sphere bounding points using Emo Welzl's move-to-front algorithm.
+  struct SphereInfo
+  {
+    SphereInfo(const EigenSTL::vector_Vector3d& points);
+    void findSphere(int npoints, int nbound);
+    void findStartingPoints();
 
-  std::vector<const Eigen::Vector3d*> list_;
-  Eigen::Vector3d center_;
-  double radius_;
-  double radius_sq_;
-
-  // DEBUG STUFF
-  const Eigen::Vector3d* base_point_;
-  Eigen::Vector3d* last_pt_;
-  int iteration_max_;
-  int iteration_;
-  int last_interesting_iteration_;
-  EigenSTL::vector_Vector3d * accounted_;
-  int *used_mask_;
-};
+    const EigenSTL::vector_Vector3d& points_;
+    std::vector<const Eigen::Vector3d*> list_;
+    Eigen::Vector3d center_;
+    double radius_;
+    double radius_sq_;
+  };
 }
 
 SphereInfo::SphereInfo(
       const EigenSTL::vector_Vector3d& points)
-  : center_(0,0,0)
+  : points_(points)
+  , center_(0,0,0)
   , radius_(0)
   , radius_sq_(0)
-  , last_pt_(NULL)
-  , iteration_max_(-1)
-  , iteration_(0)
-  , accounted_(NULL)
-  , used_mask_(NULL)
 {
   int npoints = points.size();
   list_.resize(npoints);
   for (int i = 0 ; i < npoints ; i++)
     list_[i] = &points[i];
-
-base_point_ = &points[0];
-last_interesting_iteration_=0;
 }
 
 
@@ -441,47 +246,25 @@ void SphereInfo::findSphere(
   static const double radius_expand =
                             std::numeric_limits<float>::epsilon() * 1000.0;
 
-  if (accounted_)
-  {
-    accounted_->clear();
-    for (int i=0; i<nbound; i++)
-    {
-      accounted_->push_back(*list_[i]);
-    }
-  }
-  if (used_mask_)
-    *used_mask_ = (1 << nbound) - 1;
-
-xx_icnt++;
   switch(nbound)
   {
   case 0:
-xx_scnt0++;
     center_ = Eigen::Vector3d::Zero();
     radius_ = 0;
-//logInform("%.*s findsphere(%3d,%d) find sphere 0 point r=%7.3f",nbound,"+++++++++",npoints,nbound,radius_);
     break;
   case 1:
-xx_scnt1++;
     center_ = *list_[0];
     radius_ = radius_expand;
-//logInform("%.*s findsphere(%3d,%d) find sphere 1 point r=%7.3f",nbound,"+++++++++",npoints,nbound,radius_);
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[0]->x(), list_[0]->y(), list_[0]->z());
     break;
   case 2:
-xx_scnt2++;
     robot_sphere_representation::findSphereTouching2Points(
             center_,
             radius_,
             *list_[0],
             *list_[1]);
     radius_ += radius_expand;
-//logInform("%.*s findsphere(%3d,%d) find sphere 2 point r=%7.3f",nbound,"+++++++++",npoints,nbound,radius_);
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[0]->x(), list_[0]->y(), list_[0]->z());
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[1]->x(), list_[1]->y(), list_[1]->z());
     break;
   case 3:
-xx_scnt3++;
     robot_sphere_representation::findSphereTouching3Points(
             center_,
             radius_,
@@ -489,15 +272,10 @@ xx_scnt3++;
             *list_[1],
             *list_[2]);
     radius_ += radius_expand;
-//logInform("%.*s findsphere(%3d,%d) find sphere 3 point r=%7.3f",nbound,"+++++++++",npoints,nbound,radius_);
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[0]->x(), list_[0]->y(), list_[0]->z());
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[1]->x(), list_[1]->y(), list_[1]->z());
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[2]->x(), list_[2]->y(), list_[2]->z());
     break;
   default:
     logError("Bad nbound=%d for findSphere",nbound);
   case 4:
-xx_scnt4++;
     robot_sphere_representation::findSphereTouching4Points(
             center_,
             radius_,
@@ -505,348 +283,70 @@ xx_scnt4++;
             *list_[1],
             *list_[2],
             *list_[3]);
-//logInform("%.*s findsphere(%3d,%d) find sphere 4 point r=%7.3f",nbound,"+++++++++",npoints,nbound,radius_);
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[0]->x(), list_[0]->y(), list_[0]->z());
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[1]->x(), list_[1]->y(), list_[1]->z());
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[2]->x(), list_[2]->y(), list_[2]->z());
-//logInform("%.*s findsphere(%3d,%d)            %7.3f %7.3f %7.3f",nbound,"+++++++++",npoints,nbound, list_[3]->x(), list_[3]->y(), list_[3]->z());
     radius_sq_ = radius_ * radius_;
     return;
   }
   radius_sq_ = radius_ * radius_;
 
-#if 0
-  if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-    return;
-  ++iteration_;
-  if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-  {
-#if 1
-for (int q=0;q<std::min(int(list_.size()),10);q++)
-{
-logInform("      list[%3d]=%3d       %08lx = %7.3f %7.3f %7.3f",
-q,
-int(list_[q] - base_point_),
-list_[q], 
-list_[q]->x(),
-list_[q]->y(),
-list_[q]->z());
-}
-#endif
-    logInform("%.*s findsphere(%3d,%d) END after gen sphere",nbound,"+++++++++",npoints,nbound);
-    return;
-  }
-#endif
-
-      if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-        return;
-      ++iteration_;
-      if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-      {
-        
-#if 1
-        for (int q=0;q<std::min(int(list_.size()),10);q++)
-        {
-        logInform("      list[%3d]=%3d       %08lx = %7.3f %7.3f %7.3f  d=%7.3f",
-        q,
-        int(list_[q] - base_point_),
-        list_[q], 
-        list_[q]->x(),
-        list_[q]->y(),
-        list_[q]->z(),
-        (*list_[q] - center_).norm());
-        }
-#endif
-        logInform("%.*s findsphere(%3d,%d) END after GENSPHERE  nbound=%d",nbound,"+++++++++",npoints,nbound, 
-          nbound);
-
-        logInform("                 c=%7.3f %7.3f %7.3f   r=%7.3f rsq=%7.3f  last_interesting_iteration=%d",
-          center_.x(),
-          center_.y(),
-          center_.z(),
-          radius_,
-          radius_sq_,
-          last_interesting_iteration_);
-
-        return;
-      }
-
-  last_interesting_iteration_ = iteration_;
-
   for (int i = nbound ; i < npoints ; ++i)
   {
-
-
-    if (accounted_)
-    {
-      accounted_->push_back(*list_[i]);
-    }
-
-if (last_pt_) *last_pt_ = *list_[i];
-int orig_idx = int(list_[i] - base_point_);
-const Eigen::Vector3d *orig_p = list_[i];
-
     if ((*list_[i] - center_).squaredNorm() > radius_sq_)
     {
-      last_interesting_iteration_ = iteration_;
-
       // entry i is a troublemaker, so move it to head of list (i.e. to
       // list_[nbound])
       const Eigen::Vector3d *p = list_[i];
-
-#if 0
-logInform("%.*s findsphere(%3d,%d) move list[i=%3d]=%d to head",
-nbound,"+++++++++",npoints,nbound,i,int(list_[i] - base_point_));
-#endif
 
       memmove(&list_[nbound+1],
               &list_[nbound],
               sizeof(const Eigen::Vector3d*) * (i - nbound));
       list_[nbound] = p;
 
-#if 0
-for (int q=0;q<std::min(int(list_.size()),10);q++)
-{
-logInform("      list[%3d]=%3d       %08lx = %7.3f %7.3f %7.3f  d=%7.3f",
-q,
-int(list_[q] - base_point_),
-list_[q], 
-list_[q]->x(),
-list_[q]->y(),
-list_[q]->z(),
-(*list_[q] - center_).norm());
-}
-#endif
-
-      // find a sphere that fits the new set of boundary points.
+      // find a sphere that fits the new set of boundary points and all preceding points.
       findSphere(i + 1, nbound + 1);
-
-
-
-      if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-        return;
-      ++iteration_;
-      if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-      {
-        
-#if 1
-        for (int q=0;q<std::min(int(list_.size()),10);q++)
-        {
-        logInform("      list[%3d]=%3d       %08lx = %7.3f %7.3f %7.3f  d=%7.3f",
-        q,
-        int(list_[q] - base_point_),
-        list_[q], 
-        list_[q]->x(),
-        list_[q]->y(),
-        list_[q]->z(),
-        (*list_[q] - center_).norm());
-        }
-#endif
-        logInform("%.*s findsphere(%3d,%d) END after found point list[%3d]=%3d = %7.3f %7.3f %7.3f  dist=%7.3f  nbound=%d",nbound,"+++++++++",npoints,nbound, 
-          i, 
-          orig_idx, 
-          orig_p->x(),
-          orig_p->y(),
-          orig_p->z(),
-          (*orig_p - center_).norm(),
-          nbound);
-
-        logInform("                 c=%7.3f %7.3f %7.3f   r=%7.3f rsq=%7.3f  last_interesting_iteration=%d",
-          center_.x(),
-          center_.y(),
-          center_.z(),
-          radius_,
-          radius_sq_,
-          last_interesting_iteration_);
-
-        return;
-      }
-    }
-    else
-    {
-      if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-        return;
-      ++iteration_;
-      if (iteration_max_ >= 0 && iteration_ >= iteration_max_)
-      {
-        
-#if 1
-        for (int q=0;q<std::min(int(list_.size()),10);q++)
-        {
-        logInform("      list[%3d]=%3d       %08lx = %7.3f %7.3f %7.3f  d=%7.3f",
-        q,
-        int(list_[q] - base_point_),
-        list_[q], 
-        list_[q]->x(),
-        list_[q]->y(),
-        list_[q]->z(),
-        (*list_[q] - center_).norm());
-        }
-#endif
-        logInform("%.*s findsphere(%3d,%d) END after check point list[%3d]=%3d = %7.3f %7.3f %7.3f  dist=%7.3f  nbound=%d",nbound,"+++++++++",npoints,nbound, 
-          i, 
-          orig_idx, 
-          orig_p->x(),
-          orig_p->y(),
-          orig_p->z(),
-          (*orig_p - center_).norm(),
-          nbound);
-
-        logInform("                 c=%7.3f %7.3f %7.3f   r=%7.3f rsq=%7.3f  last_interesting_iteration=%d",
-          center_.x(),
-          center_.y(),
-          center_.z(),
-          radius_,
-          radius_sq_,
-          last_interesting_iteration_);
-
-        return;
-      }
-
     }
   }
 }
 
-namespace robot_sphere_representation
+// optional, but makes it faster
+// places the 6 points at the extremes of the axes at the beginning of the list
+void SphereInfo::findStartingPoints()
 {
-void generateBoundingSphere1(
-      const EigenSTL::vector_Vector3d& points,
-      Eigen::Vector3d& center,
-      double &radius)
-{
-  SphereInfo info(points);
+  if (points_.size() < 6)
+    return;
 
-  info.findSphere(points.size(), 0);
+  EigenSTL::vector_Vector3d::const_iterator xmin = points_.begin();
+  EigenSTL::vector_Vector3d::const_iterator xmax = points_.begin();
+  EigenSTL::vector_Vector3d::const_iterator ymin = points_.begin();
+  EigenSTL::vector_Vector3d::const_iterator ymax = points_.begin();
+  EigenSTL::vector_Vector3d::const_iterator zmin = points_.begin();
+  EigenSTL::vector_Vector3d::const_iterator zmax = points_.begin();
 
-  center = info.center_;
-  radius = info.radius_;
-}
+  EigenSTL::vector_Vector3d::const_iterator it = points_.begin();
+  EigenSTL::vector_Vector3d::const_iterator end = points_.end();
 
-void generateBoundingSphere2(
-      const EigenSTL::vector_Vector3d& points,
-      Eigen::Vector3d& center,
-      double &radius)
-{
-  SphereInfo info(points);
-
-  srand(int(time(NULL)));
-
-  for (int i = 0; i < points.size() ; i++)
+  // find most distant points in each dimension
+  for ( ; it != end ; ++it )
   {
-    std::swap(info.list_[i], info.list_[i + (rand() % (points.size()-i))]);
+    if (xmin->x() > it->x())
+      xmin = it;
+    if (xmax->x() < it->x())
+      xmax = it;
+    if (ymin->y() > it->y())
+      ymin = it;
+    if (ymax->y() < it->y())
+      ymax = it;
+    if (zmin->z() > it->z())
+      zmin = it;
+    if (zmax->z() < it->z())
+      zmax = it;
   }
 
-  info.findSphere(points.size(), 0);
-
-  center = info.center_;
-  radius = info.radius_;
-}
-
-void generateBoundingSphere3(
-      const EigenSTL::vector_Vector3d& points,
-      Eigen::Vector3d& center,
-      double &radius)
-{
-  SphereInfo info(points);
-
-  if (points.size() > 6)
-  {
-    int ixmin = 0;
-    int ixmax = 0;
-    int iymin = 0;
-    int iymax = 0;
-    int izmin = 0;
-    int izmax = 0;
-
-    for (int i = 0; i < points.size() ; i++)
-    {
-      if (info.list_[ixmin]->x() > info.list_[i]->x())
-        ixmin = i;
-      if (info.list_[ixmax]->x() < info.list_[i]->x())
-        ixmax = i;
-      if (info.list_[iymin]->y() > info.list_[i]->y())
-        iymin = i;
-      if (info.list_[iymax]->y() < info.list_[i]->y())
-        iymax = i;
-      if (info.list_[izmin]->z() > info.list_[i]->z())
-        izmin = i;
-      if (info.list_[izmax]->z() < info.list_[i]->z())
-        izmax = i;
-    }
-    std::swap(info.list_[0], info.list_[ixmin]);
-    std::swap(info.list_[1], info.list_[ixmax]);
-    std::swap(info.list_[2], info.list_[iymin]);
-    std::swap(info.list_[3], info.list_[iymax]);
-    std::swap(info.list_[4], info.list_[izmin]);
-    std::swap(info.list_[5], info.list_[izmax]);
-  }
-
-  info.findSphere(points.size(), 0);
-
-  center = info.center_;
-  radius = info.radius_;
-}
-
-void xx_clr()
-{
-  xx_icnt=0;
-  xx_scnt0=0;
-  xx_scnt1=0;
-  xx_scnt2=0;
-  xx_scnt3=0;
-  xx_scnt4=0;
-}
-void xx_print(const char *str)
-{
-  logInform("generateBoundingSphere %s  it=%3d   sp=%3d,%3d,%3d,%3d,%3d",
-    str,
-    xx_icnt,
-    xx_scnt0,
-    xx_scnt1,
-    xx_scnt2,
-    xx_scnt3,
-    xx_scnt4);
-}
-}
-
-void robot_sphere_representation::generateBoundingSphereDebug(
-      const EigenSTL::vector_Vector3d& points,
-      Eigen::Vector3d& center,
-      double &radius,
-      int iteration,
-      int* used_mask,
-      EigenSTL::vector_Vector3d* corners,
-      EigenSTL::vector_Vector3d* accounted,
-      Eigen::Vector3d* last_pt)
-{
-  SphereInfo info(points);
-
-  info.last_pt_ = last_pt;
-  info.iteration_max_ = iteration;
-  info.accounted_ = accounted;
-  info.used_mask_ = used_mask;
-
-  if (last_pt)
-    *last_pt = points.empty() ? Eigen::Vector3d::Zero() : points[0];
-  if (accounted)
-    accounted->clear();
-  if (used_mask)
-    *used_mask = 0;
-
-  info.findSphere(points.size(), 0);
-
-  if (corners)
-  {
-    corners->clear();
-    for (int i=0; i<4 && i<points.size() ; ++i)
-    {
-      corners->push_back(*info.list_[i]);
-    }
-  }
-logInform("ITERATIONS: %d",info.iteration_);
-
-  center = info.center_;
-  radius = info.radius_;
+  std::swap(list_[0], list_[xmin - points_.begin()]);
+  std::swap(list_[1], list_[xmax - points_.begin()]);
+  std::swap(list_[2], list_[ymin - points_.begin()]);
+  std::swap(list_[3], list_[ymax - points_.begin()]);
+  std::swap(list_[4], list_[zmin - points_.begin()]);
+  std::swap(list_[5], list_[zmax - points_.begin()]);
 }
 
 void robot_sphere_representation::generateBoundingSphere(
@@ -854,20 +354,11 @@ void robot_sphere_representation::generateBoundingSphere(
       Eigen::Vector3d& center,
       double &radius)
 {
-  xx_clr();
-  generateBoundingSphere1(points,center,radius);
-  xx_print("1");
-#if 0
-  double r1=radius;
-  xx_clr();
-  generateBoundingSphere2(points,center,radius);
-  xx_print("1");
-  double r2=radius;
-  xx_clr();
-  generateBoundingSphere3(points,center,radius);
-  xx_print("1");
-  logInform("r1: %f",r1);
-  logInform("r2: %f",r2);
-  logInform("r3: %f",radius);
-#endif
+  SphereInfo info(points);
+
+  info.findStartingPoints();
+  info.findSphere(points.size(), 0);
+
+  center = info.center_;
+  radius = info.radius_;
 }
