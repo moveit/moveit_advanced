@@ -38,13 +38,6 @@
 #include <console_bridge/console.h>
 #include <Eigen/LU>
 
-int xx_icnt;
-int xx_scnt0;
-int xx_scnt1;
-int xx_scnt2;
-int xx_scnt3;
-int xx_scnt4;
-
 void robot_sphere_representation::findSphereTouching2Points(
       Eigen::Vector3d& center,
       double& radius,
@@ -65,7 +58,6 @@ static void findSphereTouching3PointsColinear(
       double bc_lensq,
       double ac_lensq)
 {
-logWarn("COLINEAR 3-point");
   if (ab_lensq > ac_lensq)
   {
     if (ab_lensq > bc_lensq)
@@ -139,7 +131,6 @@ static void findSphereTouching4PointsCoplanar(
       const Eigen::Vector3d& c,
       const Eigen::Vector3d& d)
 {
-logWarn("COPLANAR 4-point");
   robot_sphere_representation::findSphereTouching3Points(center,
                                                          radius,
                                                          a,
