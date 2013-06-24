@@ -75,7 +75,6 @@ namespace robot_sphere_representation
         const Eigen::Vector3d& b,
         const Eigen::Vector3d& c,
         const Eigen::Vector3d& d);
-
 }
 
 

@@ -58,8 +58,9 @@ add_library(
     src/robot_sphere_representation.cpp
     src/link_sphere_representation.cpp
     src/sphere_rep.cpp
-    src/bounding_sphere.cpp
     src/method_enums.cpp
+    src/bounding_sphere.cpp
+    src/body_bounding_sphere.cpp
 )
 
 target_link_libraries(
