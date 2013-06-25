@@ -7,6 +7,7 @@
   </description>
 
   <maintainer email="acorn@willowgarage.com">Acorn Pooley</maintainer>
+  <author email="acorn@willowgarage.com">Acorn Pooley</author>
   <license>BSD</license>
 
 
@@ -15,8 +16,6 @@
   <!-- Example: -->
   <!-- <url type="website">http://ros.org/wiki/collision_distance_field_display</url> -->
 
-
-  <author email="acorn@willowgarage.com">Acorn Pooley</author>
 
 
   <buildtool_depend>catkin</buildtool_depend> 
