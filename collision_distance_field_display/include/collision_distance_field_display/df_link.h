@@ -50,6 +50,18 @@ namespace robot_sphere_representation
 class LinkSphereRepresentation;
 }
 
+namespace robot_model
+{
+class RobotModel;
+class LinkModel;
+}
+
+namespace robot_state
+{
+class RobotState;
+class LinkState;
+}
+
 namespace moveit_rviz_plugin
 {
 class CollisionDistanceFieldDisplay;
@@ -75,6 +87,12 @@ public:
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
   void getLinkBoundingSphere(Eigen::Vector3d& center, double& radius) const;
+
+  // access the display's RobotModel and RobotState
+  const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const;
+  boost::shared_ptr<const robot_state::RobotState> getRobotState() const;
+  const robot_model::LinkModel *getLinkModel() const;
+  const robot_state::LinkState *getLinkState() const;
 
   // update displayed property values based on current getSphereRep() values.
   void updatePropertyValues();

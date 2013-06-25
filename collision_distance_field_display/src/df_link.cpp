@@ -133,3 +133,22 @@ rviz::RobotLink* moveit_rviz_plugin::DFLinkFactory::createLink(
 }
 
 
+const robot_model::RobotModelConstPtr& moveit_rviz_plugin::DFLink::getRobotModel() const
+{
+  return getDisplay()->getRobotModel();
+}
+
+robot_state::RobotStateConstPtr moveit_rviz_plugin::DFLink::getRobotState() const
+{
+  return getDisplay()->getRobotState();
+}
+
+const robot_model::LinkModel *moveit_rviz_plugin::DFLink::getLinkModel() const
+{
+  return getRobotModel()->getLinkModel(getName());
+}
+
+const robot_state::LinkState *moveit_rviz_plugin::DFLink::getLinkState() const
+{
+  return getRobotState()->getLinkState(getName());
+}
