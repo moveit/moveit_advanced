@@ -38,6 +38,7 @@
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
 #include <moveit/robot_sphere_representation/bounding_sphere.h>
+#include <moveit/robot_sphere_representation/body_bounding_sphere.h>
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 
@@ -322,6 +323,52 @@ namespace moveit_rviz_plugin
   };
 }
 
+namespace moveit_rviz_plugin
+{
+  // Draw link's bounding sphere based on vertices
+  class LinkObj_VertBSphere : public PerLinkSubObj
+  {
+  public:
+    LinkObj_VertBSphere(PerLinkObjBase *base, DFLink *link)
+      : PerLinkSubObj(base, link)
+    { }
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_VertBSphere>(
+                                  parent,
+                                  "Show tight bounding sphere around link vertices",
+                                  "This demonstrates the tight bounding sphere code",
+                                  QColor(255, 0, 0),
+                                  0.5,
+                                  PerLinkObjBase::SPHERES));
+    }
+
+    virtual void changed()
+    {
+      shapes_.reset();
+      centers_.clear();
+      radii_.clear();
+
+      if (!getBool())
+        return;
+
+      robot_relative_ = false;
+
+      const robot_model::LinkModel* lm = link_->getLinkModel();
+      const shapes::ShapeConstPtr& shape = lm->getShape();
+      if (shape)
+      {
+        double bounding_radius;
+        Eigen::Vector3d bounding_center;
+        robot_sphere_representation::findTightBoundingSphere(*shape, bounding_center, bounding_radius);
+        shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+        shapes_->addSphere(bounding_center, bounding_radius);
+      }
+    }
+  };
+}
+
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Property* df_collision_property,
                                                                        rviz::Property* sphere_gen_propety)
@@ -338,6 +385,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
   LinkObj_RepLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_BCyl::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_SDFBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_VertBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
 }
 
 
