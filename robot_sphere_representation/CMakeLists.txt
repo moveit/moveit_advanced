@@ -69,14 +69,6 @@ target_link_libraries(
     ${Boost_LIBRARIES}
 )
 
-## Declare a cpp executable
-# add_executable(robot_sphere_representation_node src/robot_sphere_representation_node.cpp)
-
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-# add_dependencies(robot_sphere_representation_node robot_sphere_representation_generate_messages_cpp)
-
-## Specify libraries to link a library or executable target against
 #############
 ## Install ##
 #############
@@ -93,21 +85,12 @@ install(
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
   
-
 install(
   DIRECTORY
     include/
   DESTINATION
     include
 )
-
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
 
 #############
 ## Testing ##
