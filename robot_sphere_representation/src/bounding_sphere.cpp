@@ -38,6 +38,12 @@
 #include <console_bridge/console.h>
 #include <Eigen/LU>
 
+#if 0
+static bool g_verbose = true;
+#else
+#define g_verbose (false)
+#endif
+
 void robot_sphere_representation::findSphereTouching2Points(
       Eigen::Vector3d& center,
       double& radius,
@@ -113,6 +119,27 @@ void robot_sphere_representation::findSphereTouching3Points(
           ab_lensq,
           (c - b).squaredNorm(),
           ac_lensq);
+    if (g_verbose)
+    {
+      logInform("findSphereTouching3Points() COLINEAR QQQQ");
+      logInform("           a = (%7.3f %7.3f %7.3f)",
+        a.x(),
+        a.y(),
+        a.z());
+      logInform("           b = (%7.3f %7.3f %7.3f)",
+        b.x(),
+        b.y(),
+        b.z());
+      logInform("           c = (%7.3f %7.3f %7.3f)",
+        c.x(),
+        c.y(),
+        c.z());
+      logInform("           s = (%7.3f %7.3f %7.3f) r=%7.3f",
+        center.x(),
+        center.y(),
+        center.z(),
+        radius);
+    }
     return;
   }
 
@@ -121,6 +148,28 @@ void robot_sphere_representation::findSphereTouching3Points(
                                (2.0 * n_lensq);
   radius = rel_center.norm();
   center = rel_center + a;
+
+  if (g_verbose)
+  {
+    logInform("findSphereTouching3Points()");
+    logInform("           a = (%7.3f %7.3f %7.3f)",
+      a.x(),
+      a.y(),
+      a.z());
+    logInform("           b = (%7.3f %7.3f %7.3f)",
+      b.x(),
+      b.y(),
+      b.z());
+    logInform("           c = (%7.3f %7.3f %7.3f)",
+      c.x(),
+      c.y(),
+      c.z());
+    logInform("           s = (%7.3f %7.3f %7.3f) r=%7.3f",
+      center.x(),
+      center.y(),
+      center.z(),
+      radius);
+  }
 }
 
 static void findSphereTouching4PointsCoplanar(
@@ -136,6 +185,18 @@ static void findSphereTouching4PointsCoplanar(
                                                          a,
                                                          b,
                                                          c);
+  if (g_verbose)
+  {
+    double dist = (center - d).norm();
+    logInform("    findSphereTouching4PointsCoplanar abc center=(%7.3f %7.3f %7.3f) r=%10.6f d.dist=%10.6f (%10.6f)   (%s)",
+      center.x(),
+      center.y(),
+      center.z(),
+      radius,
+      dist,
+      radius - dist,
+      radius - dist < 0 ? "OUTSIDE" : "ok");
+  }
   if ((center - d).squaredNorm() <= radius*radius)
     return;
   robot_sphere_representation::findSphereTouching3Points(center,
@@ -143,6 +204,18 @@ static void findSphereTouching4PointsCoplanar(
                                                          a,
                                                          b,
                                                          d);
+  if (g_verbose)
+  {
+    double dist = (center - c).norm();
+    logInform("    findSphereTouching4PointsCoplanar abd center=(%7.3f %7.3f %7.3f) r=%10.6f c.dist=%10.6f (%10.6f)   (%s)",
+      center.x(),
+      center.y(),
+      center.z(),
+      radius,
+      dist,
+      radius - dist,
+      radius - dist < 0 ? "OUTSIDE" : "ok");
+  }
   if ((center - c).squaredNorm() <= radius*radius)
     return;
   robot_sphere_representation::findSphereTouching3Points(center,
@@ -150,6 +223,18 @@ static void findSphereTouching4PointsCoplanar(
                                                          a,
                                                          c,
                                                          d);
+  if (g_verbose)
+  {
+    double dist = (center - b).norm();
+    logInform("    findSphereTouching4PointsCoplanar acd center=(%7.3f %7.3f %7.3f) r=%10.6f b.dist=%10.6f (%10.6f)   (%s)",
+      center.x(),
+      center.y(),
+      center.z(),
+      radius,
+      dist,
+      radius - dist,
+      radius - dist < 0 ? "OUTSIDE" : "ok");
+  }
   if ((center - b).squaredNorm() <= radius*radius)
     return;
   robot_sphere_representation::findSphereTouching3Points(center,
@@ -157,6 +242,18 @@ static void findSphereTouching4PointsCoplanar(
                                                          b,
                                                          c,
                                                          d);
+  if (g_verbose)
+  {
+    double dist = (center - a).norm();
+    logInform("    findSphereTouching4PointsCoplanar bcd center=(%7.3f %7.3f %7.3f) r=%10.6f a.dist=%10.6f (%10.6f)   (%s)",
+      center.x(),
+      center.y(),
+      center.z(),
+      radius,
+      dist,
+      radius - dist,
+      radius - dist < 0 ? "OUTSIDE" : "ok");
+  }
 }
 
 void robot_sphere_representation::findSphereTouching4Points(
@@ -178,6 +275,31 @@ void robot_sphere_representation::findSphereTouching4Points(
   if (std::abs(det) <= std::numeric_limits<double>::epsilon())
   {
     findSphereTouching4PointsCoplanar(center, radius, a,b,c,d);
+    if (g_verbose)
+    {
+      logInform("findSphereTouching4Points() COPLANAR  QQQQ");
+      logInform("           a = (%7.3f %7.3f %7.3f)",
+        a.x(),
+        a.y(),
+        a.z());
+      logInform("           b = (%7.3f %7.3f %7.3f)",
+        b.x(),
+        b.y(),
+        b.z());
+      logInform("           c = (%7.3f %7.3f %7.3f)",
+        c.x(),
+        c.y(),
+        c.z());
+      logInform("           d = (%7.3f %7.3f %7.3f)",
+        d.x(),
+        d.y(),
+        d.z());
+      logInform("           s = (%7.3f %7.3f %7.3f) r=%7.3f",
+        center.x(),
+        center.y(),
+        center.z(),
+        radius);
+    }
     return;
   }
   
@@ -191,6 +313,32 @@ void robot_sphere_representation::findSphereTouching4Points(
 
   radius = rel_center.norm();
   center = rel_center + a;
+
+  if (g_verbose)
+  {
+    logInform("findSphereTouching4Points()");
+    logInform("           a = (%7.3f %7.3f %7.3f)",
+      a.x(),
+      a.y(),
+      a.z());
+    logInform("           b = (%7.3f %7.3f %7.3f)",
+      b.x(),
+      b.y(),
+      b.z());
+    logInform("           c = (%7.3f %7.3f %7.3f)",
+      c.x(),
+      c.y(),
+      c.z());
+    logInform("           d = (%7.3f %7.3f %7.3f)",
+      d.x(),
+      d.y(),
+      d.z());
+    logInform("           s = (%7.3f %7.3f %7.3f) r=%7.3f",
+      center.x(),
+      center.y(),
+      center.z(),
+      radius);
+  }
 }
 
 namespace
@@ -236,6 +384,12 @@ void SphereInfo::findSphere(
   static const double radius_expand =
                             std::numeric_limits<float>::epsilon() * 1000.0;
 
+  if (g_verbose)
+  {
+    logInform(" findSphere(%d,%3d) ENTER",
+      nbound,npoints);
+  }
+
   switch(nbound)
   {
   case 0:
@@ -275,17 +429,86 @@ void SphereInfo::findSphere(
             *list_[3]);
     radius_ += radius_expand;
     radius_sq_ = radius_ * radius_;
+    if (g_verbose)
+    {
+      logInform(" findSphere(%d,%4d) begin check   s = (%7.3f %7.3f %7.3f) r=%10.6f   rsq=%10.6f    ",
+        nbound,
+        npoints,
+        center_.x(),
+        center_.y(),
+        center_.z(),
+        radius_,
+        radius_sq_);
+      for (int i=0; i<nbound; ++i)
+      {
+        double d = (*list_[i] - center_).norm();
+        logInform("    BOUND: list_[%4d] = %4d         (%7.3f %7.3f %7.3f) d=%10.6f (%10.6f)    (BOUND)    ",
+          i,
+          int(list_[i] - &points_[0]),
+          list_[i]->x(),
+          list_[i]->y(),
+          list_[i]->z(),
+          d,
+          radius_ - d);
+      }
+    }
     return;
   }
   radius_sq_ = radius_ * radius_;
 
+  if (g_verbose)
+  {
+    logInform(" findSphere(%d,%4d) begin check   s = (%7.3f %7.3f %7.3f) r=%10.6f   rsq=%10.6f    ",
+      nbound,
+      npoints,
+      center_.x(),
+      center_.y(),
+      center_.z(),
+      radius_,
+      radius_sq_);
+    for (int i=0; i<nbound; ++i)
+    {
+      double d = (*list_[i] - center_).norm();
+      logInform("    BOUND: list_[%4d] = %4d         (%7.3f %7.3f %7.3f) d=%10.6f (%10.6f)    (BOUND)    ",
+        i,
+        int(list_[i] - &points_[0]),
+        list_[i]->x(),
+        list_[i]->y(),
+        list_[i]->z(),
+        d,
+        radius_ - d);
+    }
+  }
+
   for (int i = nbound ; i < npoints ; ++i)
   {
+
+    if (g_verbose)
+    {
+      double d = (*list_[i] - center_).norm();
+      logInform("    check  list_[%4d] = %4d         (%7.3f %7.3f %7.3f) d=%10.6f (%10.6f)    (%s)    ",
+        i,
+        int(list_[i] - &points_[0]),
+        list_[i]->x(),
+        list_[i]->y(),
+        list_[i]->z(),
+        d,
+        radius_ - d,
+        ((*list_[i] - center_).squaredNorm() > radius_sq_) ? "OUTSIDE" : "ok");
+    }
+
     if ((*list_[i] - center_).squaredNorm() > radius_sq_)
     {
       // entry i is a troublemaker, so move it to head of list (i.e. to
       // list_[nbound])
       const Eigen::Vector3d *p = list_[i];
+
+      if (g_verbose)
+      {
+        logInform("        Point %4d outside -- move to list_[%4d]    ",
+          int(list_[i] - &points_[0]),
+          nbound);
+      }
 
       memmove(&list_[nbound+1],
               &list_[nbound],
@@ -294,7 +517,31 @@ void SphereInfo::findSphere(
 
       // find a sphere that has the new boundary point and contains all points that have already been checked so far.
       findSphere(nbound + 1, i + 1);
+
+      if (g_verbose)
+      {
+        logInform(" findSphere(%d,%4d) cont          s = (%7.3f %7.3f %7.3f) r=%10.6f   rsq=%10.6f    ",
+          nbound,
+          npoints,
+          center_.x(),
+          center_.y(),
+          center_.z(),
+          radius_,
+          radius_sq_);
+      }
     }
+  }
+
+  if (g_verbose)
+  {
+    logInform(" findSphere(%d,%4d) RETURN        s = (%7.3f %7.3f %7.3f) r=%10.6f   rsq=%10.6f    ",
+      nbound,
+      npoints,
+      center_.x(),
+      center_.y(),
+      center_.z(),
+      radius_,
+      radius_sq_);
   }
 }
 
