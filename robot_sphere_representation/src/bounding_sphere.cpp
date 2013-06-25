@@ -136,21 +136,21 @@ static void findSphereTouching4PointsCoplanar(
                                                          a,
                                                          b,
                                                          c);
-  if ((center - d).squaredNorm() <= radius)
+  if ((center - d).squaredNorm() <= radius*radius)
     return;
   robot_sphere_representation::findSphereTouching3Points(center,
                                                          radius,
                                                          a,
                                                          b,
                                                          d);
-  if ((center - c).squaredNorm() <= radius)
+  if ((center - c).squaredNorm() <= radius*radius)
     return;
   robot_sphere_representation::findSphereTouching3Points(center,
                                                          radius,
                                                          a,
                                                          c,
                                                          d);
-  if ((center - b).squaredNorm() <= radius)
+  if ((center - b).squaredNorm() <= radius*radius)
     return;
   robot_sphere_representation::findSphereTouching3Points(center,
                                                          radius,
@@ -175,7 +175,7 @@ void robot_sphere_representation::findSphereTouching4Points(
   double det = m.determinant();
 
   // points are coplanar?
-  if (det <= std::numeric_limits<double>::epsilon())
+  if (std::abs(det) <= std::numeric_limits<double>::epsilon())
   {
     findSphereTouching4PointsCoplanar(center, radius, a,b,c,d);
     return;
@@ -199,7 +199,7 @@ namespace
   struct SphereInfo
   {
     SphereInfo(const EigenSTL::vector_Vector3d& points);
-    void findSphere(int npoints, int nbound);
+    void findSphere(int nbound, int npoints);
     void findStartingPoints();
 
     const EigenSTL::vector_Vector3d& points_;
@@ -226,11 +226,10 @@ SphereInfo::SphereInfo(
 
 // find the tightest bounding sphere.
 // Recursive.
-// The first nbound points in list_ are on the boundary.  The rest are inside
-// (or need to be checked).
+// The first nbound points in list_ are known to be on the boundary.  The rest need to be checked.
 void SphereInfo::findSphere(
-      int npoints,
-      int nbound)
+      int nbound,
+      int npoints)
 {
   // increase radius by this much to avoid flipping between points that are
   // equal distance from center.
@@ -274,6 +273,7 @@ void SphereInfo::findSphere(
             *list_[1],
             *list_[2],
             *list_[3]);
+    radius_ += radius_expand;
     radius_sq_ = radius_ * radius_;
     return;
   }
@@ -292,8 +292,8 @@ void SphereInfo::findSphere(
               sizeof(const Eigen::Vector3d*) * (i - nbound));
       list_[nbound] = p;
 
-      // find a sphere that fits the new set of boundary points and all preceding points.
-      findSphere(i + 1, nbound + 1);
+      // find a sphere that has the new boundary point and contains all points that have already been checked so far.
+      findSphere(nbound + 1, i + 1);
     }
   }
 }
@@ -348,7 +348,7 @@ void robot_sphere_representation::generateBoundingSphere(
   SphereInfo info(points);
 
   info.findStartingPoints();
-  info.findSphere(points.size(), 0);
+  info.findSphere(0, points.size());
 
   center = info.center_;
   radius = info.radius_;
