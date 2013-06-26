@@ -12,6 +12,11 @@ find_package(Boost REQUIRED COMPONENTS system)
 pkg_check_modules(OGRE OGRE)
 link_directories( ${OGRE_LIBRARY_DIRS} )
 
+# Qt Stuff
+find_package(Qt4 REQUIRED)
+include(${QT_USE_FILE})
+add_definitions(-DQT_NO_KEYWORDS)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -59,17 +64,27 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${QT_INCLUDE_DIR}
 )
+
+#qt4_wrap_cpp(
+#  MOC_SOURCES
+#    include/mesh_ros/header_with_qt_objects.h
+#)
+
 
 set(LIB_NAME mesh_ros)
 add_library(
   ${LIB_NAME}
     src/mesh_ros.cpp
+    src/mesh_rviz.cpp
 )
 
 target_link_libraries(
   ${LIB_NAME}
     ${catkin_LIBRARIES}
+    ${OGRE_LIBRARIES}
+    ${QT_LIBRARIES}
     ${Boost_LIBRARIES}
 )
 
