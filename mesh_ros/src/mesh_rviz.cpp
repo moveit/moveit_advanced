@@ -92,8 +92,8 @@ void mesh_ros::RvizMeshShape::setColor(
   float g = color.y();
   float b = color.z();
   float a = color.w();
-  material_->getTechnique(0)->setAmbient( r,g,b );
-  material_->getTechnique(0)->setDiffuse( 0,0,0,a );
+  material_->getTechnique(0)->setAmbient( r*0.3, g*0.3, b*0.3 );
+  material_->getTechnique(0)->setDiffuse( r, g, b, a );
 
   if (a < 0.9998)
   {
@@ -131,10 +131,16 @@ void mesh_ros::RvizMeshShape::reset(
   std::vector<mesh_core::Mesh::Triangle>::const_iterator end = mesh->getTris().end();
   for ( ; it != end ; ++it)
   {
+    const Eigen::Vector3d& v0 = mesh->getVert(it->verts_[0]);
+    const Eigen::Vector3d& v1 = mesh->getVert(it->verts_[1]);
+    const Eigen::Vector3d& v2 = mesh->getVert(it->verts_[2]);
+    Eigen::Vector3d norm = ((v1 - v0).cross(v2 - v0)).normalized();
+
     for (int i = 0 ; i < 3 ; ++i)
     {
       const Eigen::Vector3d& v = mesh->getVert(it->verts_[i]);
       manual_object_->position(v.x(), v.y(), v.z());
+      manual_object_->normal(norm.x(), norm.y(), norm.z());
     }
   }
 
