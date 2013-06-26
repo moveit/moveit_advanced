@@ -50,14 +50,43 @@ public:
     // true if same vertices in same winding order.
     bool operator==(const Triangle& b) const;
 
-    int verts_[3];    // index of vertices
-    int edges_[3];    // index of edges
+    // index of vertices (always valid)
+    int verts_[3];
+
+    // index of edges (always valid)
+    // edges_[0] is verts_[0] - verts_[1]
+    // edges_[1] is verts_[1] - verts_[2]
+    // edges_[2] is verts_[2] - verts_[0]
+    int edges_[3];
+
+    // index of adjacent triangle sharing edge edges_[i]
+    // -1 if none, -2 if more than 1
+    // invalid unless adjacent_tris_valid_ is true
+    int adjacent_tris_[3];
+
+    // if adjacent_tris_[dir] is valid then this is the dir in the adjacent
+    // triangle corresponding to this triangle.  In other words:
+    //   int tria = <any-tri-idx>
+    //   int dir = <0, 1, or 2>
+    //   int trib = mesh.tris_[tria].adjacent_tris_[dir]
+    //   int dirb = mesh.tris_[tria].adjacent_tris_back_dir_[dir]
+    //   tria ==    mesh.tris_[trib].adjacent_tris_[dirb]
+    int adjacent_tris_back_dir_[3];
+
+    // index of submesh
+    // -1 until findSubmeshes() is called.
+    int submesh_;
   };
   struct Edge
   {
-    int verts_[2];  // index of vertices.  verts_[0] < verts_[1]
-    int tris_[2];   // index of tris.  if >2 tris then tris_[0]=-2 anda
-                    //  tris_[1] = # of tris
+    // index of vertices.
+    // always valid.
+    // verts_[0] < verts_[1] (guaranteed)
+    int verts_[2];
+
+    // index of adjacent tris in same submesh.
+    // if >2 tris then tris_[0]=-2 and tris_[1] = # of tris
+    int tris_[2];
   };
 
   // construct an empty mesh
@@ -118,6 +147,17 @@ private:
   // find/add an edge given index of 2 vertices
   int addEdge(int vertidx_a, int vertidx_b);
 
+  // set the adjacent_tris_ and adjacent_tris_back_dir_ fields in all triangles.
+  void setAdjacentTriangles();
+  
+  // assign each triangle to a submesh.
+  // Each submesh is connected to all other triangles in the same submesh, but
+  // not connected to triangles in other submeshes.
+  void findSubmeshes();
+
+  // helper for findSubmeshes().
+  void assignSubmesh(Triangle& t, int submesh);
+
 
   double epsilon_;
   double epsilon_squared_;
@@ -131,6 +171,12 @@ private:
 
   // true if any edges are shared by >2 triangles
   bool have_degenerate_edges_;
+
+  // calculated by findSubmeshes()
+  int number_of_submeshes_;
+
+  // set true by setAdjacentTriangles()
+  bool adjacent_tris_valid_;
 };
 
 }
