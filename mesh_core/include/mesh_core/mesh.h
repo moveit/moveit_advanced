@@ -47,8 +47,17 @@ class Mesh
 public:
   struct Triangle
   {
-    int verts_[3];
-    int adjacent_tris_[3];
+    // true if same vertices in same winding order.
+    bool operator==(const Triangle& b) const;
+
+    int verts_[3];    // index of vertices
+    int edges_[3];    // index of edges
+  };
+  struct Edge
+  {
+    int verts_[2];  // index of vertices.  verts_[0] < verts_[1]
+    int tris_[2];   // index of tris.  if >2 tris then tris_[0]=-2 anda
+                    //  tris_[1] = # of tris
   };
 
   // construct an empty mesh
@@ -59,16 +68,20 @@ public:
   /// remove everything and be left with empty mesh
   void clear();
 
-  /// add a triangle defined by 3 vertices. 
-  // Each vertex is a pointer to 3 // doubles.
-  void add(double *a,
-           double *b,
-           double *c);
+  /// reserve space for tris and/or verts in addition to what is already stored.
+  // This is an optimization and is completely optional.
+  void reserve(int ntris, int nverts = 0);
 
   /// add a triangle defined by 3 vertices. 
   void add(const Eigen::Vector3d& a,
            const Eigen::Vector3d& b,
            const Eigen::Vector3d& c);
+
+  /// add a triangle defined by 3 vertices. 
+  // Each vertex is a pointer to 3 // doubles.
+  void add(double *a,
+           double *b,
+           double *c);
 
   /// add a list of triangles.
   // tris is a pointer to ntris*3 ints.  Each triangle is represented by 3
@@ -80,11 +93,14 @@ public:
   /// add a list of triangles.
   // tris is a pointer to ntris*3 ints.  Each triangle is represented by 3
   // adjacent ints.  The ints are vertex indices.
-  // verts is an array of 
+  // verts contains 3 doubles per vertex: x, y, z
   void add(double *verts,
            int ntris,
            int *tris);
   
+
+  // set a different epsilon.  Does not affect existing vertices.
+  void setEpsilon(double epsilon);
 
   // access. Low level - no check on idx!
   const Eigen::Vector3d& getVert(int idx) const { return verts_[idx]; }
@@ -96,9 +112,25 @@ public:
   const std::vector<Triangle>& getTris() const { return tris_; }
 
 private:
+  // find/add a vertex and return its (possibly new) index.
+  int addVertex(const Eigen::Vector3d& a);
+
+  // find/add an edge given index of 2 vertices
+  int addEdge(int vertidx_a, int vertidx_b);
+
+
   double epsilon_;
+  double epsilon_squared_;
   EigenSTL::vector_Vector3d verts_;
   std::vector<Triangle> tris_;
+  std::vector<Edge> edges_;
+
+  // map from vertex idx pair to edge idx.
+  // pair<a,b> always has a<b
+  std::map<std::pair<int,int>,int> edge_map_;
+
+  // true if any edges are shared by >2 triangles
+  bool have_degenerate_edges_;
 };
 
 }
