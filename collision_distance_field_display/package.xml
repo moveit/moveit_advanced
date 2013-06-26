@@ -25,6 +25,8 @@
   <build_depend>interactive_markers</build_depend>
   <build_depend>libogre-dev</build_depend>
   <build_depend>libqt4-dev</build_depend>
+  <build_depend>mesh_core</build_depend>
+  <build_depend>mesh_ros</build_depend>
   <build_depend>moveit_ros_robot_interaction</build_depend>
   <build_depend>moveit_ros_visualization</build_depend>
   <build_depend>pluginlib</build_depend> 
@@ -38,6 +40,8 @@
   <run_depend>interactive_markers</run_depend>
   <run_depend>libogre-dev</run_depend>
   <run_depend>libqt4-dev</run_depend>
+  <run_depend>mesh_core</run_depend>
+  <run_depend>mesh_ros</run_depend>
   <run_depend>moveit_ros_robot_interaction</run_depend>
   <run_depend>moveit_ros_visualization</run_depend>
   <run_depend>pluginlib</run_depend> 

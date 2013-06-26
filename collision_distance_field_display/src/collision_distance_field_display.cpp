@@ -56,6 +56,9 @@
 #include <moveit/collision_detection_fcl/collision_detector_allocator_fcl.h>
 #include <moveit/robot_sphere_representation/robot_sphere_representation.h>
 
+#include <mesh_core/mesh.h>
+#include <mesh_ros/mesh_rviz.h>
+
 enum {
   CD_UNKNOWN,
   CD_FCL,
@@ -371,6 +374,49 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
     // failed.  Set property string to actual active detector
     collision_method_property_->setStdString(getPlanningSceneRO()->getActiveCollisionDetectorName());
   }
+
+
+
+/////////// TODO: REMOVE THIS DEBUG TEST CODE
+  mesh_core::Mesh mesh;
+  mesh.add( Eigen::Vector3d(0,0,0),
+            Eigen::Vector3d(1,1,0),
+            Eigen::Vector3d(1,0,0));
+  mesh.add( Eigen::Vector3d(0,0,0),
+            Eigen::Vector3d(0,1,0),
+            Eigen::Vector3d(1,1,0));
+  mesh.add( Eigen::Vector3d(0,0,1),
+            Eigen::Vector3d(1,0,1),
+            Eigen::Vector3d(1,1,1));
+  mesh.add( Eigen::Vector3d(0,0,1),
+            Eigen::Vector3d(1,1,1),
+            Eigen::Vector3d(0,1,1));
+  mesh.add( Eigen::Vector3d(0,0,0),
+            Eigen::Vector3d(0,0,1),
+            Eigen::Vector3d(0,1,1));
+  mesh.add( Eigen::Vector3d(0,0,0),
+            Eigen::Vector3d(0,1,1),
+            Eigen::Vector3d(0,1,0));
+  mesh.add( Eigen::Vector3d(1,0,0),
+            Eigen::Vector3d(1,1,0),
+            Eigen::Vector3d(1,1,1));
+  mesh.add( Eigen::Vector3d(1,0,0),
+            Eigen::Vector3d(1,1,1),
+            Eigen::Vector3d(1,0,1));
+  mesh.add( Eigen::Vector3d(0,0,0),
+            Eigen::Vector3d(1,0,0),
+            Eigen::Vector3d(1,0,1));
+  mesh.add( Eigen::Vector3d(0,0,0),
+            Eigen::Vector3d(1,0,1),
+            Eigen::Vector3d(0,0,1));
+  mesh.add( Eigen::Vector3d(0,1,0),
+            Eigen::Vector3d(0,1,1),
+            Eigen::Vector3d(1,1,1));
+  mesh.add( Eigen::Vector3d(0,1,0),
+            Eigen::Vector3d(1,1,1),
+            Eigen::Vector3d(1,1,0));
+
+  mesh_shape_.reset(new mesh_ros::RvizMeshShape(context_, planning_scene_node_, &mesh, Eigen::Vector4f(0,1,0,1)));
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::dfPointExamineChanged()

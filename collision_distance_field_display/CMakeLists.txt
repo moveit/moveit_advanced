@@ -26,6 +26,8 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
   geometric_shapes
   interactive_markers
+  mesh_core
+  mesh_ros
   class_loader
   rviz
   tf

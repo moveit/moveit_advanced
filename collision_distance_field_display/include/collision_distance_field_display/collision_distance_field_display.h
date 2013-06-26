@@ -65,6 +65,11 @@ namespace robot_sphere_representation
 class RobotSphereRepresentation;
 }
 
+namespace mesh_ros
+{
+class RvizMeshShape;
+}
+
 namespace moveit_rviz_plugin
 {
 class PerLinkObjList;
@@ -226,7 +231,6 @@ private:
   rviz::ColorProperty* df_point_examine_color_;
   rviz::ColorProperty* df_point_examine_near_color_;
   rviz::FloatProperty* df_point_examine_size_;
-
   rviz::IntProperty* debug_iteration_;
 
   // per link visible objects to display
@@ -243,6 +247,8 @@ private:
   boost::shared_ptr<ShapesDisplay> contact_points_display_;
   boost::shared_ptr<ShapesDisplay> colliding_spheres_display_;
   boost::shared_ptr<ShapesDisplay> distance_display_;
+
+  boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_shape_;
 };
 
 }
