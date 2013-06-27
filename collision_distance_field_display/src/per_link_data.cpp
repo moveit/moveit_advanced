@@ -513,8 +513,20 @@ namespace moveit_rviz_plugin
             Eigen::Vector3d intersection3 = proj.extract(intersection);
             
             shapes_->addSphere(intersection3,
-                               0.03,
+                               0.05,
                                hit ? Eigen::Vector4f(1,0,0,1) : Eigen::Vector4f(0,1,0,1));
+          }
+          
+
+          hit = line1.intersect(line0, intersection, parallel);
+
+          if (!parallel)
+          {
+            Eigen::Vector3d intersection3 = proj.extract(intersection);
+            
+            shapes_->addBox(intersection3,
+                            0.04,
+                            hit ? Eigen::Vector4f(1,1,0,1) : Eigen::Vector4f(0,1,1,1));
           }
           
 

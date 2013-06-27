@@ -97,13 +97,25 @@ public:
                   double radius,
                   const color_cast::Color& color = color_cast::Color::getDefault());
 
-  // BOXES
+  // BOXES/CUBES
 
   // add a box.
   // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
-  void addCube(
+  void addBox(
     const Eigen::Affine3d& pose, 
     const Eigen::Vector3d& size,
+    const color_cast::Color& color = color_cast::Color::getDefault());
+
+  // add a cube.
+  void addBox(
+    const Eigen::Affine3d& pose, 
+    double size,
+    const color_cast::Color& color = color_cast::Color::getDefault());
+
+  // add a cube unrotated.
+  void addBox(
+    const Eigen::Vector3d& position, 
+    double size,
     const color_cast::Color& color = color_cast::Color::getDefault());
 
   // CYLINDERS

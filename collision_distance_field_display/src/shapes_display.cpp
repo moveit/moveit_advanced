@@ -176,7 +176,7 @@ void moveit_rviz_plugin::ShapesDisplay::addSpheres(
     addSphere(centers[i], radius, color);
 }
 
-void moveit_rviz_plugin::ShapesDisplay::addCube(
+void moveit_rviz_plugin::ShapesDisplay::addBox(
     const Eigen::Affine3d& pose, 
     const Eigen::Vector3d& size,
     const color_cast::Color& color)
@@ -200,6 +200,22 @@ void moveit_rviz_plugin::ShapesDisplay::addCube(
   s.node_->setOrientation(orientation);
 
   shapes_.push_back(s);
+}
+
+void moveit_rviz_plugin::ShapesDisplay::addBox(
+    const Eigen::Affine3d& pose, 
+    double size,
+    const color_cast::Color& color)
+{
+  addBox(pose, Eigen::Vector3d(size, size, size), color);
+}
+
+void moveit_rviz_plugin::ShapesDisplay::addBox(
+    const Eigen::Vector3d& position,
+    double size,
+    const color_cast::Color& color)
+{
+  addBox(Eigen::Affine3d(Eigen::Translation3d(position)), Eigen::Vector3d(size, size, size), color);
 }
 
 void moveit_rviz_plugin::ShapesDisplay::addZCylinder(
