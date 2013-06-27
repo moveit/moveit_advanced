@@ -47,6 +47,9 @@
 #include <rviz/properties/enum_property.h>
 #include <rviz/properties/int_property.h>
 
+#include <mesh_core/mesh.h>
+#include <mesh_core/geom.h>
+
 
 namespace moveit_rviz_plugin
 {
@@ -369,6 +372,116 @@ namespace moveit_rviz_plugin
   };
 }
 
+namespace moveit_rviz_plugin
+{
+  // Fit plane to link vertices and draw plane as an axis
+  class LinkObj_LinkVerts : public PerLinkSubObj
+  {
+  public:
+    LinkObj_LinkVerts(PerLinkObjBase *base, DFLink *link)
+      : PerLinkSubObj(base, link)
+    { }
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_LinkVerts>(
+                                  parent,
+                                  "Show Link Vertices",
+                                  "Show vertices of the link collision geometry mesh (if it is a mesh)",
+                                  QColor(0, 0, 255),
+                                  1.0,
+                                  PerLinkObjBase::POINTS,
+                                  0.005));
+    }
+
+    virtual void changed()
+    {
+      shapes_.reset();
+      centers_.clear();
+      radii_.clear();
+
+      if (!getBool())
+        return;
+
+      robot_relative_ = false;
+
+      const robot_model::LinkModel* lm = link_->getLinkModel();
+      const shapes::ShapeConstPtr& shape = lm->getShape();
+      if (shape)
+      {
+        const shapes::Mesh *mesh = dynamic_cast<const shapes::Mesh*>(shape.get());
+        if (mesh)
+        {
+          EigenSTL::vector_Vector3d points;
+          mesh_core::appendPoints(points, mesh->vertex_count, mesh->vertices);
+
+          shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+          shapes_->addPoints(points);
+        }
+        else
+        {
+          ROS_WARN("link %s is not a mesh!",lm->getName().c_str());
+        }
+      }
+    }
+  };
+}
+
+namespace moveit_rviz_plugin
+{
+  // Fit plane to link vertices and draw plane as an axis
+  class LinkObj_VertPlane : public PerLinkSubObj
+  {
+  public:
+    LinkObj_VertPlane(PerLinkObjBase *base, DFLink *link)
+      : PerLinkSubObj(base, link)
+    { }
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_VertPlane>(
+                                  parent,
+                                  "Show tight bounding sphere around link vertices",
+                                  "This demonstrates the tight bounding sphere code",
+                                  QColor(255, 0, 0),
+                                  0.5,
+                                  PerLinkObjBase::SPHERES));
+    }
+
+    virtual void changed()
+    {
+      shapes_.reset();
+      centers_.clear();
+      radii_.clear();
+
+      if (!getBool())
+        return;
+
+      robot_relative_ = false;
+
+      const robot_model::LinkModel* lm = link_->getLinkModel();
+      const shapes::ShapeConstPtr& shape = lm->getShape();
+      if (shape)
+      {
+        const shapes::Mesh *mesh = dynamic_cast<const shapes::Mesh*>(shape.get());
+        if (mesh)
+        {
+          EigenSTL::vector_Vector3d points;
+          mesh_core::appendPoints(points, mesh->vertex_count, mesh->vertices);
+
+          mesh_core::PlaneProjection proj(points);
+          shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+          shapes_->addAxis(proj.getOrientation(), proj.getOrigin());
+        }
+        else
+        {
+          ROS_WARN("link %s is not a mesh!",lm->getName().c_str());
+        }
+      }
+    }
+  };
+}
+
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Property* df_collision_property,
                                                                        rviz::Property* sphere_gen_propety)
@@ -386,6 +499,8 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
   LinkObj_BCyl::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_SDFBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_VertBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_LinkVerts::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_VertPlane::addSelf(sphere_gen_propety, *per_link_objects_);
 }
 
 
