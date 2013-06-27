@@ -445,7 +445,9 @@ namespace moveit_rviz_plugin
                                   "Axis of a plane through the middle of the link vertices, calculated by least squares fit.",
                                   QColor(255, 0, 0),
                                   0.5,
-                                  PerLinkObjBase::SPHERES));
+                                  PerLinkObjBase::SPHERES,
+                                  0.005,
+                                  true));
     }
 
     virtual void changed()

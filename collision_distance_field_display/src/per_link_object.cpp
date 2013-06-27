@@ -55,6 +55,12 @@ void moveit_rviz_plugin::PerLinkObjList::update()
     (*it)->changed();
 }
 
+void moveit_rviz_plugin::PerLinkObjList::updateState()
+{
+  for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
+    (*it)->stateChanged();
+}
+
 void moveit_rviz_plugin::PerLinkObjList::disableAll()
 {
   for (std::vector<PerLinkObjBase*>::iterator it = objs_.begin() ; it != objs_.end() ; ++it)
@@ -80,10 +86,12 @@ moveit_rviz_plugin::PerLinkObjBase::PerLinkObjBase(
                 const QColor& default_color,
                 double default_alpha,
                 Style style,
-                double size) :
-  style_(style),
-  avoid_enable_update_(false),
-  rviz::BoolProperty(name.c_str(), false, descrip.c_str(), parent)
+                double size,
+                bool update_with_state)
+  : style_(style)
+  , avoid_enable_update_(false)
+  , rviz::BoolProperty(name.c_str(), false, descrip.c_str(), parent)
+  , update_with_state_(update_with_state)
 {
   connect(this, SIGNAL( changed() ), this, SLOT( changedEnableSlot() ) );
 
@@ -111,6 +119,12 @@ moveit_rviz_plugin::PerLinkObjBase::PerLinkObjBase(
                       SLOT( changedSlot() ),
                       this );
   setStyle(style_);
+}
+
+void moveit_rviz_plugin::PerLinkObjBase::stateChanged()
+{
+  if (update_with_state_)
+    changed();
 }
 
 void moveit_rviz_plugin::PerLinkObjBase::setStyle(Style style)

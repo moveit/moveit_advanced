@@ -65,6 +65,9 @@ public:
   // call the update functions for all objects in all links.
   void update();
 
+  // update only objects with update_with_state_ == true
+  void updateState();
+
   // turn off all objects for all links
   void disableAll();
 
@@ -100,6 +103,7 @@ public:
   double getStyle() { return style_; }
   void setStyle(Style style);
   virtual void changed();
+  void stateChanged();
   void clear();
   void disableAll();
 
@@ -115,7 +119,8 @@ protected:
                 const QColor& default_color,
                 double default_alpha,
                 Style style,
-                double size);
+                double size,
+                bool update_with_state);
 
   void addSubObject(PerLinkSubObjBase*);
 
@@ -130,6 +135,7 @@ private:
   Style style_;
   std::vector<PerLinkSubObjBase*> sub_objs_;
   bool avoid_enable_update_;
+  bool update_with_state_;
 };
 
 
@@ -139,14 +145,15 @@ template<class VSO>
 class PerLinkObj : public PerLinkObjBase
 {
 public:
-  PerLinkObj(rviz::Property *parent,
-            const std::string& name,
-            const std::string& descrip,
-            const QColor& default_color = Qt::white,
-            double default_alpha = 1.0,
-            Style style = SPHERES,
-            double size = 0.005) :
-    PerLinkObjBase(parent, name, descrip, default_color, default_alpha, style, size)
+  PerLinkObj(rviz::Property *parent,                  // where global properties (color, alpha, pointsize) go
+            const std::string& name,                  // what is this object (short name)
+            const std::string& descrip,               // longer description
+            const QColor& default_color = Qt::white,  // default color (can be overridden per shape)
+            double default_alpha = 1.0,               // default alpha (can be overridden per shape)
+            Style default_style = SPHERES,            // a hint about what shapes will be used.
+            double default_size = 0.005,              // default size of all points for this object
+            bool update_with_state = false) :         // true if the shape must be recalculated when the robot moves (state changes)
+    PerLinkObjBase(parent, name, descrip, default_color, default_alpha, default_style, default_size, update_with_state)
   {}
 
 protected:

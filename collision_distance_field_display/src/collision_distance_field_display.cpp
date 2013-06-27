@@ -796,6 +796,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     updateLinkColors(*state);
     robot_visual_->update(state, color_cast::getColorRGBA(attached_object_color_property_, robot_alpha_property_));
 
+    per_link_objects_->updateState();
     context_->queueRender();
   }
   else if (robot_visual_position_dirty_)
@@ -804,6 +805,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateRobotVisual()
     robot_state::RobotStateConstPtr state = getRobotState();
     updateLinkColors(*state);
     robot_visual_->update(state);
+    per_link_objects_->updateState();
     context_->queueRender();
   }
 }
