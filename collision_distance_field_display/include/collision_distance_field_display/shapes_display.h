@@ -179,6 +179,18 @@ public:
                     double max_cone_diameter = 0.05,
                     double min_cylinder_diameter = 0.001);
 
+  // AXIS
+
+  // add arrow pointing from base to tip
+  void addAxis(const Eigen::Affine3d& frame,
+               double size = 0.5);
+
+  // add arrow pointing from base to tip
+  void addAxis(const Eigen::Quaterniond& orientation,
+               const Eigen::Vector3d& position,
+               double size = 0.5);
+
+
 private:
 
   // ensure points_ is valid

@@ -450,4 +450,26 @@ void moveit_rviz_plugin::ShapesDisplay::addArrow(
   addArrow(base, tip, color_, max_cone_diameter, min_cylinder_diameter);
 }
 
+void moveit_rviz_plugin::ShapesDisplay::addAxis(
+      const Eigen::Affine3d& frame,
+      double size)
+{
+  addArrow(frame.translation(),
+           frame.translation() + frame.linear().col(0) * size,
+           Eigen::Vector4f(1,0,0,color_.w()));
+  addArrow(frame.translation(),
+           frame.translation() + frame.linear().col(1) * size,
+           Eigen::Vector4f(0,1,0,color_.w()));
+  addArrow(frame.translation(),
+           frame.translation() + frame.linear().col(2) * size,
+           Eigen::Vector4f(0,0,1,color_.w()));
+}
 
+void moveit_rviz_plugin::ShapesDisplay::addAxis(
+      const Eigen::Quaterniond& orientation,
+      const Eigen::Vector3d& position,
+      double size)
+{
+  Eigen::Affine3d frame = Eigen::Translation3d(position) * orientation;
+  addAxis(frame, size);
+}
