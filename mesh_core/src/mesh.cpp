@@ -309,3 +309,57 @@ int mesh_core::Mesh::addEdge(int vertidx_a, int vertidx_b)
   return edge_idx;
 }
 
+#if 0
+void mesh_core::Mesh::fillGaps()
+{
+  findSubmeshes();
+
+  std::vector<Edge>::iterator edge = edges_.begin();
+  std::vector<Edge>::iterator edge_end = edges_.end();
+  for ( ; edge != edge_end ; ++edge)
+  {
+    if (edge->tris_[0] >=0 && edge->tris_[1] < 0)
+    {
+      fillGap(&*edge);
+    }
+  }
+}
+
+void mesh_core::Mesh::fillGap(Edge* edge)
+{
+  std::vector<Edge*> edges;
+  edges.reserve(tris_.size());
+
+  edges.push_back(edge);
+
+  if (edge->tris_[0] < 0 || edge->tris_[1] >= 0)
+  {
+    logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
+    return;
+  }
+  Triangle *t = &tris_[edge->tris_[0]];
+  for (int dir = 0 ; dir < 3 ; ++dir)
+  {
+    if (t->edges_
+  }
+}
+
+void mesh_core::Mesh::fillGap(Edge* edge)
+{
+  std::vector<Edge*> edges;
+  edges.reserve(tris_.size());
+
+  edges.push_back(edge);
+
+  if (edge->tris_[0] < 0 || edge->tris_[1] >= 0)
+  {
+    logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
+    return;
+  }
+  Triangle *t = &tris_[edge->tris_[0]];
+  for (int dir = 0 ; dir < 3 ; ++dir)
+  {
+    if (t->edges_
+  }
+}
+#endif

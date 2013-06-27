@@ -59,6 +59,7 @@ set(LIB_NAME mesh_core)
 add_library(
   ${LIB_NAME}
     src/mesh.cpp
+    src/geom.cpp
 )
 
 target_link_libraries(

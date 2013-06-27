@@ -140,6 +140,9 @@ public:
   const EigenSTL::vector_Vector3d& getVerts() const { return verts_; }
   const std::vector<Triangle>& getTris() const { return tris_; }
 
+  // fill in gaps (cracks or holes) in the mesh
+  void fillGaps();
+
 private:
   // find/add a vertex and return its (possibly new) index.
   int addVertex(const Eigen::Vector3d& a);
