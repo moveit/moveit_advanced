@@ -106,6 +106,11 @@ namespace color_cast
     QColor getQColor() const;
     Ogre::ColourValue getOColor() const;
 
+    float r() const { return color_.x(); }
+    float g() const { return color_.y(); }
+    float b() const { return color_.z(); }
+    float a() const { return color_.w(); }
+
   private:
     Eigen::Vector4f color_;
   };
