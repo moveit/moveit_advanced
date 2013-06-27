@@ -111,7 +111,7 @@ void moveit_rviz_plugin::ShapesDisplay::addPoint(
 
 void moveit_rviz_plugin::ShapesDisplay::addPoints(
       const EigenSTL::vector_Vector3d& points,
-      const Eigen::Vector4f& color)
+      const color_cast::Color& color)
 {
   EigenSTL::vector_Vector3d::const_iterator it = points.begin();
   EigenSTL::vector_Vector3d::const_iterator end = points.end();
@@ -121,23 +121,12 @@ void moveit_rviz_plugin::ShapesDisplay::addPoints(
   }
 }
 
-void moveit_rviz_plugin::ShapesDisplay::addPoint(
-      const Eigen::Vector3d& point)
-{
-  addPoint(point, color_);
-}
-
-void moveit_rviz_plugin::ShapesDisplay::addPoints(
-      const EigenSTL::vector_Vector3d& points)
-{
-  addPoints(points, color_);
-}
-
 void moveit_rviz_plugin::ShapesDisplay::addSphere(
     const Eigen::Vector3d& center,
     double radius,
-    const Eigen::Vector4f& color)
+    const color_cast::Color& color)
 {
+  const Eigen::Vector4f& colorf = color.isDefault() ? color_ : color.getColorf();
   Shape s;
   s.node_ = node_->createChildSceneNode();
   s.shape_ = new rviz::Shape(rviz::Shape::Sphere,
@@ -148,7 +137,7 @@ void moveit_rviz_plugin::ShapesDisplay::addSphere(
   Ogre::Vector3 scale(radius*2, radius*2, radius*2);
   s.node_->setPosition(pos);
   s.shape_->setScale(scale);
-  s.shape_->setColor(color.x(), color.y(), color.z(), color.w());
+  s.shape_->setColor(colorf.x(), colorf.y(), colorf.z(), colorf.w());
 
   shapes_.push_back(s);
 }
@@ -156,7 +145,7 @@ void moveit_rviz_plugin::ShapesDisplay::addSphere(
 void moveit_rviz_plugin::ShapesDisplay::addSpheres(
       const EigenSTL::vector_Vector3d& centers,
       std::vector<double> radii,
-      const Eigen::Vector4f& color)
+      const color_cast::Color& color)
 {
   std::size_t cnt = centers.size();
   if (!cnt)
@@ -180,46 +169,26 @@ void moveit_rviz_plugin::ShapesDisplay::addSpheres(
 void moveit_rviz_plugin::ShapesDisplay::addSpheres(
       const EigenSTL::vector_Vector3d& centers,
       double radius,
-      const Eigen::Vector4f& color)
+      const color_cast::Color& color)
 {
   std::size_t cnt = centers.size();
   for (std::size_t i = 0 ; i < cnt ; ++i)
     addSphere(centers[i], radius, color);
 }
 
-void moveit_rviz_plugin::ShapesDisplay::addSphere(
-    const Eigen::Vector3d& center,
-    double radius)
-{
-  addSphere(center, radius, color_);
-}
-
-void moveit_rviz_plugin::ShapesDisplay::addSpheres(
-      const EigenSTL::vector_Vector3d& centers,
-      std::vector<double> radii)
-{
-  addSpheres(centers, radii, color_);
-}
-
-void moveit_rviz_plugin::ShapesDisplay::addSpheres(
-      const EigenSTL::vector_Vector3d& centers,
-      double radius)
-{
-  addSpheres(centers, radius, color_);
-}
-
 void moveit_rviz_plugin::ShapesDisplay::addCube(
     const Eigen::Affine3d& pose, 
     const Eigen::Vector3d& size,
-    const Eigen::Vector4f& color)
+    const color_cast::Color& color)
 {
+  const Eigen::Vector4f& colorf = color.isDefault() ? color_ : color.getColorf();
   Shape s;
   s.node_ = node_->createChildSceneNode();
   s.shape_ = new rviz::Shape(rviz::Shape::Cube,
                              node_->getCreator(),
                              s.node_);
   s.shape_->setScale(OVec3(size));
-  s.shape_->setColor(color.x(), color.y(), color.z(), color.w());
+  s.shape_->setColor(colorf.x(), colorf.y(), colorf.z(), colorf.w());
 
   Ogre::Vector3 position(pose.translation().x(),
                          pose.translation().y(),
@@ -233,19 +202,13 @@ void moveit_rviz_plugin::ShapesDisplay::addCube(
   shapes_.push_back(s);
 }
 
-void moveit_rviz_plugin::ShapesDisplay::addCube(
-    const Eigen::Affine3d& pose, 
-    const Eigen::Vector3d& size)
-{
-  addCube(pose, size, color_);
-}
-
 void moveit_rviz_plugin::ShapesDisplay::addZCylinder(
     const Eigen::Affine3d& pose, 
     double radius, 
     double length, 
-    const Eigen::Vector4f& color)
+    const color_cast::Color& color)
 {
+  const Eigen::Vector4f& colorf = color.isDefault() ? color_ : color.getColorf();
   Shape s;
   s.node_ = node_->createChildSceneNode();
   s.shape_ = new rviz::Shape(rviz::Shape::Cylinder,
@@ -271,17 +234,9 @@ void moveit_rviz_plugin::ShapesDisplay::addZCylinder(
   s.node_->setPosition(position);
   s.node_->setOrientation(orientation);
 
-  s.shape_->setColor(color.x(), color.y(), color.z(), color.w());
+  s.shape_->setColor(colorf.x(), colorf.y(), colorf.z(), colorf.w());
 
   shapes_.push_back(s);
-}
-
-void moveit_rviz_plugin::ShapesDisplay::addZCylinder(
-    const Eigen::Affine3d& pose, 
-    double radius, 
-    double length)
-{
-  addZCylinder(pose, radius, length, color_);
 }
 
 static void calcOrientationFromEndpoints(
@@ -289,7 +244,7 @@ static void calcOrientationFromEndpoints(
     const Eigen::Vector3d& tip,     // in
     double& len,                    // out
     Eigen::Vector3d& dir,           // out
-    Ogre::Quaternion& quat)            // out
+    Ogre::Quaternion& quat)         // out
 {
   dir = tip - base;
   len = dir.norm();
@@ -318,17 +273,19 @@ void moveit_rviz_plugin::ShapesDisplay::addCylinderOrCone(
     double length,
     double radius,
     const Ogre::Quaternion& quat,
-    const Eigen::Vector4f& color)
+    const color_cast::Color& color)
 {
   if (length < std::numeric_limits<double>::epsilon())
     return;
+
+  const Eigen::Vector4f& colorf = color.isDefault() ? color_ : color.getColorf();
 
   Shape s;
   s.node_ = node_->createChildSceneNode();
   s.shape_ = new rviz::Shape(cone ? rviz::Shape::Cone : rviz::Shape::Cylinder,
                              node_->getCreator(),
                              s.node_);
-  s.shape_->setColor(color.x(), color.y(), color.z(), color.w());
+  s.shape_->setColor(colorf.x(), colorf.y(), colorf.z(), colorf.w());
 
   // unscaled cylinder length is from y=-0.5 to y=+0.5
   // unscaled cylinder diameter is 1
@@ -348,7 +305,7 @@ void moveit_rviz_plugin::ShapesDisplay::addCylinder(
     const Eigen::Vector3d& end0,
     const Eigen::Vector3d& end1,
     double radius,
-    const Eigen::Vector4f& color)
+    const color_cast::Color& color)
 {
   double len;
   Eigen::Vector3d dir;
@@ -358,19 +315,11 @@ void moveit_rviz_plugin::ShapesDisplay::addCylinder(
   addCylinderOrCone(false, end0, dir, len, radius, quat, color);
 }
 
-void moveit_rviz_plugin::ShapesDisplay::addCylinder(
-    const Eigen::Vector3d& end0,
-    const Eigen::Vector3d& end1,
-    double radius)
-{
-  addCylinder(end0, end1, radius, color_);
-}
-
 void moveit_rviz_plugin::ShapesDisplay::addCone(
     const Eigen::Vector3d& base,
     const Eigen::Vector3d& tip,
     double radius,
-    const Eigen::Vector4f& color)
+    const color_cast::Color& color)
 {
   double len;
   Eigen::Vector3d dir;
@@ -380,19 +329,11 @@ void moveit_rviz_plugin::ShapesDisplay::addCone(
   addCylinderOrCone(true, base, dir, len, radius, quat, color);
 }
 
-void moveit_rviz_plugin::ShapesDisplay::addCone(
-    const Eigen::Vector3d& base,
-    const Eigen::Vector3d& tip,
-    double radius)
-{
-  addCone(base, tip, radius, color_);
-}
-
 // Assumes length extends from origin towards the z axis
 void moveit_rviz_plugin::ShapesDisplay::addArrow(
       const Eigen::Vector3d& base,
       const Eigen::Vector3d& tip,
-      const Eigen::Vector4f& color,
+      const color_cast::Color& color,
       double max_cone_diameter,
       double min_cylinder_diameter)
 {
@@ -440,15 +381,6 @@ void moveit_rviz_plugin::ShapesDisplay::addArrow(
         cone_diameter * 0.5, 
         quat, 
         color);
-}
-
-void moveit_rviz_plugin::ShapesDisplay::addArrow(
-      const Eigen::Vector3d& base,
-      const Eigen::Vector3d& tip,
-      double max_cone_diameter,
-      double min_cylinder_diameter)
-{
-  addArrow(base, tip, color_, max_cone_diameter, min_cylinder_diameter);
 }
 
 void moveit_rviz_plugin::ShapesDisplay::addAxis(

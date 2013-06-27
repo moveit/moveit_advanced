@@ -68,59 +68,37 @@ public:
   // POINTS
 
   // add a point
-  void addPoint(const Eigen::Vector3d& point);
-
-  // add a point with color
   void addPoint(const Eigen::Vector3d& point,
                 const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add several points
-  void addPoints(const EigenSTL::vector_Vector3d& points);
-
-  // add several points with color
   void addPoints(const EigenSTL::vector_Vector3d& points,
-                 const Eigen::Vector4f& color);
+                 const color_cast::Color& color = color_cast::Color::getDefault());
 
   // SPHERES
 
   // add a sphere
   void addSphere(const Eigen::Vector3d& center,
-                 double radius);
-
-  // add a sphere with color
-  void addSphere(const Eigen::Vector3d& center,
                  double radius,
-                 const Eigen::Vector4f& color);
+                 const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add several spheres
   void addSpheres(const EigenSTL::vector_Vector3d& centers,
-                  std::vector<double> radii);
-
-  // add several spheres with color
-  void addSpheres(const EigenSTL::vector_Vector3d& centers,
                   std::vector<double> radii,
-                  const Eigen::Vector4f& color);
+                  const color_cast::Color& color = color_cast::Color::getDefault());
 
-  // add several spheres with the same radius
-  void addSpheres(const EigenSTL::vector_Vector3d& centers,
-                  double radius);
-
-  // add several spheres with color
+  // add several spheres, all sharing the same radius
   void addSpheres(const EigenSTL::vector_Vector3d& centers,
                   double radius,
-                  const Eigen::Vector4f& color);
+                  const color_cast::Color& color = color_cast::Color::getDefault());
 
   // BOXES
 
   // add a box.
   void addCube(
     const Eigen::Affine3d& pose, 
-    const Eigen::Vector3d& size);
-
-  void addCube(
-    const Eigen::Affine3d& pose, 
     const Eigen::Vector3d& size,
-    const Eigen::Vector4f& color);
+    const color_cast::Color& color = color_cast::Color::getDefault());
 
   // CYLINDERS
 
@@ -128,27 +106,15 @@ public:
   void addZCylinder(
     const Eigen::Affine3d& pose, 
     double radius, 
-    double length);
-
-  // add a cylinder with color
-  void addZCylinder(
-    const Eigen::Affine3d& pose, 
-    double radius, 
     double length, 
-    const Eigen::Vector4f& color);
+    const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add a cylinder given 2 endpoints.
   void addCylinder(
     const Eigen::Vector3d& end0,
     const Eigen::Vector3d& end1,
-    double radius);
-
-  // add a cylinder with color
-  void addCylinder(
-    const Eigen::Vector3d& end0,
-    const Eigen::Vector3d& end1,
     double radius, 
-    const Eigen::Vector4f& color);
+    const color_cast::Color& color = color_cast::Color::getDefault());
 
   // CONES
 
@@ -156,27 +122,16 @@ public:
   void addCone(
     const Eigen::Vector3d& base,
     const Eigen::Vector3d& tip,
-    double radius);
-
-  // add a cone with color
-  void addCone(
-    const Eigen::Vector3d& base,
-    const Eigen::Vector3d& tip,
     double radius, 
-    const Eigen::Vector4f& color);
+    const color_cast::Color& color = color_cast::Color::getDefault());
 
   // ARROWS
 
-  // add arrow pointing from base to tip
-  void addArrow(const Eigen::Vector3d& base,
-                const Eigen::Vector3d& tip,
-                double max_cone_diameter = 0.05,
-                double min_cylinder_diameter = 0.001);
-
-  // add arrow with color
+  // add an arrow
+  // diameter is based on length and can be clamped with the last 2 parameters.
   void addArrow(const Eigen::Vector3d& base,
                     const Eigen::Vector3d& tip,
-                    const Eigen::Vector4f& color,
+                    const color_cast::Color& color = color_cast::Color::getDefault(),
                     double max_cone_diameter = 0.05,
                     double min_cylinder_diameter = 0.001);
 
@@ -204,7 +159,7 @@ private:
                          double length,
                          double radius,
                          const Ogre::Quaternion& quat,
-                         const Eigen::Vector4f& color);
+                         const color_cast::Color& color);
 
   // maintains one instance of a shape.  Used for all shapes except points.
   struct Shape
