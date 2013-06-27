@@ -38,7 +38,30 @@
 #include <console_bridge/console.h>
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
-//#include <Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h>
+
+//###########################################################################
+//############################### FREE FUNCTIONS ############################
+//###########################################################################
+
+void mesh_core::appendPoints(
+    EigenSTL::vector_Vector3d& vector,
+    int npoints,
+    const double *data)
+{
+  int base = vector.size();
+  vector.resize(base + npoints);
+  for (int i = 0; i < npoints ; ++i)
+  {
+    vector[base+i] = Eigen::Vector3d(data[i*3+0],
+                                     data[i*3+1],
+                                     data[i*3+2]);
+  }
+}
+
+//###########################################################################
+//############################### Plane #####################################
+//###########################################################################
+
 
 mesh_core::Plane::Plane(
       const Eigen::Vector3d& normal,
@@ -178,6 +201,10 @@ logInform("SelfAdjointEigenSolver failed.  Using normal=0,0,1");
     *average = c;
 }
 
+//###########################################################################
+//############################### PlaneProjection ###########################
+//###########################################################################
+
 
 mesh_core::PlaneProjection::PlaneProjection(
       const Eigen::Vector3d& normal,
@@ -259,17 +286,8 @@ Eigen::Quaterniond mesh_core::PlaneProjection::getOrientation() const
 }
 
 
-void mesh_core::appendPoints(
-    EigenSTL::vector_Vector3d& vector,
-    int npoints,
-    const double *data)
-{
-  int base = vector.size();
-  vector.resize(base + npoints);
-  for (int i = 0; i < npoints ; ++i)
-  {
-    vector[base+i] = Eigen::Vector3d(data[i*3+0],
-                                     data[i*3+1],
-                                     data[i*3+2]);
-  }
-}
+//###########################################################################
+//############################### LINE2D ####################################
+//###########################################################################
+
+

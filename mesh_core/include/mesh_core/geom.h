@@ -134,6 +134,9 @@ public:
 
 private:
   Eigen::Vector2d pt_[2];
+  double m_; // slope
+  double b_; // y intercept
+
   Eigen::Vector2d ab_normalized_;
   double len_;
 };
