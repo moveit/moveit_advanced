@@ -81,7 +81,44 @@ namespace color_cast
   Ogre::ColourValue getOColor(const QColor& qcolor);
   Ogre::ColourValue getOColor(const Ogre::ColourValue& oc);
   Ogre::ColourValue getOColor(rviz::ColorProperty *color_prop = NULL, rviz::FloatProperty *alpha_prop = NULL);
+
+  class Color
+  {
+  public:
+    Color(const Eigen::Vector4f& color);
+    Color(const Eigen::Vector3f& color);
+    Color(const Eigen::Vector4d& color);
+    Color(const Eigen::Vector3d& color);
+    Color(const std_msgs::ColorRGBA& color);
+    Color(const QColor& color);
+    Color(const Ogre::ColourValue& color);
+    Color(rviz::ColorProperty *color_prop = NULL, rviz::FloatProperty *alpha_prop = NULL);
+
+    const Eigen::Vector4f& getColorf() const { return color_; }
+    std_msgs::ColorRGBA getColorRGBA() const;
+    QColor getQColor() const;
+    Ogre::ColourValue getOColor() const;
+
+  private:
+    Eigen::Vector4f color_;
+  };
 }
+
+inline color_cast::Color::Color(const Eigen::Vector4f& color)
+  : color_(color)
+{}
+
+inline color_cast::Color::Color(const Eigen::Vector3f& color)
+  : color_(color.x(), color.y(), color.z(), 1.0)
+{}
+
+inline color_cast::Color::Color(const Eigen::Vector4d& color)
+  : color_(color.x(), color.y(), color.z(), color.w())
+{}
+
+inline color_cast::Color::Color(const Eigen::Vector3d& color)
+  : color_(color.x(), color.y(), color.z(), 1.0)
+{}
 
 #endif
 
