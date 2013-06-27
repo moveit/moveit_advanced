@@ -68,26 +68,31 @@ public:
   // POINTS
 
   // add a point
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addPoint(const Eigen::Vector3d& point,
                 const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add several points
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addPoints(const EigenSTL::vector_Vector3d& points,
                  const color_cast::Color& color = color_cast::Color::getDefault());
 
   // SPHERES
 
   // add a sphere
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addSphere(const Eigen::Vector3d& center,
                  double radius,
                  const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add several spheres
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addSpheres(const EigenSTL::vector_Vector3d& centers,
                   std::vector<double> radii,
                   const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add several spheres, all sharing the same radius
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addSpheres(const EigenSTL::vector_Vector3d& centers,
                   double radius,
                   const color_cast::Color& color = color_cast::Color::getDefault());
@@ -95,6 +100,7 @@ public:
   // BOXES
 
   // add a box.
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addCube(
     const Eigen::Affine3d& pose, 
     const Eigen::Vector3d& size,
@@ -103,6 +109,7 @@ public:
   // CYLINDERS
 
   // add a cylinder.  Endpoints are on z axis.  Center is at origin.
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addZCylinder(
     const Eigen::Affine3d& pose, 
     double radius, 
@@ -110,6 +117,7 @@ public:
     const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add a cylinder given 2 endpoints.
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addCylinder(
     const Eigen::Vector3d& end0,
     const Eigen::Vector3d& end1,
@@ -119,6 +127,7 @@ public:
   // CONES
 
   // add a cone
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addCone(
     const Eigen::Vector3d& base,
     const Eigen::Vector3d& tip,
@@ -129,6 +138,7 @@ public:
 
   // add an arrow
   // diameter is based on length and can be clamped with the last 2 parameters.
+  // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addArrow(const Eigen::Vector3d& base,
                     const Eigen::Vector3d& tip,
                     const color_cast::Color& color = color_cast::Color::getDefault(),
