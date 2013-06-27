@@ -208,3 +208,13 @@ Ogre::ColourValue color_cast::Color::getOColor() const
   return Ogre::ColourValue(color_.x(), color_.y(), color_.z(), color_.w());
 }
 
+const color_cast::Color& color_cast::Color::getDefault()
+{
+  static Color default_color; // opaque white using default constructor
+  return default_color;
+}
+
+bool color_cast::Color::isDefault() const
+{
+  return this == &getDefault();
+}

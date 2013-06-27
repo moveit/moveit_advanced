@@ -85,6 +85,7 @@ namespace color_cast
   class Color
   {
   public:
+    Color(float r, float g, float b, float a = 1.0);
     Color(const Eigen::Vector4f& color);
     Color(const Eigen::Vector3f& color);
     Color(const Eigen::Vector4d& color);
@@ -93,6 +94,12 @@ namespace color_cast
     Color(const QColor& color);
     Color(const Ogre::ColourValue& color);
     Color(rviz::ColorProperty *color_prop = NULL, rviz::FloatProperty *alpha_prop = NULL);
+
+    // Get the default color.  Always white.  Use isDefault() to check for default.
+    static const Color& getDefault();
+
+    // true if this is the default color
+    bool isDefault() const;
 
     const Eigen::Vector4f& getColorf() const { return color_; }
     std_msgs::ColorRGBA getColorRGBA() const;
@@ -106,6 +113,10 @@ namespace color_cast
 
 inline color_cast::Color::Color(const Eigen::Vector4f& color)
   : color_(color)
+{}
+
+inline color_cast::Color::Color(float r, float g, float b, float a)
+  : color_(r,g,b,a)
 {}
 
 inline color_cast::Color::Color(const Eigen::Vector3f& color)
