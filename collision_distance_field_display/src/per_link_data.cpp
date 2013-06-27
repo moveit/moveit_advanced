@@ -441,8 +441,8 @@ namespace moveit_rviz_plugin
     {
       per_link_objects.addVisObject(new PerLinkObj<LinkObj_VertPlane>(
                                   parent,
-                                  "Show tight bounding sphere around link vertices",
-                                  "This demonstrates the tight bounding sphere code",
+                                  "Show plane through link vertices",
+                                  "Axis of a plane through the middle of the link vertices, calculated by least squares fit.",
                                   QColor(255, 0, 0),
                                   0.5,
                                   PerLinkObjBase::SPHERES));
@@ -457,7 +457,7 @@ namespace moveit_rviz_plugin
       if (!getBool())
         return;
 
-      robot_relative_ = false;
+      robot_relative_ = true;
 
       const robot_model::LinkModel* lm = link_->getLinkModel();
       const shapes::ShapeConstPtr& shape = lm->getShape();
@@ -466,12 +466,56 @@ namespace moveit_rviz_plugin
         const shapes::Mesh *mesh = dynamic_cast<const shapes::Mesh*>(shape.get());
         if (mesh)
         {
+          const Eigen::Affine3d& link_xform = link_->getLinkState()->getGlobalCollisionBodyTransform();
           EigenSTL::vector_Vector3d points;
-          mesh_core::appendPoints(points, mesh->vertex_count, mesh->vertices);
+          mesh_core::appendPointsTransformed(points, link_xform, mesh->vertex_count, mesh->vertices);
+          
 
           mesh_core::PlaneProjection proj(points);
           shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
           shapes_->addAxis(proj.getOrientation(), proj.getOrigin());
+
+          Eigen::Vector3d a = link_->getRobotState()->getLinkState("l_gripper_l_finger_tip_link")->getGlobalCollisionBodyTransform().translation();
+          Eigen::Vector3d b = link_->getRobotState()->getLinkState("r_gripper_l_finger_tip_link")->getGlobalCollisionBodyTransform().translation();
+          Eigen::Vector3d c = link_->getRobotState()->getLinkState("head_pan_link")->getGlobalCollisionBodyTransform().translation();
+          Eigen::Vector3d d = link_->getRobotState()->getLinkState("base_laser_link")->getGlobalCollisionBodyTransform().translation();
+
+          shapes_->addPoint(a, Eigen::Vector4f(1,0,0,1));
+          shapes_->addPoint(b, Eigen::Vector4f(1,0,0,1));
+          shapes_->addPoint(c, Eigen::Vector4f(1,0,0,1));
+          shapes_->addPoint(d, Eigen::Vector4f(1,0,0,1));
+          shapes_->addArrow(a,b);
+          shapes_->addArrow(c,d);
+
+          Eigen::Vector2d a2 = proj.project(a);
+          Eigen::Vector2d b2 = proj.project(b);
+          Eigen::Vector2d c2 = proj.project(c);
+          Eigen::Vector2d d2 = proj.project(d);
+
+          Eigen::Vector3d a23 = proj.extract(a2);
+          Eigen::Vector3d b23 = proj.extract(b2);
+          Eigen::Vector3d c23 = proj.extract(c2);
+          Eigen::Vector3d d23 = proj.extract(d2);
+          shapes_->addArrow(a23,b23, Eigen::Vector4f(0,1,1,1));
+          shapes_->addArrow(c23,d23, Eigen::Vector4f(0,1,1,1));
+
+          mesh_core::LineSegment2D line0(a2,b2);
+          mesh_core::LineSegment2D line1(c2,d2);
+
+          bool parallel;
+          Eigen::Vector2d intersection;
+          bool hit = line0.intersect(line1, intersection, parallel);
+
+          if (!parallel)
+          {
+            Eigen::Vector3d intersection3 = proj.extract(intersection);
+            
+            shapes_->addSphere(intersection3,
+                               0.03,
+                               hit ? Eigen::Vector4f(1,0,0,1) : Eigen::Vector4f(0,1,0,1));
+          }
+          
+
         }
         else
         {
