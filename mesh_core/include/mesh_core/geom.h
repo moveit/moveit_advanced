@@ -43,8 +43,20 @@ namespace mesh_core
 {
 
 /// append points to a vector.
+// data is 3 doubles per point: x,y,z
+// npoints are taken from data and pushed on the back of vector.
 void appendPoints(
     EigenSTL::vector_Vector3d& vector,
+    int npoints,
+    const double *data);
+
+/// append transformed points to a vector.
+// data is 3 doubles per point: x,y,z
+// npoints are taken from data, transformed by xform, and pushed on the back of
+// vector.
+void appendPointsTransformed(
+    EigenSTL::vector_Vector3d& vector,
+    const Eigen::Affine3d& xform,
     int npoints,
     const double *data);
 
@@ -102,7 +114,7 @@ public:
 
   // project to and from plane
   Eigen::Vector2d project(const Eigen::Vector3d& p) const;
-  Eigen::Vector3d to3D(const Eigen::Vector2d& p) const;
+  Eigen::Vector3d extract(const Eigen::Vector2d& p) const;
 
   void getFrame(Eigen::Affine3d& frame) const;
   Eigen::Quaterniond getOrientation() const;
@@ -116,29 +128,39 @@ private:
   Eigen::Vector3d origin_;
 };
 
-class Line2D
+class LineSegment2D
 {
 public:
   // construct from 2 endpoints
-  Line2D(const Eigen::Vector2d& a = Eigen::Vector2d(0,0),
+  LineSegment2D(const Eigen::Vector2d& a = Eigen::Vector2d(0,0),
          const Eigen::Vector2d& b = Eigen::Vector2d(0,0));
 
   // calculate intersection of 2 line segments.
   // True if line segments intersect.
-  // if intersection is non NULL it is filled in whether segments intersect or
+  // intersection is filled in whether segments intersect or
   // not.  If lines are parallel intersection is set to 0,0.
   // If non-NULL parallel returns true if lines are parallel.
-  bool intersect(const Line2D& other,
-                 Eigen::Vector2d* intersection = NULL,
-                 bool* parallel = NULL) const;
+  bool intersect(const LineSegment2D& other,
+                 Eigen::Vector2d& intersection,
+                 bool& parallel) const;
 
 private:
   Eigen::Vector2d pt_[2];
-  double m_; // slope
-  double b_; // y intercept
 
-  Eigen::Vector2d ab_normalized_;
-  double len_;
+  // true if x0 == x1 +/-epsilon
+  bool vertical_;
+
+  // if line is not vertical:  1/(x1 - x0)
+  // if line is vertical:      1/(y1 - y0)
+  // if line is a point:       0
+  double inv_dx_;
+
+  // valid only if vertical_ is false
+  double slope_;
+  double y_intercept_;
+
+  //Eigen::Vector2d ab_normalized_;
+  //double len_;
 };
 
 }

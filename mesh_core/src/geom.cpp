@@ -58,6 +58,23 @@ void mesh_core::appendPoints(
   }
 }
 
+void mesh_core::appendPointsTransformed(
+    EigenSTL::vector_Vector3d& vector,
+    const Eigen::Affine3d& xform,
+    int npoints,
+    const double *data)
+{
+  int base = vector.size();
+  vector.resize(base + npoints);
+  for (int i = 0; i < npoints ; ++i)
+  {
+    vector[base+i] = xform * Eigen::Vector3d(
+                                     data[i*3+0],
+                                     data[i*3+1],
+                                     data[i*3+2]);
+  }
+}
+
 //###########################################################################
 //############################### Plane #####################################
 //###########################################################################
@@ -262,7 +279,8 @@ Eigen::Vector2d mesh_core::PlaneProjection::project(const Eigen::Vector3d& p) co
   return Eigen::Vector2d(ptrans.dot(x_axis_), ptrans.dot(y_axis_));
 }
 
-Eigen::Vector3d mesh_core::PlaneProjection::to3D(const Eigen::Vector2d& p) const
+Eigen::Vector3d mesh_core::PlaneProjection::extract(
+      const Eigen::Vector2d& p) const
 {
   return origin_ + p.x() * x_axis_ + p.y() * y_axis_;
 }
@@ -287,7 +305,118 @@ Eigen::Quaterniond mesh_core::PlaneProjection::getOrientation() const
 
 
 //###########################################################################
-//############################### LINE2D ####################################
+//############################### LineSegment2D #############################
 //###########################################################################
 
+mesh_core::LineSegment2D::LineSegment2D(
+      const Eigen::Vector2d& a,
+      const Eigen::Vector2d& b)
+{
+  pt_[0] = a;
+  pt_[1] = b;
+  Eigen::Vector2d delta = b - a;
+
+  if (std::abs(delta.x() < std::numeric_limits<float>::epsilon()))
+  {
+    vertical_ = true;
+    if (std::abs(delta.y() < std::numeric_limits<float>::epsilon()))
+      inv_dx_ = 0.0;
+    else
+      inv_dx_ = 1.0 / delta.y();
+  }
+  else
+  {
+    vertical_ = false;
+    inv_dx_ = 1.0 / delta.x();
+    slope_ = delta.y() * inv_dx_;
+    y_intercept_ = a.y() - slope_ * a.x();
+  }
+}
+
+bool mesh_core::LineSegment2D::intersect(
+      const LineSegment2D& other,
+      Eigen::Vector2d& intersection,
+      bool& parallel) const
+{
+  const LineSegment2D& a = *this;
+  const LineSegment2D& b = other;
+  if (a.vertical_)
+  {
+    if (b.vertical_)
+    {
+      parallel = true;
+      intersection = a.pt_[0];
+      if (a.pt_[0].x() != b.pt_[0].x())
+        return false;
+
+      double aymin = std::min(a.pt_[0].y(), a.pt_[1].y());
+      double aymax = std::max(a.pt_[0].y(), a.pt_[1].y());
+      double bymin = std::min(b.pt_[0].y(), b.pt_[1].y());
+      double bymax = std::max(b.pt_[0].y(), b.pt_[1].y());
+
+      if (bymax < aymin)
+        return false;
+      if (bymin > aymax)
+        return false;
+
+      if (bymax <= aymax)
+        intersection.y() = bymax;
+      else if (bymin >= aymin)
+        intersection.y() = bymin;
+      else
+        intersection.y() = aymin;
+
+      return true;
+    }
+    parallel = false;
+    intersection.x() = a.pt_[0].x();
+    intersection.y() = b.slope_ * intersection.x() + b.y_intercept_;
+
+    double tb = (intersection.x() - b.pt_[0].x()) * b.inv_dx_;
+    if (tb > 1.0 || tb < 0.0)
+      return false;
+    
+    if (b.inv_dx_ == 0.0)
+    {
+      if (intersection.y() != a.pt_[0].y())
+        return false;
+    }
+    else
+    {
+      double ta = (intersection.y() - a.pt_[0].y()) * b.inv_dx_;
+      if (ta > 1.0 || ta < 0.0)
+        return false;
+    }
+    
+    return true;
+  }
+  else if (b.vertical_)
+  {
+    return b.intersect(a, intersection, parallel);
+  }
+  else
+  {
+    double bottom = a.slope_ - b.slope_;
+    if (std::abs(bottom < std::numeric_limits<float>::epsilon()))
+    {
+      parallel = true;
+      intersection.setZero();
+      return false;
+    }
+
+    parallel = false;
+    intersection.x() = (b.y_intercept_ - a.y_intercept_) / bottom;
+    intersection.y() = a.slope_ * intersection.x() + a.y_intercept_;
+
+    double ta = (intersection.x() - a.pt_[0].x()) * b.inv_dx_;
+    if (ta > 1.0 || ta < 0.0)
+      return false;
+    
+    double tb = (intersection.x() - b.pt_[0].x()) * b.inv_dx_;
+    if (tb > 1.0 || tb < 0.0)
+      return false;
+    
+    return true;
+  }
+}
 
