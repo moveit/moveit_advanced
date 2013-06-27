@@ -92,19 +92,20 @@ static inline Ogre::Quaternion OQuat(const Eigen::Quaterniond& q)
 
 void moveit_rviz_plugin::ShapesDisplay::addPoint(
       const Eigen::Vector3d& point,
-      const Eigen::Vector4f& color)
+      const color_cast::Color& color)
 {
+  const Eigen::Vector4f& colorf = color.isDefault() ? color_ : color.getColorf();
   addPointCloud();
   rviz::PointCloud::Point p;
   p.position.x = point.x();
   p.position.y = point.y();
   p.position.z = point.z();
-  p.color.r = color.x();
-  p.color.g = color.y();
-  p.color.b = color.z();
-  p.color.a = color.w();
+  p.color.r = colorf.x();
+  p.color.g = colorf.y();
+  p.color.b = colorf.z();
+  p.color.a = colorf.w();
   points_->addPoints(&p, 1);
-  if (color.w() != color_.w())
+  if (colorf.w() != color_.w())
     points_->setAlpha(1.0, true);
 }
 

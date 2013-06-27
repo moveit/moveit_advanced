@@ -35,6 +35,7 @@
 #include <Eigen/Geometry>
 #include <vector>
 #include <eigen_stl_containers/eigen_stl_vector_container.h>
+#include <collision_distance_field_display/color_cast.h>
 
 
 namespace Ogre
@@ -71,7 +72,7 @@ public:
 
   // add a point with color
   void addPoint(const Eigen::Vector3d& point,
-                const Eigen::Vector4f& color);
+                const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add several points
   void addPoints(const EigenSTL::vector_Vector3d& points);
