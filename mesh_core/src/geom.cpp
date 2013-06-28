@@ -189,32 +189,11 @@ void mesh_core::Plane::leastSquaresGeneral(
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigensolver(m);
   if (eigensolver.info() == Eigen::Success)
   {
-
-
-#if 0
-const Eigen::Vector3d& evalues = eigensolver.eigenvalues();
-logInform("Eigenvalues: %10.6f %10.6f %10.6f",
-evalues.x(),
-evalues.y(),
-evalues.z());
-const Eigen::Matrix3d& evecs = eigensolver.eigenvectors();
-for (int i=0;i<3;i++)
-{
-  logInform("Eigenvec[%d]: %10.6f %10.6f %10.6f",
-    evecs(0,i),
-    evecs(1,i),
-    evecs(2,i));
-}
-#endif
-    
     normal_ = eigensolver.eigenvectors().col(0);
     normal_.normalize();
   }
   else
   {
-#if 0
-logInform("SelfAdjointEigenSolver failed.  Using normal=0,0,1");
-#endif
     normal_ = Eigen::Vector3d(0,0,1);
   }
 
@@ -322,14 +301,6 @@ mesh_core::LineSegment2D::LineSegment2D(
   pt_[1] = b;
   Eigen::Vector2d delta = b - a;
 
-logInform("ConstructLine: (%7.3f, %7.3f)  (%7.3f, %7.3f)  delta=(%7.3f, %7.3f)",
-pt_[0].x(),
-pt_[0].y(),
-pt_[1].x(),
-pt_[2].y(),
-delta.x(),
-delta.y());
-
   if (std::abs(delta.x()) <= std::numeric_limits<double>::epsilon())
   {
     vertical_ = true;
@@ -345,12 +316,6 @@ delta.y());
     slope_ = delta.y() * inv_dx_;
     y_intercept_ = a.y() - slope_ * a.x();
   }
-
-logInform("      m=%7.3f  b=%7.3f oodx=%7.3f %s",
-slope_,
-y_intercept_,
-inv_dx_,
-vertical_?"VERTICAL":"");
 }
 
 bool mesh_core::LineSegment2D::intersect(
@@ -361,36 +326,15 @@ bool mesh_core::LineSegment2D::intersect(
   const LineSegment2D& a = *this;
   const LineSegment2D& b = other;
 
-logInform("linea: (%7.3f, %7.3f)  (%7.3f, %7.3f)  m=%7.3f  b=%7.3f oodx=%7.3f %s",
-a.pt_[0].x(),
-a.pt_[0].y(),
-a.pt_[1].x(),
-a.pt_[1].y(),
-a.slope_,
-a.y_intercept_,
-a.inv_dx_,
-a.vertical_?"VERTICAL":"");
-logInform("lineb: (%7.3f, %7.3f)  (%7.3f, %7.3f)  m=%7.3f  b=%7.3f oodx=%7.3f %s",
-b.pt_[0].x(),
-b.pt_[0].y(),
-b.pt_[1].x(),
-b.pt_[1].y(),
-b.slope_,
-b.y_intercept_,
-b.inv_dx_,
-a.vertical_?"VERTICAL":"");
-
   if (a.vertical_)
   {
     if (b.vertical_)
     {
-logInform("BOTH VERT");
       parallel = true;
       intersection = a.pt_[0];
       if (a.pt_[0].x() != b.pt_[0].x())
         return false;
 
-logInform("BOTH VERT OVERLAP");
       double aymin = std::min(a.pt_[0].y(), a.pt_[1].y());
       double aymax = std::max(a.pt_[0].y(), a.pt_[1].y());
       double bymin = std::min(b.pt_[0].y(), b.pt_[1].y());
@@ -410,7 +354,6 @@ logInform("BOTH VERT OVERLAP");
 
       return true;
     }
-logInform("A VERTICAL");
     parallel = false;
     intersection.x() = a.pt_[0].x();
     intersection.y() = b.slope_ * intersection.x() + b.y_intercept_;
@@ -435,7 +378,6 @@ logInform("A VERTICAL");
   }
   else if (b.vertical_)
   {
-logInform("B VERTICAL");
     return b.intersect(a, intersection, parallel);
   }
   else
@@ -451,12 +393,6 @@ logInform("B VERTICAL");
     parallel = false;
     intersection.x() = (b.y_intercept_ - a.y_intercept_) / bottom;
     intersection.y() = a.slope_ * intersection.x() + a.y_intercept_;
-
-logInform("   bottom=%7.3f  top=%7.3f  int= (%7.3f %7.3f)",
-bottom,
-b.y_intercept_ - a.y_intercept_,
-intersection.x(),
-intersection.y());
 
     double ta = (intersection.x() - a.pt_[0].x()) * b.inv_dx_;
     if (ta > 1.0 || ta < 0.0)
