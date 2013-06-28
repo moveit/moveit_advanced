@@ -441,7 +441,7 @@ logInform("B VERTICAL");
   else
   {
     double bottom = a.slope_ - b.slope_;
-    if (std::abs(bottom < std::numeric_limits<double>::epsilon()))
+    if (std::abs(bottom) < std::numeric_limits<double>::epsilon())
     {
       parallel = true;
       intersection.setZero();
