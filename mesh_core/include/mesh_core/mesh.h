@@ -39,6 +39,8 @@
 
 #include <eigen_stl_containers/eigen_stl_containers.h>
 
+#define MESH_CORE__MESH__ENABLE_DEBUG 1
+
 namespace mesh_core
 {
 
@@ -217,11 +219,17 @@ private:
 
 
 
-  void assertValidTri(const Triangle& tri, const char *msg) const;
+  void assertValidTri(const Triangle& tri, const char *msg) const
+#if MESH_CORE__MESH__ENABLE_DEBUG
+  ;
+#else
+  {}
+#endif
 };
 
 }
 
+#if MESH_CORE__MESH__ENABLE_DEBUG
 #define ACORN_ASSERT_LINE(_cond, _file, _line) \
   do { \
     if (!(_cond)) { \
@@ -232,6 +240,10 @@ private:
       abort(); \
     } \
   } while(0)
+#else
+#define ACORN_ASSERT_LINE(_cond, _file, _line) \
+  do { } while(0)
+#endif
 
 #define ACORN_ASSERT(_cond) \
         ACORN_ASSERT_LINE(_cond, __FILE__, __LINE__)
