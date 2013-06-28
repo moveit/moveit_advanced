@@ -150,6 +150,15 @@ public:
   // fill in gaps (cracks or holes) in the mesh
   void fillGaps();
 
+  int triIndex(const Triangle& tri) const
+  {
+    return &tri - &tris_[0];
+  }
+  int edgeIndex(const Edge& edge) const
+  {
+    return &edge - &edges_[0];
+  }
+
 private:
   // find/add a vertex and return its (possibly new) index.
   int addVertex(const Eigen::Vector3d& a);
@@ -205,10 +214,39 @@ private:
 
   // set true by setAdjacentTriangles()
   bool adjacent_tris_valid_;
+
+
+
+  void assertValidTri(const Triangle& tri, const char *msg) const;
 };
 
 }
 
+#define ACORN_ASSERT_LINE(_cond, _file, _line) \
+  do { \
+    if (!(_cond)) { \
+      logInform("Failed assert at %s:%d  -- %s", \
+        _file, \
+        _line, \
+        #_cond); \
+      abort(); \
+    } \
+  } while(0)
+
+#define ACORN_ASSERT(_cond) \
+        ACORN_ASSERT_LINE(_cond, __FILE__, __LINE__)
+
+#define ACORN_ASSERT_DIR(d) \
+  ACORN_ASSERT((unsigned int)(d) < 3)
+#define ACORN_ASSERT_TRI_IDX(t) \
+  ACORN_ASSERT((unsigned int)(t) < this->tris_.size())
+#define ACORN_ASSERT_VERT_IDX(v) \
+  ACORN_ASSERT((unsigned int)(v) < this->verts_.size())
+#define ACORN_ASSERT_EDGE_IDX(e) \
+  ACORN_ASSERT((unsigned int)(e) < this->edges_.size())
+#define ACORN_ASSERT_TRI(t) \
+  ACORN_ASSERT_TRI_IDX(&tri - &this->tris_[0])
+  
 
 #endif
 

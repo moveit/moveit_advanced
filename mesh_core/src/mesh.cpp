@@ -249,6 +249,8 @@ void mesh_core::Mesh::assignSubmesh(Triangle& t, int submesh)
   for (int dir = 0 ; dir < 3 ; ++dir)
   {
     int tadj_idx = t.adjacent_tris_[dir];
+    if (tadj_idx < 0)
+      continue;
     Triangle& tadj = tris_[tadj_idx];
 
     if (tadj.submesh_ != submesh)
@@ -324,6 +326,7 @@ void mesh_core::Mesh::clearMark(int value)
   std::vector<Triangle>::iterator end = tris_.end();
   for ( ; it != end ; ++it)
   {
+   assertValidTri(*it, "clearMark");
     it->mark_ = value;
   }
 }
@@ -392,6 +395,8 @@ void mesh_core::Mesh::fixWindings(
       int& tri_cnt,
       int& flip_cnt)
 {
+  assertValidTri(first_tri, "fixWindings1");
+
   std::vector<FlipInfo> list;
   list.resize(tris_.size());
 
@@ -409,6 +414,9 @@ void mesh_core::Mesh::fixWindings(
     FlipInfo &info = *tail++;
     Triangle& tri = *info.tri;
     tri_cnt++;
+
+    assertValidTri(tri, "fixWindings2");
+
     if (info.flip)
     {
       flipWinding(*info.tri);
@@ -422,6 +430,8 @@ void mesh_core::Mesh::fixWindings(
         continue;
       Triangle& adj = tris_[adj_idx];
 
+      assertValidTri(adj, "fixWindings3");
+
       // visit each triangle only once
       if (adj.mark_ == mark)
         continue;
@@ -431,6 +441,12 @@ void mesh_core::Mesh::fixWindings(
       head->flip = !isWindingSame(tri, dir);
 
       head++;
+
+      if (head - &list[0] > list.size())
+      {
+        logError("fixWindings OVERFLOWED!");
+        return;
+      }
     }
   }
   while (tail != head);
@@ -439,6 +455,9 @@ void mesh_core::Mesh::fixWindings(
 // flip the winding order by swapping vertex 1 and 2
 void mesh_core::Mesh::flipWinding(Triangle& tri)
 {
+  ACORN_ASSERT_TRI(tri);
+  assertValidTri(tri, "flipWinding1");
+
   std::swap(tri.verts_[1], tri.verts_[2]);
   std::swap(tri.edges_[0], tri.edges_[2]);
   if (adjacent_tris_valid_)
@@ -446,19 +465,85 @@ void mesh_core::Mesh::flipWinding(Triangle& tri)
     std::swap(tri.adjacent_tris_[0], tri.adjacent_tris_[2]);
     std::swap(tri.adjacent_tris_back_dir_[0], tri.adjacent_tris_back_dir_[2]);
 
+
     if (tri.adjacent_tris_[0] >= 0)
     {
+      ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[0]);
       Triangle& adj = tris_[tri.adjacent_tris_[0]];
+      ACORN_ASSERT_TRI(adj);
       adj.adjacent_tris_back_dir_[tri.adjacent_tris_back_dir_[0]] = 0;
     }
 
     if (tri.adjacent_tris_[2] >= 0)
     {
+      ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[2]);
       Triangle& adj = tris_[tri.adjacent_tris_[2]];
+      ACORN_ASSERT_TRI(adj);
       adj.adjacent_tris_back_dir_[tri.adjacent_tris_back_dir_[2]] = 2;
     }
   }
+  assertValidTri(tri, "flipWinding2");
 }
+
+void mesh_core::Mesh::assertValidTri(
+      const Triangle& tri,
+      const char *msg) const
+{
+  ACORN_ASSERT_TRI(tri);
+  ACORN_ASSERT_TRI_IDX(triIndex(tri));
+
+  ACORN_ASSERT(adjacent_tris_valid_);
+  ACORN_ASSERT(number_of_submeshes_>0);
+  ACORN_ASSERT(number_of_submeshes_ == submesh_tris_.size());
+
+  ACORN_ASSERT(tri.submesh_ >= 0 && tri.submesh_ < number_of_submeshes_);
+
+  for (int dir = 0 ; dir < 3 ; ++dir)
+  {
+    ACORN_ASSERT_VERT_IDX(tri.verts_[dir]);
+    ACORN_ASSERT_EDGE_IDX(tri.edges_[dir]);
+    const Edge& edge = edges_[tri.edges_[dir]];
+    ACORN_ASSERT_VERT_IDX(edge.verts_[0]);
+    ACORN_ASSERT_VERT_IDX(edge.verts_[1]);
+    if (edge.tris_[0] == -2)
+    {
+      ACORN_ASSERT(edge.tris_[1] > 2);
+      ACORN_ASSERT(tri.adjacent_tris_[dir] == -2);
+      ACORN_ASSERT(have_degenerate_edges_);
+    }
+    else
+    {
+      ACORN_ASSERT_TRI_IDX(edge.tris_[0]);
+      if (edge.tris_[1] == -1)
+      {
+        ACORN_ASSERT(tri.adjacent_tris_[dir] == -1);
+      }
+      else
+      {
+        ACORN_ASSERT_TRI_IDX(edge.tris_[1]);
+        ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[dir]);
+        const Triangle& adj = tris_[tri.adjacent_tris_[dir]];
+        int back_dir = tri.adjacent_tris_back_dir_[dir];
+        ACORN_ASSERT_DIR(back_dir);
+
+        ACORN_ASSERT(adj.adjacent_tris_[back_dir] == triIndex(tri));
+        ACORN_ASSERT(adj.edges_[back_dir] == tri.edges_[dir]);
+        ACORN_ASSERT(adj.adjacent_tris_back_dir_[back_dir] == dir);
+      }
+    }
+    ACORN_ASSERT(edge.verts_[0] < edge.verts_[1]);
+    if (edge.verts_[0] == tri.verts_[dir])
+    {
+      ACORN_ASSERT(edge.verts_[1] == tri.verts_[(dir+1)%3]);
+    }
+    else
+    {
+      ACORN_ASSERT(edge.verts_[0] == tri.verts_[(dir+1)%3]);
+      ACORN_ASSERT(edge.verts_[1] == tri.verts_[dir]);
+    }
+  }
+}
+
 
 #if XXXXXXXX
 void mesh_core::Mesh::fillGaps()
