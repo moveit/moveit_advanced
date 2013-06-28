@@ -486,20 +486,13 @@ namespace moveit_rviz_plugin
           shapes_->addPoint(b, Eigen::Vector4f(1,0,0,1));
           shapes_->addPoint(c, Eigen::Vector4f(1,0,0,1));
           shapes_->addPoint(d, Eigen::Vector4f(1,0,0,1));
-          shapes_->addArrow(a,b);
-          shapes_->addArrow(c,d);
+          shapes_->addArrow(a,b, Eigen::Vector4f(1,0,0,1));
+          shapes_->addArrow(c,d, Eigen::Vector4f(1,0,0,1));
 
           Eigen::Vector2d a2 = proj.project(a);
           Eigen::Vector2d b2 = proj.project(b);
           Eigen::Vector2d c2 = proj.project(c);
           Eigen::Vector2d d2 = proj.project(d);
-
-          Eigen::Vector3d a23 = proj.extract(a2);
-          Eigen::Vector3d b23 = proj.extract(b2);
-          Eigen::Vector3d c23 = proj.extract(c2);
-          Eigen::Vector3d d23 = proj.extract(d2);
-          shapes_->addArrow(a23,b23, Eigen::Vector4f(0,1,1,1));
-          shapes_->addArrow(c23,d23, Eigen::Vector4f(0,1,1,1));
 
           mesh_core::LineSegment2D line0(a2,b2);
           mesh_core::LineSegment2D line1(c2,d2);
@@ -525,10 +518,32 @@ namespace moveit_rviz_plugin
             Eigen::Vector3d intersection3 = proj.extract(intersection);
             
             shapes_->addBox(intersection3,
-                            0.04,
+                            0.07,
                             hit ? Eigen::Vector4f(1,1,0,1) : Eigen::Vector4f(0,1,1,1));
+            shapes_->addBox(
+                        Eigen::Vector3d(intersection.x(), intersection.y(), 0),
+                        0.07,
+                        hit ? Eigen::Vector4f(1,1,0,1) : Eigen::Vector4f(0,1,1,1));
           }
           
+
+          Eigen::Vector3d a23 = proj.extract(a2);
+          Eigen::Vector3d b23 = proj.extract(b2);
+          Eigen::Vector3d c23 = proj.extract(c2);
+          Eigen::Vector3d d23 = proj.extract(d2);
+          shapes_->addArrow(a23,b23, Eigen::Vector4f(0,1,1,1));
+          shapes_->addArrow(c23,d23, Eigen::Vector4f(0,1,1,1));
+
+
+          shapes_->addArrow(
+                  Eigen::Vector3d(a2.x(), a2.y(), 0),
+                  Eigen::Vector3d(b2.x(), b2.y(), 0),
+                  Eigen::Vector4f(0,1,1,1));
+          shapes_->addArrow(
+                  Eigen::Vector3d(c2.x(), c2.y(), 0),
+                  Eigen::Vector3d(d2.x(), d2.y(), 0),
+                  Eigen::Vector4f(0,1,1,1));
+
 
         }
         else
