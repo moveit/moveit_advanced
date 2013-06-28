@@ -442,7 +442,8 @@ namespace moveit_rviz_plugin
       per_link_objects.addVisObject(new PerLinkObj<LinkObj_VertPlane>(
                                   parent,
                                   "Show plane through link vertices",
-                                  "Axis of a plane through the middle of the link vertices, calculated by least squares fit.",
+                                  "Axis of a plane through the middle of the link vertices, calculated by least"
+                                  " squares fit. This is for debugging Line and Plane code",
                                   QColor(255, 0, 0),
                                   0.5,
                                   PerLinkObjBase::SPHERES,
