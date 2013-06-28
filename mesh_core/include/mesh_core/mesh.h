@@ -76,6 +76,9 @@ public:
     // index of submesh
     // -1 until findSubmeshes() is called.
     int submesh_;
+
+    // used in various places when we want to see all tris exactly once
+    int mark_;
   };
   struct Edge
   {
@@ -140,6 +143,10 @@ public:
   const EigenSTL::vector_Vector3d& getVerts() const { return verts_; }
   const std::vector<Triangle>& getTris() const { return tris_; }
 
+  // make windings agree on adjacent triangles, so adjacent tris have
+  // consistent normals.
+  void fixWindings();
+
   // fill in gaps (cracks or holes) in the mesh
   void fillGaps();
 
@@ -161,6 +168,21 @@ private:
   // helper for findSubmeshes().
   void assignSubmesh(Triangle& t, int submesh);
 
+  // helper for fixWindings()()
+  void fixWindings(
+      Triangle& tri,
+      bool flip_first_tri,
+      int mark,
+      int& tri_cnt,
+      int& flip_cnt);
+  void flipWinding(Triangle& tri);
+
+  // true if adjacent triangle winding is consistent with this triangle.
+  // false if they differ or there are more/less than 1 adjacent tri in that dir
+  bool isWindingSame(Triangle& tri, int dir);
+
+  // set the mark_ field in all triangles to the given value
+  void clearMark(int value = 0);
 
   double epsilon_;
   double epsilon_squared_;
@@ -175,8 +197,11 @@ private:
   // true if any edges are shared by >2 triangles
   bool have_degenerate_edges_;
 
-  // calculated by findSubmeshes()
+  // calculated by findSubmeshes().  Invalid if -1
   int number_of_submeshes_;
+
+  // one triangle from each submesh.
+  std::vector<int> submesh_tris_;
 
   // set true by setAdjacentTriangles()
   bool adjacent_tris_valid_;

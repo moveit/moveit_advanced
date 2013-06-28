@@ -216,6 +216,11 @@ void mesh_core::Mesh::findSubmeshes()
 {
   setAdjacentTriangles();
 
+  if (number_of_submeshes_ > 0)
+    return;
+
+  submesh_tris_.clear();
+
   std::vector<Triangle>::iterator it = tris_.begin();
   std::vector<Triangle>::iterator end = tris_.end();
   for ( ; it != end ; ++it)
@@ -229,6 +234,9 @@ void mesh_core::Mesh::findSubmeshes()
   {
     if (it->submesh_ == -1)
     {
+      submesh_tris_.resize(number_of_submeshes_+1);
+      submesh_tris_[number_of_submeshes_] = it - tris_.begin();
+
       assignSubmesh(*it, number_of_submeshes_);
       number_of_submeshes_++;
     }
@@ -309,7 +317,150 @@ int mesh_core::Mesh::addEdge(int vertidx_a, int vertidx_b)
   return edge_idx;
 }
 
-#if 0
+
+void mesh_core::Mesh::clearMark(int value)
+{
+  std::vector<Triangle>::iterator it = tris_.begin();
+  std::vector<Triangle>::iterator end = tris_.end();
+  for ( ; it != end ; ++it)
+  {
+    it->mark_ = value;
+  }
+}
+
+// make all windings point the same way
+void mesh_core::Mesh::fixWindings()
+{
+  int mark = 0;
+
+  findSubmeshes();
+  clearMark(mark);
+
+
+  for (int i=0; i<number_of_submeshes_; ++i)
+  {
+    int tri_cnt = 0;
+    int flip_cnt = 0;
+    fixWindings(
+              tris_[submesh_tris_[i]],
+              false,
+              ++mark,
+              tri_cnt,
+              flip_cnt);
+    if (flip_cnt > tri_cnt/2)
+    {
+      // guessed wrong - flip them all back the opposite way
+      fixWindings(
+              tris_[submesh_tris_[i]],
+              true,
+              ++mark,
+              tri_cnt,
+              flip_cnt);
+    }
+  }
+}
+
+bool mesh_core::Mesh::isWindingSame(Triangle& tri, int dir)
+{
+  int adj_idx = tri.adjacent_tris_[dir];
+  if (adj_idx < 0)
+    return false;
+  Triangle& adj = tris_[adj_idx];
+
+  int back_dir = tri.adjacent_tris_back_dir_[dir];
+
+  return tri.verts_[dir] != adj.verts_[back_dir];
+}
+
+namespace {
+struct FlipInfo
+{
+  mesh_core::Mesh::Triangle* tri;
+  bool flip;
+};
+}
+
+// if possible, make all windings point the same way for all triangles in this
+// tris submesh.
+// Should only be called from fixWindings().
+// Returns the total number of triangles in the submesh and the number of triangles flipped.
+// If flip_this_tri is true, the initial triangle's winding is flipped.
+void mesh_core::Mesh::fixWindings(
+      Triangle& first_tri,
+      bool flip_first_tri,
+      int mark,
+      int& tri_cnt,
+      int& flip_cnt)
+{
+  std::vector<FlipInfo> list;
+  list.resize(tris_.size());
+
+  list[0].tri = &first_tri;
+  list[0].flip = flip_first_tri;
+  first_tri.mark_ = mark;
+
+  FlipInfo *tail = &list[0];
+  FlipInfo *head = &list[1];
+  
+  // go through all tris in the same submesh and make them consistent with the
+  // first_tri
+  do
+  {
+    FlipInfo &info = *tail++;
+    Triangle& tri = *info.tri;
+    tri_cnt++;
+    if (info.flip)
+    {
+      flipWinding(*info.tri);
+      flip_cnt++;
+    }
+    
+    for (int dir = 0 ; dir < 3 ; ++dir)
+    {
+      int adj_idx = tri.adjacent_tris_[dir];
+      if (adj_idx < 0)
+        continue;
+      Triangle& adj = tris_[adj_idx];
+
+      // visit each triangle only once
+      if (adj.mark_ == mark)
+        continue;
+      adj.mark_ = mark;
+
+      head->tri = &adj;
+      head->flip = !isWindingSame(tri, dir);
+
+      head++;
+    }
+  }
+  while (tail != head);
+}
+
+// flip the winding order by swapping vertex 1 and 2
+void mesh_core::Mesh::flipWinding(Triangle& tri)
+{
+  std::swap(tri.verts_[1], tri.verts_[2]);
+  std::swap(tri.edges_[0], tri.edges_[2]);
+  if (adjacent_tris_valid_)
+  {
+    std::swap(tri.adjacent_tris_[0], tri.adjacent_tris_[2]);
+    std::swap(tri.adjacent_tris_back_dir_[0], tri.adjacent_tris_back_dir_[2]);
+
+    if (tri.adjacent_tris_[0] >= 0)
+    {
+      Triangle& adj = tris_[tri.adjacent_tris_[0]];
+      adj.adjacent_tris_back_dir_[tri.adjacent_tris_back_dir_[0]] = 0;
+    }
+
+    if (tri.adjacent_tris_[2] >= 0)
+    {
+      Triangle& adj = tris_[tri.adjacent_tris_[2]];
+      adj.adjacent_tris_back_dir_[tri.adjacent_tris_back_dir_[2]] = 2;
+    }
+  }
+}
+
+#if XXXXXXXX
 void mesh_core::Mesh::fillGaps()
 {
   findSubmeshes();
@@ -320,12 +471,12 @@ void mesh_core::Mesh::fillGaps()
   {
     if (edge->tris_[0] >=0 && edge->tris_[1] < 0)
     {
-      fillGap(&*edge);
+      fillGap(*edge);
     }
   }
 }
 
-void mesh_core::Mesh::fillGap(Edge* edge)
+void mesh_core::Mesh::fillGap(Edge& edge)
 {
   std::vector<Edge*> edges;
   edges.reserve(tris_.size());
