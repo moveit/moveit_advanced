@@ -47,6 +47,30 @@ namespace mesh_core
 class Mesh
 {
 public:
+  // info about an triangle's edge
+  struct TriEdge
+  {
+    // index of edge adjacent to triangle.  Always valid.
+    int edge_idx_;
+
+    // index in Edge::tris_ of this triangle.  Always valid.
+    int edge_tri_idx_;
+
+    // Only valid if adjacent_tris_valid_ is true.
+    //   -1 : no adjacent triangle  (or unknown if !adjacent_tris_valid_)
+    //   -2 : more than 1 adjacent triangle
+    //   else : index of adjacent triangle
+    int adjacent_tri_;
+
+    // if adjacent_tri_ >= 0 then this is the dir in that adjacent triangle
+    // corresponding to this triangle.  So
+    //   int tria = <any-tri-idx>
+    //   int dir = <0, 1, or 2>
+    //   int trib = mesh.tris_[tria].edges_[dir].adjacent_tri_
+    //   int dirb = mesh.tris_[tria].edges_[dir].adjacent_tri_back_dir_
+    //   tria ==    mesh.tris_[trib].edges[dirb].adjacent_tri_
+    int adjacent_tri_back_dir_;
+  };
   struct Triangle
   {
     // true if same vertices in same winding order.
@@ -55,25 +79,8 @@ public:
     // index of vertices (always valid)
     int verts_[3];
 
-    // index of edges (always valid)
-    // edges_[0] is verts_[0] - verts_[1]
-    // edges_[1] is verts_[1] - verts_[2]
-    // edges_[2] is verts_[2] - verts_[0]
-    int edges_[3];
-
-    // index of adjacent triangle sharing edge edges_[i]
-    // -1 if none, -2 if more than 1
-    // invalid unless adjacent_tris_valid_ is true
-    int adjacent_tris_[3];
-
-    // if adjacent_tris_[dir] is valid then this is the dir in the adjacent
-    // triangle corresponding to this triangle.  In other words:
-    //   int tria = <any-tri-idx>
-    //   int dir = <0, 1, or 2>
-    //   int trib = mesh.tris_[tria].adjacent_tris_[dir]
-    //   int dirb = mesh.tris_[tria].adjacent_tris_back_dir_[dir]
-    //   tria ==    mesh.tris_[trib].adjacent_tris_[dirb]
-    int adjacent_tris_back_dir_[3];
+    // info about each edge of triangle.  Always valid.
+    TriEdge edges_[3];
 
     // index of submesh
     // -1 until findSubmeshes() is called.
@@ -82,6 +89,16 @@ public:
     // used in various places when we want to see all tris exactly once
     int mark_;
   };
+
+  // info about an edge's triangle
+  struct EdgeTri
+  {
+    // index of tri adjacent to edge.  Always valid.
+    int tri_idx_;
+
+    // dir in tri of this edge.  Always valid.
+    int tri_dir_;
+  };
   struct Edge
   {
     // index of vertices.
@@ -89,9 +106,9 @@ public:
     // verts_[0] < verts_[1] (guaranteed)
     int verts_[2];
 
-    // index of adjacent tris in same submesh.
-    // if >2 tris then tris_[0]=-2 and tris_[1] = # of tris
-    int tris_[2];
+    // info about adjacent tris.
+    // In a well formed mesh there should be 2 tris adjacent to every edge.
+    std::vector<EdgeTri> tris_;
   };
   struct Vertex
   {

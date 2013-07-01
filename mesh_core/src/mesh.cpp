@@ -78,98 +78,33 @@ void mesh_core::Mesh::add(
   t.verts_[1] = bi;
   t.verts_[2] = ci;
   t.submesh_ = -1;
+  t.mark_ = 0;
 
   number_of_submeshes_ = -1; // need to recalculate
   adjacent_tris_valid_ = false;
 
   // find 3 edges
-  for (int i = 0; i < 3 ; ++i)
+  for (int dir = 0; dir < 3 ; ++dir)
   {
-    t.adjacent_tris_[i] = -1;
-    t.adjacent_tris_back_dir_[i] = -1;
-    t.edges_[i] = addEdge(t.verts_[i], t.verts_[(i+1)%3]);
-    Edge& edge = edges_[t.edges_[i]];
+    TriEdge& te = t.edges_[dir];
+    te.adjacent_tri_ = -1;
+    te.adjacent_tri_back_dir_ = -1;
+    te.edge_idx_ = addEdge(t.verts_[dir], t.verts_[(dir+1)%3]);
 
-    if (edge.tris_[0] == -2)
-    {
-      // >3 triangles share this edge
-      edge.tris_[1]++;
-    }
-    else
-    {
-      for (int j = 0 ;; ++j)
-      {
-        if (j == 2)
-        {
-          // 3 triangles share this edge
-          edge.tris_[0] = -2;
-          edge.tris_[1] = 3;
-          have_degenerate_edges_ = true;
-          break;
-        }
-        if (edge.tris_[j] < 0)
-        {
-          edge.tris_[j] = tri_idx;
-          break;
-        }
-      }
-    }
+    Edge& edge = edges_[te.edge_idx_];
+    te.edge_tri_idx_ = edge.tris_.size();
+    edge.tris_.resize(te.edge_tri_idx_ + 1);
+
+    EdgeTri& et = edge.tris_[te.edge_tri_idx_];
+    et.tri_idx_ = tri_idx;
+    et.tri_dir_ = dir;
+
+    // have more than 2 tris per edge?
+    if (edge.tris_.size() > 2)
+      have_degenerate_edges_ = true;
   }
 
   assertValidTri_PreAdjacentValid(t, "add tri");
-}
-
-void mesh_core::Mesh::setAdjacentTriangles()
-{
-  if (adjacent_tris_valid_)
-    return;
-
-  std::vector<Triangle>::iterator it = tris_.begin();
-  std::vector<Triangle>::iterator end = tris_.end();
-  for (int tidx = 0 ; it != end ; ++it, ++tidx)
-  {
-    for (int dir = 0 ; dir < 3 ; ++dir)
-    {
-      it->adjacent_tris_[dir] = -1;
-      it->adjacent_tris_back_dir_[dir] = -1;
-
-      int edge_idx = it->edges_[dir];
-      Edge& edge = edges_[edge_idx];
-      if (edge.tris_[0] == -2)
-      {
-        it->adjacent_tris_[dir] = -2;
-        continue;
-      }
-      if (edge.tris_[0] == -1)
-      {
-        logError("setAdjacentTriangles found edge.tris_[0] == -1");
-        it->adjacent_tris_[dir] = -1;
-        continue;
-      }
-      if (edge.tris_[1] == -1)
-      {
-        it->adjacent_tris_[dir] = -1;
-        continue;
-      }
-
-      int tadj_idx = edge.tris_[0] == tidx ?
-                     edge.tris_[1] :
-                     edge.tris_[0];
-      Triangle& tadj = tris_[tadj_idx];
-
-      for (int adj_dir = 0 ; adj_dir < 3 ; ++adj_dir)
-      {
-        if (tadj.edges_[adj_dir] == edge_idx)
-        {
-          it->adjacent_tris_[dir] = tadj_idx;
-          tadj.adjacent_tris_[adj_dir] = tidx;
-          it->adjacent_tris_back_dir_[dir] = adj_dir;
-          tadj.adjacent_tris_back_dir_[adj_dir] = dir;
-        }
-      }
-    }
-  }
-  adjacent_tris_valid_ = true;
 }
 
 void mesh_core::Mesh::add(
@@ -250,7 +185,7 @@ void mesh_core::Mesh::assignSubmesh(Triangle& t, int submesh)
   t.submesh_ = submesh;
   for (int dir = 0 ; dir < 3 ; ++dir)
   {
-    int tadj_idx = t.adjacent_tris_[dir];
+    int tadj_idx = t.edges_[dir].adjacent_tri_;
     if (tadj_idx < 0)
       continue;
     Triangle& tadj = tris_[tadj_idx];
@@ -318,8 +253,7 @@ int mesh_core::Mesh::addEdge(int vertidx_a, int vertidx_b)
   Edge &e = edges_.back();
   e.verts_[0] = vertidx_a;
   e.verts_[1] = vertidx_b;
-  e.tris_[0] = -1;
-  e.tris_[1] = -1;
+  e.tris_.reserve(2);
 
   edge_map_[key] = edge_idx;
 
@@ -339,9 +273,66 @@ void mesh_core::Mesh::clearMark(int value)
   std::vector<Triangle>::iterator end = tris_.end();
   for ( ; it != end ; ++it)
   {
-   assertValidTri(*it, "clearMark");
+    assertValidTri(*it, "clearMark");
     it->mark_ = value;
   }
+}
+
+void mesh_core::Mesh::setAdjacentTriangles()
+{
+  if (adjacent_tris_valid_)
+    return;
+
+  int tri_cnt = tris_.size();
+  for (int tri_idx = 0 ; tri_idx != tri_cnt ; ++tri_idx)
+  {
+    Triangle& tri = tris_[tri_idx];
+    for (int dir = 0 ; dir < 3 ; ++dir)
+    {
+      TriEdge& te = tri.edges_[dir];
+      te.adjacent_tri_ = -1;
+      te.adjacent_tri_back_dir_ = -1;
+
+      int edge_idx = te.edge_idx_;
+      Edge& edge = edges_[edge_idx];
+
+      ACORN_ASSERT(edge.tris_.size() > 0);
+      if (edge.tris_.size() == 2)
+      {
+        if (edge.tris_[0].tri_idx_ == tri_idx)
+        {
+          te.adjacent_tri_ = edge.tris_[1].tri_idx_;
+        }
+        else
+        {
+          ACORN_ASSERT(edge.tris_[1].tri_idx_ == tri_idx);
+          te.adjacent_tri_ = edge.tris_[0].tri_idx_;
+        }
+
+        Triangle& adj = tris_[te.adjacent_tri_];
+
+        for (int back_dir = 0 ;; ++back_dir)
+        {
+          ACORN_ASSERT(back_dir < 3);
+          if (back_dir >= 3)
+            break;
+
+          TriEdge& adj_te = adj.edges_[back_dir];
+          if (adj_te.edge_idx_ == edge_idx)
+          {
+            te.adjacent_tri_back_dir_ = back_dir;
+            break;
+          }
+        }
+
+      }
+      else if (edge.tris_.size() > 2)
+      {
+        te.adjacent_tri_ = -2;
+      }
+    }
+  }
+  adjacent_tris_valid_ = true;
 }
 
 // make all windings point the same way
@@ -378,13 +369,12 @@ void mesh_core::Mesh::fixWindings()
 
 bool mesh_core::Mesh::isWindingSame(Triangle& tri, int dir)
 {
-  int adj_idx = tri.adjacent_tris_[dir];
+  int adj_idx = tri.edges_[dir].adjacent_tri_;
   if (adj_idx < 0)
     return false;
   Triangle& adj = tris_[adj_idx];
 
-  int back_dir = tri.adjacent_tris_back_dir_[dir];
-
+  int back_dir = tri.edges_[dir].adjacent_tri_back_dir_;
   return tri.verts_[dir] != adj.verts_[back_dir];
 }
 
@@ -438,7 +428,7 @@ void mesh_core::Mesh::fixWindings(
     
     for (int dir = 0 ; dir < 3 ; ++dir)
     {
-      int adj_idx = tri.adjacent_tris_[dir];
+      int adj_idx = tri.edges_[dir].adjacent_tri_;
       if (adj_idx < 0)
         continue;
       Triangle& adj = tris_[adj_idx];
@@ -473,28 +463,26 @@ void mesh_core::Mesh::flipWinding(Triangle& tri)
 
   std::swap(tri.verts_[1], tri.verts_[2]);
   std::swap(tri.edges_[0], tri.edges_[2]);
-  if (adjacent_tris_valid_)
+
+  // fixup edge 0 and 2 which got swapped
+  for (int dir = 0 ; dir < 3 ; dir++)
   {
-    std::swap(tri.adjacent_tris_[0], tri.adjacent_tris_[2]);
-    std::swap(tri.adjacent_tris_back_dir_[0], tri.adjacent_tris_back_dir_[2]);
+    if (dir == 1)
+      continue;
 
+    TriEdge& te = tri.edges_[dir];
+    Edge& edge = edges_[te.edge_idx_];
+    EdgeTri& et = edge.tris_[te.edge_tri_idx_];
+    et.tri_dir_ = dir;
 
-    if (tri.adjacent_tris_[0] >= 0)
+    if (adjacent_tris_valid_ && te.adjacent_tri_ >= 0)
     {
-      ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[0]);
-      Triangle& adj = tris_[tri.adjacent_tris_[0]];
-      ACORN_ASSERT_TRI(adj);
-      adj.adjacent_tris_back_dir_[tri.adjacent_tris_back_dir_[0]] = 0;
-    }
-
-    if (tri.adjacent_tris_[2] >= 0)
-    {
-      ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[2]);
-      Triangle& adj = tris_[tri.adjacent_tris_[2]];
-      ACORN_ASSERT_TRI(adj);
-      adj.adjacent_tris_back_dir_[tri.adjacent_tris_back_dir_[2]] = 2;
+      Triangle& adj = tris_[te.adjacent_tri_];
+      TriEdge& adj_te = adj.edges_[te.adjacent_tri_back_dir_];
+      adj_te.adjacent_tri_back_dir_ = dir;
     }
   }
+
   assertValidTri(tri, "flipWinding2");
 }
 
@@ -524,44 +512,29 @@ void mesh_core::Mesh::assertValidTri_PreAdjacentValid(
   for (int dir = 0 ; dir < 3 ; ++dir)
   {
     ACORN_ASSERT_VERT_IDX(tri.verts_[dir]);
-    ACORN_ASSERT_EDGE_IDX(tri.edges_[dir]);
-    const Edge& edge = edges_[tri.edges_[dir]];
+    ACORN_ASSERT_EDGE_IDX(tri.edges_[dir].edge_idx_);
+    const TriEdge& te = tri.edges_[dir];
+    const Edge& edge = edges_[te.edge_idx_];
+    ACORN_ASSERT(te.edge_tri_idx_ <= edge.tris_.size());
+    const EdgeTri& et = edge.tris_[te.edge_tri_idx_];
     assertValidEdge(edge, msg);
-    if (edge.tris_[0] == -2)
-    {
-      ACORN_ASSERT(edge.tris_[1] > 2);
-      if (adjacent_tris_valid_)
-      {
-        ACORN_ASSERT(tri.adjacent_tris_[dir] == -2);
-      }
-      ACORN_ASSERT(have_degenerate_edges_);
-    }
-    else
-    {
-      ACORN_ASSERT_TRI_IDX(edge.tris_[0]);
-      if (edge.tris_[1] == -1)
-      {
-        if (adjacent_tris_valid_)
-        {
-          ACORN_ASSERT(tri.adjacent_tris_[dir] == -1);
-        }
-      }
-      else
-      {
-        ACORN_ASSERT_TRI_IDX(edge.tris_[1]);
-        if (adjacent_tris_valid_)
-        {
-          ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[dir]);
-          const Triangle& adj = tris_[tri.adjacent_tris_[dir]];
-          int back_dir = tri.adjacent_tris_back_dir_[dir];
-          ACORN_ASSERT_DIR(back_dir);
 
-          ACORN_ASSERT(adj.adjacent_tris_[back_dir] == triIndex(tri));
-          ACORN_ASSERT(adj.edges_[back_dir] == tri.edges_[dir]);
-          ACORN_ASSERT(adj.adjacent_tris_back_dir_[back_dir] == dir);
-        }
-      }
+    ACORN_ASSERT(et.tri_idx_ == triIndex(tri));
+    ACORN_ASSERT(et.tri_dir_ == dir);
+
+    if (adjacent_tris_valid_ && te.adjacent_tri_ >= 0)
+    {
+      ACORN_ASSERT_TRI_IDX(te.adjacent_tri_);
+      ACORN_ASSERT_DIR(te.adjacent_tri_back_dir_);
+      const Triangle& adj = tris_[te.adjacent_tri_];
+      int back_dir = te.adjacent_tri_back_dir_;
+      const TriEdge& adj_te = adj.edges_[back_dir];
+
+      ACORN_ASSERT(adj_te.edge_idx_ == te.edge_idx_);
+      ACORN_ASSERT(adj_te.adjacent_tri_ == triIndex(tri));
+      ACORN_ASSERT(adj_te.adjacent_tri_back_dir_ == dir);
     }
+
     ACORN_ASSERT(edge.verts_[0] < edge.verts_[1]);
     if (edge.verts_[0] == tri.verts_[dir])
     {
@@ -635,9 +608,26 @@ void mesh_core::Mesh::fillGap(Edge& edge)
 
   if (edge->tris_[0] < 0 || edge->tris_[1] >= 0)
   {
+    ACORN_ASSERT(0);
     logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
     return;
   }
+
+  int edge_idx = edgeIdx(edge);
+  Triangle& tri = tris_[edge->tris_[0]];
+  int dir = 0;
+  for (;; ++dir)
+  {
+    if (dir == 3)
+    {
+      ACORN_ASSERT(0);
+      logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
+      return;
+    }
+    if (tri.edges_[dir] == edge_idx)
+      break;
+  }
+
 
 
   Triangle *t = &tris_[edge->tris_[0]];
