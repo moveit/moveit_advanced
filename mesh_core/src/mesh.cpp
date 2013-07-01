@@ -115,6 +115,8 @@ void mesh_core::Mesh::add(
       }
     }
   }
+
+  assertValidTri_PreAdjacentValid(t, "add tri");
 }
 
 void mesh_core::Mesh::setAdjacentTriangles()
@@ -291,6 +293,10 @@ int mesh_core::Mesh::addVertex(const Eigen::Vector3d& a)
       return it - verts_.begin();
   }
   verts_.push_back(a);
+
+  vert_info_.resize(verts_.size());
+  vert_info_[verts_.size() - 1].edges_.reserve(8);
+
   return verts_.size() - 1;
 }
 
@@ -316,6 +322,13 @@ int mesh_core::Mesh::addEdge(int vertidx_a, int vertidx_b)
   e.tris_[1] = -1;
 
   edge_map_[key] = edge_idx;
+
+  // add edge to per-vertex list of edges
+  for (int i = 0 ; i < 2 ; ++i)
+  {
+    vert_info_[e.verts_[i]].edges_.push_back(edge_idx);
+  }
+
   return edge_idx;
 }
 
@@ -489,26 +502,38 @@ void mesh_core::Mesh::assertValidTri(
       const Triangle& tri,
       const char *msg) const
 {
+  ACORN_ASSERT(adjacent_tris_valid_);
+  ACORN_ASSERT(number_of_submeshes_ > 0);
+  assertValidTri_PreAdjacentValid(tri, msg);
+}
+
+void mesh_core::Mesh::assertValidTri_PreAdjacentValid(
+      const Triangle& tri,
+      const char *msg) const
+{
   ACORN_ASSERT_TRI(tri);
   ACORN_ASSERT_TRI_IDX(triIndex(tri));
+  ACORN_ASSERT(vert_info_.size() == verts_.size());
 
-  ACORN_ASSERT(adjacent_tris_valid_);
-  ACORN_ASSERT(number_of_submeshes_>0);
-  ACORN_ASSERT(number_of_submeshes_ == submesh_tris_.size());
-
-  ACORN_ASSERT(tri.submesh_ >= 0 && tri.submesh_ < number_of_submeshes_);
+  if (number_of_submeshes_ > 0)
+  {
+    ACORN_ASSERT(number_of_submeshes_ == submesh_tris_.size());
+    ACORN_ASSERT(tri.submesh_ >= 0 && tri.submesh_ < number_of_submeshes_);
+  }
 
   for (int dir = 0 ; dir < 3 ; ++dir)
   {
     ACORN_ASSERT_VERT_IDX(tri.verts_[dir]);
     ACORN_ASSERT_EDGE_IDX(tri.edges_[dir]);
     const Edge& edge = edges_[tri.edges_[dir]];
-    ACORN_ASSERT_VERT_IDX(edge.verts_[0]);
-    ACORN_ASSERT_VERT_IDX(edge.verts_[1]);
+    assertValidEdge(edge, msg);
     if (edge.tris_[0] == -2)
     {
       ACORN_ASSERT(edge.tris_[1] > 2);
-      ACORN_ASSERT(tri.adjacent_tris_[dir] == -2);
+      if (adjacent_tris_valid_)
+      {
+        ACORN_ASSERT(tri.adjacent_tris_[dir] == -2);
+      }
       ACORN_ASSERT(have_degenerate_edges_);
     }
     else
@@ -516,19 +541,25 @@ void mesh_core::Mesh::assertValidTri(
       ACORN_ASSERT_TRI_IDX(edge.tris_[0]);
       if (edge.tris_[1] == -1)
       {
-        ACORN_ASSERT(tri.adjacent_tris_[dir] == -1);
+        if (adjacent_tris_valid_)
+        {
+          ACORN_ASSERT(tri.adjacent_tris_[dir] == -1);
+        }
       }
       else
       {
         ACORN_ASSERT_TRI_IDX(edge.tris_[1]);
-        ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[dir]);
-        const Triangle& adj = tris_[tri.adjacent_tris_[dir]];
-        int back_dir = tri.adjacent_tris_back_dir_[dir];
-        ACORN_ASSERT_DIR(back_dir);
+        if (adjacent_tris_valid_)
+        {
+          ACORN_ASSERT_TRI_IDX(tri.adjacent_tris_[dir]);
+          const Triangle& adj = tris_[tri.adjacent_tris_[dir]];
+          int back_dir = tri.adjacent_tris_back_dir_[dir];
+          ACORN_ASSERT_DIR(back_dir);
 
-        ACORN_ASSERT(adj.adjacent_tris_[back_dir] == triIndex(tri));
-        ACORN_ASSERT(adj.edges_[back_dir] == tri.edges_[dir]);
-        ACORN_ASSERT(adj.adjacent_tris_back_dir_[back_dir] == dir);
+          ACORN_ASSERT(adj.adjacent_tris_[back_dir] == triIndex(tri));
+          ACORN_ASSERT(adj.edges_[back_dir] == tri.edges_[dir]);
+          ACORN_ASSERT(adj.adjacent_tris_back_dir_[back_dir] == dir);
+        }
       }
     }
     ACORN_ASSERT(edge.verts_[0] < edge.verts_[1]);
@@ -544,21 +575,55 @@ void mesh_core::Mesh::assertValidTri(
   }
 }
 
+void mesh_core::Mesh::assertValidEdge(
+      const Edge& edge,
+      const char *msg) const
+{
+  int edge_idx = &edge - &edges_[0];
+  ACORN_ASSERT_EDGE_IDX(edge_idx);
+  for (int i = 0 ; i < 2 ; ++i)
+  {
+    ACORN_ASSERT_VERT_IDX(edge.verts_[i]);
+    int vidx = edge.verts_[i];
+    const Vertex& vtx = vert_info_[vidx];
+
+    int ve_cnt = 0;
+    for (int j = 0 ; j < vtx.edges_.size() ; ++j)
+    {
+      ACORN_ASSERT_EDGE_IDX(vtx.edges_[j]);
+      if (vtx.edges_[j] == edge_idx)
+        ve_cnt++;
+    }
+    ACORN_ASSERT(ve_cnt == 1);
+  }
+}
+
 
 #if XXXXXXXX
 void mesh_core::Mesh::fillGaps()
 {
   findSubmeshes();
 
+  for (;;)
+  {
+    int edge_idx = findGap();
+    if (edge_idx < 0)
+      break;
+    fillGap(edges_[edge_idx]);
+  }
+}
+
+void mesh_core::Mesh::findGap()
+{
   std::vector<Edge>::iterator edge = edges_.begin();
   std::vector<Edge>::iterator edge_end = edges_.end();
-  for ( ; edge != edge_end ; ++edge)
+  for (int idx = 0 ; edge != edge_end ; ++edge, ++idx)
   {
+    // edge which is a gap?
     if (edge->tris_[0] >=0 && edge->tris_[1] < 0)
-    {
-      fillGap(*edge);
-    }
+      return idx;
   }
+  return -1; // no gaps found
 }
 
 void mesh_core::Mesh::fillGap(Edge& edge)
@@ -573,6 +638,8 @@ void mesh_core::Mesh::fillGap(Edge& edge)
     logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
     return;
   }
+
+
   Triangle *t = &tris_[edge->tris_[0]];
   for (int dir = 0 ; dir < 3 ; ++dir)
   {

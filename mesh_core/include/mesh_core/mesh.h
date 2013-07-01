@@ -93,6 +93,13 @@ public:
     // if >2 tris then tris_[0]=-2 and tris_[1] = # of tris
     int tris_[2];
   };
+  struct Vertex
+  {
+    // Note: the position of the vertex is in the Mesh::verts_ array.
+
+    // indices of edges touching this vertex.
+    std::vector<int> edges_;
+  };
 
   // construct an empty mesh
   // vertices closer than epsilon will be combined.
@@ -195,6 +202,13 @@ private:
   // set the mark_ field in all triangles to the given value
   void clearMark(int value = 0);
 
+  // Debug asserts
+  void assertValidTri(const Triangle& tri, const char *msg) const;
+  void assertValidTri_PreAdjacentValid(const Triangle& tri, const char *msg) const;
+  void assertValidEdge(const Edge& edge, const char *msg) const;
+
+
+private:
   double epsilon_;
   double epsilon_squared_;
   EigenSTL::vector_Vector3d verts_;
@@ -204,6 +218,10 @@ private:
   // map from vertex idx pair to edge idx.
   // pair<a,b> always has a<b
   std::map<std::pair<int,int>,int> edge_map_;
+
+  // extra info per vertex. 
+  // Note that the position of the vertex is in verts_
+  std::vector<Vertex> vert_info_;
 
   // true if any edges are shared by >2 triangles
   bool have_degenerate_edges_;
@@ -219,12 +237,6 @@ private:
 
 
 
-  void assertValidTri(const Triangle& tri, const char *msg) const
-#if MESH_CORE__MESH__ENABLE_DEBUG
-  ;
-#else
-  {}
-#endif
 };
 
 }
@@ -240,9 +252,27 @@ private:
       abort(); \
     } \
   } while(0)
+
 #else
+
 #define ACORN_ASSERT_LINE(_cond, _file, _line) \
   do { } while(0)
+
+inline void mesh_core::Mesh::assertValidTri(
+      const Triangle& tri, 
+      const char *msg) const
+{}
+
+inline void mesh_core::Mesh::assertValidTri_PreAdjacentValid(
+      const Triangle& tri, 
+      const char *msg) const
+{}
+
+inline void mesh_core::Mesh::assertValidEdge(
+      const Edge& edge,
+      const char *msg) const
+{}
+
 #endif
 
 #define ACORN_ASSERT(_cond) \
