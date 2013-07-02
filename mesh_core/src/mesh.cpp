@@ -50,6 +50,13 @@ void mesh_core::Mesh::clear()
 {
   verts_.clear();
   tris_.clear();
+  edges_.clear();
+  edge_map_.clear();
+  vert_info_.clear();
+  have_degenerate_edges_ = false;
+  number_of_submeshes_ = -1;
+  submesh_tris_.clear();
+  adjacent_tris_valid_ = false;
 }
 
 void mesh_core::Mesh::reserve(int ntris, int nverts)
@@ -58,6 +65,8 @@ void mesh_core::Mesh::reserve(int ntris, int nverts)
   if (nverts == 0)
     nverts = ntris * 3;
   verts_.reserve(verts_.size() + nverts);
+  edges_.reserve(nverts);
+  vert_info_.reserve(nverts);
 }
 
 void mesh_core::Mesh::add(
@@ -1073,4 +1082,159 @@ void mesh_core::Mesh::generatePolygon(
   addGapTri(p, direction);
   addGapTri(p->next_->next_, direction);
 }
+
+
+void mesh_core::Mesh::slice(
+      const Plane& plane,
+      Mesh& a,
+      Mesh& b) const
+{
+  
+  std::vector<signed char> clipcodes;
+  std::vector<double> dists;
+  clipcodes.resize(verts_.size());
+  dists.resize(verts_.size());
+
+  int acnt = 0;
+  int bcnt = 0;
+
+  for (int i = 0 ; i < verts_.size() ; ++i)
+  {
+    dists[i] = plane.dist(verts_[i]);
+    if (std::abs(dists[i]) < std::numeric_limits<double>::epsilon() * 100)
+    {
+      clipcodes[i] = 0;
+    }
+    else if (dists[i] < 0.0)
+    {
+      acnt++;
+      clipcodes[i] = 1;
+    }
+    else
+    {
+      bcnt++;
+      clipcodes[i] = -1;
+    }
+  }
+
+  a.clear();
+  b.clear();
+
+  a.epsilon_ = b.epsilon_ = epsilon_;
+  a.epsilon_squared_ = b.epsilon_squared_ = epsilon_squared_;
+
+  if (bcnt == 0)
+  {
+    a = *this;
+    return;
+  }
+  else if (acnt == 0)
+  {
+    b = *this;
+    return;
+  }
+
+  a.reserve(tris_.size() * 2, verts_.size() * 2);
+  b.reserve(tris_.size() * 2, verts_.size() * 2);
+
+  std::vector<Triangle>::const_iterator tri = tris_.begin();
+  std::vector<Triangle>::const_iterator tri_end = tris_.end();
+  for ( ; tri != tri_end ; ++tri)
+  {
+    // ab is 0 for a and 1 for b
+    for (int ab = 0 ; ab < 2 ; ++ab)
+    {
+      // ab_sign is 1 for a and -1 for b
+      int ab_sign = ab ? -1 : 1;
+      Mesh& newmesh = ab ? b : a;
+
+      // categorize triangle - inside, outside, or needs to be clipped?
+      int cc[3];
+      int in_cnt = 0;
+      int out_cnt = 0;
+      int start = -1;
+      for (int i = 0 ; i < 3 ; ++i)
+      {
+        cc[i] = ab_sign * clipcodes[tri->verts_[i]];
+        if (cc[i] > 0)
+        {
+          in_cnt++;
+          start = i;
+        }
+        else if (cc[i] < 0)
+        {
+          out_cnt++;
+        }
+      }
+
+      // entire triangle is out?
+      if (in_cnt < 1)
+        continue;
+
+      // entire triangle is in?
+      if (out_cnt < 1)
+      {
+        newmesh.add(
+              verts_[tri->verts_[0]],
+              verts_[tri->verts_[1]],
+              verts_[tri->verts_[2]]);
+        continue;
+      }
+
+      Eigen::Vector3d v[4];
+      int vcnt = 0;
+
+      ACORN_ASSERT(start >= 0);
+
+      int prev;
+      int cur = start;
+      ACORN_ASSERT(cc[cur] > 0);
+      while (cc[cur] >= 0)
+      {
+        ACORN_ASSERT(cur != start);
+        v[vcnt++] = verts_[tri->verts_[cur]];
+        prev = cur;
+        cur = (cur + 1) % 3;
+      }
+
+      if (cc[prev] > 0)
+      {
+        // in->out transition
+        int prev_idx = tri->verts_[prev];
+        int cur_idx  = tri->verts_[cur];
+        double t = dists[prev_idx] / (dists[prev_idx] - dists[cur_idx]);
+        v[vcnt++] = t * verts_[prev_idx] + (1.0 - t) * verts_[cur_idx];
+      }
+
+      while (cc[cur] < 0)
+      {
+        ACORN_ASSERT(cur != start);
+        prev = cur;
+        cur = (cur + 1) % 3;
+      }
+
+      if (cc[cur] > 0)
+      {
+        // out->in transition
+        int prev_idx = tri->verts_[prev];
+        int cur_idx  = tri->verts_[cur];
+        double t = dists[cur_idx] / (dists[cur_idx] - dists[prev_idx]);
+        v[vcnt++] = t * verts_[cur_idx] + (1.0 - t) * verts_[prev_idx];
+      }
+
+      while (cur != start)
+      {
+        ACORN_ASSERT(cc[cur] >= 0);
+        v[vcnt++] = verts_[tri->verts_[cur]];
+        cur = (cur + 1) % 3;
+      }
+      
+      ACORN_ASSERT(vcnt >= 3 && vcnt <= 4);
+      newmesh.add(v[0], v[1], v[2]);
+      if (vcnt == 4)
+        newmesh.add(v[0], v[2], v[3]);
+    }
+  }
+}
+
 

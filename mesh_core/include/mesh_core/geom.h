@@ -79,6 +79,11 @@ public:
   double getC() const { return normal_.z(); }
   double getD() const { return d_; }
 
+  // return signed distance of point from plane.
+  // dist > 0 if normal points from plane to point
+  // dist < 0 if normal points from plane away from point
+  double dist(const Eigen::Vector3d& point) const;
+
 protected:
   // set plane from least squares fit of points.
   // Optionally return average of points.
@@ -167,6 +172,11 @@ private:
   //double len_;
 };
 
+}
+
+inline double mesh_core::Plane::dist(const Eigen::Vector3d& point) const
+{
+  return point.dot(normal_) + d_;
 }
 
 

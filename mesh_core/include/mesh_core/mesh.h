@@ -80,6 +80,7 @@
   
 namespace mesh_core
 {
+class Plane;
 
 class Mesh
 {
@@ -194,6 +195,13 @@ public:
            int ntris,
            int *tris);
   
+  // add triangles from a list.
+  // tri_cnt - number of triangles to add
+  // triangles - each tri is represented by 3 ints, each an index into vertices
+  // vertices - each vertex is 3 doubles.
+  void add(int tri_cnt,
+           int *triangles,
+           double *vertices);
 
   // set a different epsilon.  Does not affect existing vertices.
   void setEpsilon(double epsilon);
@@ -206,6 +214,14 @@ public:
 
   const EigenSTL::vector_Vector3d& getVerts() const { return verts_; }
   const std::vector<Triangle>& getTris() const { return tris_; }
+
+  // slize this mesh in half along plane and create 2 new meshes
+  //   a: contains only parts beyond plane
+  //   b: contains only parts before plane
+  // The original mesh is not modified
+  void slice(const Plane& plane,
+             Mesh& a,
+             Mesh& b) const;
 
   // make windings agree on adjacent triangles, so adjacent tris have
   // consistent normals.
