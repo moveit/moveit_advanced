@@ -277,6 +277,35 @@ int mesh_core::Mesh::addEdge(int vertidx_a, int vertidx_b)
 }
 
 
+void mesh_core::Mesh::print() const
+{
+  logInform("Mesh 0x%08lx",(long)this);
+  for (int i = 0; i < tris_.size() ; ++i)
+  {
+    const Triangle& tri = tris_[i];
+    logInform("   Tri[%3d] v(%3d,%3d,%3d) e(%3d,%3d,%3d) tadj=(%3d,%3d,%3d)",
+      i,
+      tri.verts_[0],
+      tri.verts_[1],
+      tri.verts_[2],
+      tri.edges_[0].edge_idx_,
+      tri.edges_[1].edge_idx_,
+      tri.edges_[2].edge_idx_,
+      tri.edges_[0].adjacent_tri_,
+      tri.edges_[1].adjacent_tri_,
+      tri.edges_[2].adjacent_tri_);
+  }
+  for (int i = 0; i < edges_.size() ; ++i)
+  {
+    const Edge& edge = edges_[i];
+    logInform("   Edge[%3d] v(%3d,%3d)  ntris=%d",
+      i,
+      edge.verts_[0],
+      edge.verts_[1],
+      int(edge.tris_.size()));
+  }
+}
+
 void mesh_core::Mesh::clearMark(int value)
 {
   std::vector<Triangle>::iterator it = tris_.begin();
@@ -593,6 +622,8 @@ void mesh_core::Mesh::fillGaps()
       break;
     fillGap(*edge);
   }
+
+  print();
 }
 
 mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
@@ -621,6 +652,12 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
 {
   ACORN_ASSERT(first_edge.tris_.size() == 1);
 
+  print();
+  logInform("================ Fill gap in edge %d  v(%d,%d)",
+    edgeIndex(first_edge),
+    first_edge.verts_[0],
+    first_edge.verts_[1]);
+
   EdgeTri& first_et = first_edge.tris_[0];
   Triangle &first_tri = tris_[first_et.tri_idx_];
 
@@ -639,12 +676,14 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
   {
     loop[0].vert_idx_ = first_edge.verts_[0];
     current_vtx = first_edge.verts_[1];
+    logInform("  FWD: v0=%d v1=%d",loop[0].vert_idx_, current_vtx);
   }
   else
   {
     ACORN_ASSERT(first_tri.verts_[first_et.tri_dir_] == first_edge.verts_[1]);
     loop[0].vert_idx_ = first_edge.verts_[1];
     current_vtx = first_edge.verts_[0];
+    logInform("  BWD: v0=%d v1=%d",loop[0].vert_idx_, current_vtx);
   }
 
   std::vector<GapEdge> new_edges;
@@ -658,9 +697,16 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
     new_edges.clear();
     bool found_correct_winding = false;
 
+    logInform("  find edges for v=%d",current_vtx);
+
     // check all edges touching current vertex
     for (int i = 0 ; i < vtx.edges_.size() ; ++i)
     {
+      logInform("    check e=%d  v(%d,%d)",
+        vtx.edges_[i],
+        edges_[vtx.edges_[i]].verts_[0],
+        edges_[vtx.edges_[i]].verts_[1]);
+
       if (vtx.edges_[i] == current_edge)
         continue;
 
@@ -668,8 +714,12 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
       if (vedge.tris_.size() == 2)
         continue;
 
+#if 0
       new_edges.resize(new_edges.size() + 1);
       GapEdge& ge = new_edges.back();
+#else
+      GapEdge ge;
+#endif
 
       ge.vert_idx_ = current_vtx;
       ge.edge_idx_ = vtx.edges_[i];
@@ -684,9 +734,16 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
         Triangle& tri = tris_[et.tri_idx_];
         ge.tri_idx_ = et.tri_idx_;
 
+        logInform("       tri %d v(%d,%d,%d)",
+          et.tri_idx_,
+          tri.verts_[0],
+          tri.verts_[1],
+          tri.verts_[2]);
+
         // does the edge go in positive winding around triangle?
         if (tri.verts_[et.tri_dir_] == current_vtx)
         {
+          logInform("         good winding");
           if (!found_correct_winding)
           {
             new_edges.clear();
@@ -697,6 +754,7 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
         }
         else if (!found_correct_winding)
         {
+          logInform("         bad winding");
           new_edges.push_back(ge);
         }
       }
@@ -710,6 +768,8 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
     {
       logWarn("mesh_core::Mesh::fillGap() found no good edges");
     }
+
+    logInform("    Found %d edges",int(new_edges.size()));
 
     if (new_edges.size() > 1)
     {
@@ -732,6 +792,12 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
     // Now we have a number of candidate edges.  Use the first one
     loop.push_back(new_edges[0]);
 
+    logInform("    use edge [%d] v=%d e=%d t=%d",
+      int(loop.size() - 1),
+      new_edges[0].vert_idx_,
+      new_edges[0].edge_idx_,
+      new_edges[0].tri_idx_);
+
     GapEdge& ge = loop.back();
     Edge& edge = edges_[ge.edge_idx_];
 
@@ -750,6 +816,10 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
   }
   while (loop_start_index == -1);
 
+  logInform("  GOT LOOP size=%d start=%d cnt=%d",
+    int(loop.size()),
+    loop_start_index,
+    int(loop.size()) - loop_start_index);
 
   // Now we have a loop of vertices around the gap.
   // Generate triangles to fill in the gap
@@ -862,14 +932,16 @@ void mesh_core::Mesh::generatePolygon(
 {
   int nverts = verts.size();
 
+  logInform("generatePolygon() nverts=%d",nverts);
+
   if (nverts < 3)
     return;
 
   if (nverts <= 4)
   {
-    add(verts[0], verts[1], verts[2]);
+    add(verts[0], verts[2], verts[1]);
     if (nverts == 4)
-      add(verts[1], verts[2], verts[3]);
+      add(verts[0], verts[3], verts[2]);
     return;
   }
 

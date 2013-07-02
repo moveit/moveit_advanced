@@ -214,6 +214,9 @@ public:
   // fill in gaps (cracks or holes) in the mesh
   void fillGaps();
 
+  // print index info
+  void print() const;
+
   int triIndex(const Triangle& tri) const
   {
     return &tri - &tris_[0];
