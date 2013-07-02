@@ -293,7 +293,7 @@ Eigen::Quaterniond mesh_core::PlaneProjection::getOrientation() const
 //############################### LineSegment2D #############################
 //###########################################################################
 
-mesh_core::LineSegment2D::LineSegment2D(
+void mesh_core::LineSegment2D::initialize(
       const Eigen::Vector2d& a,
       const Eigen::Vector2d& b)
 {
@@ -316,6 +316,13 @@ mesh_core::LineSegment2D::LineSegment2D(
     slope_ = delta.y() * inv_dx_;
     y_intercept_ = a.y() - slope_ * a.x();
   }
+}
+
+mesh_core::LineSegment2D::LineSegment2D(
+      const Eigen::Vector2d& a,
+      const Eigen::Vector2d& b)
+{
+  initialize(a,b);
 }
 
 bool mesh_core::LineSegment2D::intersect(

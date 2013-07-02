@@ -38,9 +38,46 @@
 #define MESH_CORE__MESH
 
 #include <eigen_stl_containers/eigen_stl_containers.h>
+#include <console_bridge/console.h>
 
 #define MESH_CORE__MESH__ENABLE_DEBUG 1
 
+#if MESH_CORE__MESH__ENABLE_DEBUG
+#define ACORN_ASSERT_LINE(_cond, _file, _line) \
+  do { \
+    if (!(_cond)) { \
+      logInform("Failed assert at %s:%d  -- %s", \
+        _file, \
+        _line, \
+        #_cond); \
+      abort(); \
+    } \
+  } while(0)
+
+#else
+
+#define ACORN_ASSERT_LINE(_cond, _file, _line) \
+  do { } while(0)
+
+#endif
+
+#define ACORN_ASSERT(_cond) \
+        ACORN_ASSERT_LINE(_cond, __FILE__, __LINE__)
+
+#define ACORN_ASSERT_DIR(d) \
+  ACORN_ASSERT((unsigned int)(d) < 3)
+#define ACORN_ASSERT_TRI_IDX(t) \
+  ACORN_ASSERT((unsigned int)(t) < this->tris_.size())
+#define ACORN_ASSERT_VERT_IDX(v) \
+  ACORN_ASSERT((unsigned int)(v) < this->verts_.size())
+#define ACORN_ASSERT_EDGE_IDX(e) \
+  ACORN_ASSERT((unsigned int)(e) < this->edges_.size())
+#define ACORN_ASSERT_TRI(t) \
+  ACORN_ASSERT_TRI_IDX(&tri - &this->tris_[0])
+
+
+
+  
 namespace mesh_core
 {
 
@@ -110,6 +147,7 @@ public:
     // In a well formed mesh there should be 2 tris adjacent to every edge.
     std::vector<EdgeTri> tris_;
   };
+
   struct Vertex
   {
     // Note: the position of the vertex is in the Mesh::verts_ array.
@@ -184,8 +222,29 @@ public:
   {
     return &edge - &edges_[0];
   }
+  static int nextDir(int dir)
+  {
+    return (dir + 1) % 3;
+  }
+  static int prevDir(int dir)
+  {
+    return (dir + 2) % 3;
+  }
+  static int otherVertIndex(const Edge& edge, int this_vert_index)
+  {
+    ACORN_ASSERT(this_vert_index == edge.verts_[0] ||
+                 this_vert_index == edge.verts_[1]);
+    return this_vert_index == edge.verts_[0] ?
+                              edge.verts_[1] :
+                              edge.verts_[0];
+  }
 
 private:
+  /// add a triangle defined by 3 existing vertices. 
+  void add(int a,
+           int b,
+           int c);
+
   // find/add a vertex and return its (possibly new) index.
   int addVertex(const Eigen::Vector3d& a);
 
@@ -218,6 +277,31 @@ private:
 
   // set the mark_ field in all triangles to the given value
   void clearMark(int value = 0);
+
+  // find a gap and return an edge touching the gap.  NULL if no gaps.
+  // Used by fillGaps()
+  Edge* findGap();
+
+  // fill a gap touching this edge. Used by fillGaps()
+  void fillGap(Edge& first_edge);
+
+  // triangulate a polygon described by verts.
+  // Triiangles are added to mesh.
+  // Winding order of triangles is reverse of vert order.
+  // verts contains verts_ indices.
+  //
+  // if partial_ok is true then generatePolygon may only triangulate part of
+  // thepolygon (but always at least 1 triangle).  If false the entire polygon
+  // will be triangulated.
+  void generatePolygon(const std::vector<int> verts, bool partial_ok);
+
+  struct GapPoint;
+
+  // add a gap-filling triangle (used by fillGaps())
+  void addGapTri(const GapPoint *p, double direction);
+
+  // check whether point is an ear.  Used by fillGap().
+  static void calcEarState(GapPoint& point);
 
   // Debug asserts
   void assertValidTri(const Triangle& tri, const char *msg) const;
@@ -252,29 +336,13 @@ private:
   // set true by setAdjacentTriangles()
   bool adjacent_tris_valid_;
 
-
-
 };
 
 }
 
-#if MESH_CORE__MESH__ENABLE_DEBUG
-#define ACORN_ASSERT_LINE(_cond, _file, _line) \
-  do { \
-    if (!(_cond)) { \
-      logInform("Failed assert at %s:%d  -- %s", \
-        _file, \
-        _line, \
-        #_cond); \
-      abort(); \
-    } \
-  } while(0)
 
-#else
 
-#define ACORN_ASSERT_LINE(_cond, _file, _line) \
-  do { } while(0)
-
+#if !MESH_CORE__MESH__ENABLE_DEBUG
 inline void mesh_core::Mesh::assertValidTri(
       const Triangle& tri, 
       const char *msg) const
@@ -289,23 +357,7 @@ inline void mesh_core::Mesh::assertValidEdge(
       const Edge& edge,
       const char *msg) const
 {}
-
 #endif
-
-#define ACORN_ASSERT(_cond) \
-        ACORN_ASSERT_LINE(_cond, __FILE__, __LINE__)
-
-#define ACORN_ASSERT_DIR(d) \
-  ACORN_ASSERT((unsigned int)(d) < 3)
-#define ACORN_ASSERT_TRI_IDX(t) \
-  ACORN_ASSERT((unsigned int)(t) < this->tris_.size())
-#define ACORN_ASSERT_VERT_IDX(v) \
-  ACORN_ASSERT((unsigned int)(v) < this->verts_.size())
-#define ACORN_ASSERT_EDGE_IDX(e) \
-  ACORN_ASSERT((unsigned int)(e) < this->edges_.size())
-#define ACORN_ASSERT_TRI(t) \
-  ACORN_ASSERT_TRI_IDX(&tri - &this->tris_[0])
-  
 
 #endif
 

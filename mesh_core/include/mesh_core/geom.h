@@ -135,6 +135,10 @@ public:
   LineSegment2D(const Eigen::Vector2d& a = Eigen::Vector2d(0,0),
          const Eigen::Vector2d& b = Eigen::Vector2d(0,0));
 
+  // change the endpoints
+  void initialize(const Eigen::Vector2d& a = Eigen::Vector2d(0,0),
+         const Eigen::Vector2d& b = Eigen::Vector2d(0,0));
+
   // calculate intersection of 2 line segments.
   // True if line segments intersect.
   // intersection is filled in whether segments intersect or

@@ -35,6 +35,7 @@
 /* Author: Acorn Pooley */
 
 #include <mesh_core/mesh.h>
+#include <mesh_core/geom.h>
 #include <console_bridge/console.h>
 
 mesh_core::Mesh::Mesh(double epsilon)
@@ -60,23 +61,19 @@ void mesh_core::Mesh::reserve(int ntris, int nverts)
 }
 
 void mesh_core::Mesh::add(
-      const Eigen::Vector3d& a,
-      const Eigen::Vector3d& b,
-      const Eigen::Vector3d& c)
+      int a,
+      int b,
+      int c)
 {
-  verts_.reserve(verts_.size()+3);
-  int ai = addVertex(a);
-  int bi = addVertex(b);
-  int ci = addVertex(c);
-  if (ai == bi || ai == ci || bi == ci)
+  if (a == b || a == c || b == c)
     return;
 
   int tri_idx = tris_.size();
   tris_.resize(tri_idx + 1);
   Triangle &t = tris_.back();
-  t.verts_[0] = ai;
-  t.verts_[1] = bi;
-  t.verts_[2] = ci;
+  t.verts_[0] = a;
+  t.verts_[1] = b;
+  t.verts_[2] = c;
   t.submesh_ = -1;
   t.mark_ = 0;
 
@@ -106,6 +103,19 @@ void mesh_core::Mesh::add(
 
   assertValidTri_PreAdjacentValid(t, "add tri");
 }
+
+void mesh_core::Mesh::add(
+      const Eigen::Vector3d& a,
+      const Eigen::Vector3d& b,
+      const Eigen::Vector3d& c)
+{
+  verts_.reserve(verts_.size()+3);
+  int ai = addVertex(a);
+  int bi = addVertex(b);
+  int ci = addVertex(c);
+  add(ai, bi, ci);
+}
+
 
 void mesh_core::Mesh::add(
       double *a,
@@ -572,87 +582,423 @@ void mesh_core::Mesh::assertValidEdge(
 }
 
 
-#if XXXXXXXX
 void mesh_core::Mesh::fillGaps()
 {
   findSubmeshes();
 
   for (;;)
   {
-    int edge_idx = findGap();
-    if (edge_idx < 0)
+    Edge* edge = findGap();
+    if (!edge)
       break;
-    fillGap(edges_[edge_idx]);
+    fillGap(*edge);
   }
 }
 
-void mesh_core::Mesh::findGap()
+mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
 {
   std::vector<Edge>::iterator edge = edges_.begin();
   std::vector<Edge>::iterator edge_end = edges_.end();
-  for (int idx = 0 ; edge != edge_end ; ++edge, ++idx)
+  for (; edge != edge_end ; ++edge)
   {
-    // edge which is a gap?
-    if (edge->tris_[0] >=0 && edge->tris_[1] < 0)
-      return idx;
+    // edge has only 1 tri?
+    if (edge->tris_.size() == 1)
+      return &*edge;
   }
-  return -1; // no gaps found
+  return NULL; // no gaps found
 }
 
-void mesh_core::Mesh::fillGap(Edge& edge)
+struct GapEdge
 {
-  std::vector<Edge*> edges;
-  edges.reserve(tris_.size());
+  int vert_idx_;
+  int edge_idx_;
+  int tri_idx_;
+  bool correct_winding_;
+  bool connected_to_same_tri_;
+};
 
-  edges.push_back(edge);
+void mesh_core::Mesh::fillGap(Edge& first_edge)
+{
+  ACORN_ASSERT(first_edge.tris_.size() == 1);
 
-  if (edge->tris_[0] < 0 || edge->tris_[1] >= 0)
+  EdgeTri& first_et = first_edge.tris_[0];
+  Triangle &first_tri = tris_[first_et.tri_idx_];
+
+  std::vector<GapEdge> loop;
+  loop.reserve(tris_.size());
+  int current_vtx = -1;
+  int current_edge = edgeIndex(first_edge);
+
+  loop.resize(1);
+  loop[0].edge_idx_ = edgeIndex(first_edge);
+  loop[0].correct_winding_ = true;
+  loop[0].tri_idx_ = first_et.tri_idx_;
+
+  // follow edge in triangle's increasing-dir order 
+  if (first_tri.verts_[first_et.tri_dir_] == first_edge.verts_[0])
   {
-    ACORN_ASSERT(0);
-    logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
+    loop[0].vert_idx_ = first_edge.verts_[0];
+    current_vtx = first_edge.verts_[1];
+  }
+  else
+  {
+    ACORN_ASSERT(first_tri.verts_[first_et.tri_dir_] == first_edge.verts_[1]);
+    loop[0].vert_idx_ = first_edge.verts_[1];
+    current_vtx = first_edge.verts_[0];
+  }
+
+  std::vector<GapEdge> new_edges;
+  new_edges.reserve(10);
+
+  // look for more gap edges until we have a loop
+  int loop_start_index = -1;
+  do
+  {
+    Vertex& vtx = vert_info_[current_vtx];
+    new_edges.clear();
+    bool found_correct_winding = false;
+
+    // check all edges touching current vertex
+    for (int i = 0 ; i < vtx.edges_.size() ; ++i)
+    {
+      if (vtx.edges_[i] == current_edge)
+        continue;
+
+      Edge& vedge = edges_[vtx.edges_[i]];
+      if (vedge.tris_.size() == 2)
+        continue;
+
+      new_edges.resize(new_edges.size() + 1);
+      GapEdge& ge = new_edges.back();
+
+      ge.vert_idx_ = current_vtx;
+      ge.edge_idx_ = vtx.edges_[i];
+      ge.tri_idx_ = -1; // filled in below
+      ge.connected_to_same_tri_ = false;
+      ge.correct_winding_ = false;
+
+      // see if there are any triangles along this edge with the correct winding
+      for (int j = 0 ; j < vedge.tris_.size() ; ++j)
+      {
+        EdgeTri& et = vedge.tris_[j];
+        Triangle& tri = tris_[et.tri_idx_];
+        ge.tri_idx_ = et.tri_idx_;
+
+        // does the edge go in positive winding around triangle?
+        if (tri.verts_[et.tri_dir_] == current_vtx)
+        {
+          if (!found_correct_winding)
+          {
+            new_edges.clear();
+            found_correct_winding = true;
+          }
+          ge.correct_winding_ = true;
+          new_edges.push_back(ge);
+        }
+        else if (!found_correct_winding)
+        {
+          new_edges.push_back(ge);
+        }
+      }
+    }
+
+    ACORN_ASSERT(!new_edges.empty());
+
+    // I expect to be able to find a winding in the correct direction for
+    // most meshes.
+    if (!found_correct_winding)
+    {
+      logWarn("mesh_core::Mesh::fillGap() found no good edges");
+    }
+
+    if (new_edges.size() > 1)
+    {
+      // this is not necessarily an error.  Just means complex cracks.
+      logInform("Found %d gap edges at vtx %d",
+        int(new_edges.size()), 
+        current_vtx);
+
+
+      // TODO: use some heuristic to decide which edge to follow?
+    }
+
+    ACORN_ASSERT(!new_edges.empty());
+    if (new_edges.empty())
+    {
+      loop_start_index = 0;
+      break;
+    }
+
+    // Now we have a number of candidate edges.  Use the first one
+    loop.push_back(new_edges[0]);
+
+    GapEdge& ge = loop.back();
+    Edge& edge = edges_[ge.edge_idx_];
+
+    current_edge = ge.edge_idx_;
+    current_vtx = otherVertIndex(edge, current_vtx);
+
+    // check to see if we have a loop.
+    for (int i = loop.size() - 2 ; i >= 0 ; --i)
+    {
+      if (loop[i].vert_idx_ == current_vtx)
+      {
+        loop_start_index = i;
+        break;
+      }
+    }
+  }
+  while (loop_start_index == -1);
+
+
+  // Now we have a loop of vertices around the gap.
+  // Generate triangles to fill in the gap
+
+  std::vector<int> loop_verts;
+  loop_verts.reserve(loop.size() - loop_start_index);
+  for (int i = loop_start_index ;  i < loop.size() ; ++i)
+  {
+    loop_verts.push_back(loop[i].vert_idx_);
+  }
+
+  ACORN_ASSERT(loop_verts.size() >= 3);
+
+  generatePolygon(loop_verts, true);
+}
+
+static inline double cross2d(const Eigen::Vector2d& a, const Eigen::Vector2d& b)
+{
+  return a.x() * b.y() - a.y() * b.x();
+}
+
+struct mesh_core::Mesh::GapPoint
+{
+  enum State
+  {
+    CONVEX,
+    REFLEX,
+    EAR,
+  };
+
+  State state_;
+  int orig_vert_idx_;       // index of vertex in mesh
+  Eigen::Vector2d v2d_;     // vertex
+  Eigen::Vector2d delta_;   // next.v2d_ - v2d_
+  Eigen::Vector2d norm_;    // norm - perpendicular normal pointing inside
+  double d_;                // -(norm_ dot v2d_)
+
+  GapPoint *next_;
+  GapPoint *prev_;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+// Decide if point is an ear or not.
+void mesh_core::Mesh::calcEarState(GapPoint& point)
+{
+  double cr = cross2d(point.prev_->delta_, point.delta_);
+  if (cr < 0.0)
+  {
+    point.state_ = GapPoint::REFLEX;
     return;
   }
 
-  int edge_idx = edgeIdx(edge);
-  Triangle& tri = tris_[edge->tris_[0]];
-  int dir = 0;
-  for (;; ++dir)
+  const GapPoint* p[3];
+  p[0] = point.prev_;
+  p[1] = &point;
+  p[2] = point.next_;
+  const GapPoint *o = p[2]->next_;
+
+  // assert at least 4 points
+  ACORN_ASSERT(p[0] != p[1]);
+  ACORN_ASSERT(p[0] != p[2]);
+  ACORN_ASSERT(p[0] != o);
+
+  // any other vertices inside the triangle?  If so it is not an ear.
+  for (; o != p[0] ; o = o->next_)
   {
-    if (dir == 3)
+    for (int j = 0; j < 3 ; ++j)
     {
-      ACORN_ASSERT(0);
-      logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
-      return;
+      // point is inside triangle.  Not an ear.
+      if (j == 3)
+      {
+        point.state_ = GapPoint::CONVEX;
+        return;
+      }
+        
+      double dist = p[j]->norm_.dot(o->v2d_) + p[j]->d_;
+      if (dist <= 0.0)
+        break;
     }
-    if (tri.edges_[dir] == edge_idx)
+  }
+  point.state_ = GapPoint::EAR;
+}
+
+void mesh_core::Mesh::addGapTri(
+      const GapPoint *p,
+      double direction)
+{
+  if (direction < 0.0)
+  {
+    add(p->prev_->orig_vert_idx_,
+        p->orig_vert_idx_,
+        p->next_->orig_vert_idx_);
+  }
+  else
+  {
+    add(p->prev_->orig_vert_idx_,
+        p->next_->orig_vert_idx_,
+        p->orig_vert_idx_);
+  }
+}
+
+// generate a polygon given a loop of vertex indices
+// if partial_ok is true then it will add at least one tri but may not close
+// the entire oplygon.  Otherwise it will close the entire polygon even if the
+// polygon has holes.
+void mesh_core::Mesh::generatePolygon(
+    const std::vector<int> verts,
+    bool partial_ok)
+{
+  int nverts = verts.size();
+
+  if (nverts < 3)
+    return;
+
+  if (nverts <= 4)
+  {
+    add(verts[0], verts[1], verts[2]);
+    if (nverts == 4)
+      add(verts[1], verts[2], verts[3]);
+    return;
+  }
+
+  // get array of verts
+  EigenSTL::vector_Vector3d points3d;
+  points3d.resize(nverts);
+  for (int i = 0 ; i < nverts ; i++)
+    points3d[i] = verts_[verts[i]];
+
+  // find a plane through (or near) the points
+  PlaneProjection proj(points3d);
+
+  // project points onto the plane
+  std::vector<GapPoint> points;
+  points.resize(nverts);
+  int xmin = 0;
+  for (int i = 0 ; i < nverts ; i++)
+  {
+    points[i].orig_vert_idx_ = verts[i];
+    points[i].v2d_ = proj.project(points3d[i]);
+    if (points[i].v2d_.x() < points[xmin].v2d_.x())
+      xmin = i;
+  }
+
+  // find winding direction
+  // use cross product sign at extreme (xmin) point, guaranteed to be convex.
+  // point.cross_ and direction have same sign if corner is convex.
+  // direction is positive if loop is ccw
+  double direction = 1.0;
+  for (int i = 0 ; i < nverts ; i++)
+  {
+    int idx  = (xmin + i) % nverts;
+    int idxn = (xmin + i + 1) % nverts;
+    int idxp = (xmin + i + nverts - 1) % nverts;
+    GapPoint& p = points[idx];
+    GapPoint& pn = points[idxn];
+    GapPoint& pp = points[idxp];
+
+    Eigen::Vector2d deltap = p.v2d_ - pp.v2d_;
+    Eigen::Vector2d deltan = pn.v2d_ - p.v2d_;
+    direction = cross2d(deltap, deltan);
+
+    if (std::abs(direction) > std::numeric_limits<double>::epsilon())
       break;
   }
 
-
-
-  Triangle *t = &tris_[edge->tris_[0]];
-  for (int dir = 0 ; dir < 3 ; ++dir)
+  // if direction is backwards, use reverse direction
+  // After this all processing is done in ccw order
+  if (direction < 0.0)
   {
-    if (t->edges_
+    GapPoint *p = &points[0];
+    GapPoint *pp = &points[nverts - 1];
+    GapPoint *pn = &points[1];
+    for (int i = 0 ; i < nverts ; i++)
+    {
+      p->next_ = pp;
+      p->prev_ = pn;
+      pp = p;
+      p = pn;
+      pn = &points[(i+2)%nverts];
+    }
   }
+  else
+  {
+    GapPoint *p = &points[0];
+    GapPoint *pp = &points[nverts - 1];
+    GapPoint *pn = &points[1];
+    for (int i = 0 ; i < nverts ; i++)
+    {
+      p->next_ = pn;
+      p->prev_ = pp;
+      pp = p;
+      p = pn;
+      pn = &points[(i+2)%nverts];
+    }
+  }
+
+  // find delta_ - vector from point to next point
+  // find norm_  - perpendicular to delta_ pointing to inside of polygon
+  // find d_     - norm_ dot v2d_
+  for (int i = 0 ; i < nverts ; i++)
+  {
+    GapPoint *p = &points[i];
+    p->delta_ = p->next_->v2d_ - p->v2d_;
+    p->norm_.x() = -p->delta_.y();
+    p->norm_.y() = p->delta_.x();
+    p->d_ = p->norm_.dot(p->v2d_);
+  }
+
+  // categorize each point
+  for (int i = 0 ; i < nverts ; i++)
+  {
+    calcEarState(points[i]);
+  }
+
+  GapPoint *p = &points[0];
+  for (;;)
+  {
+    if (p->state_ != GapPoint::EAR)
+    {
+      p = p->next_;
+      continue;
+    }
+
+    // found an ear
+    addGapTri(p, direction);
+
+    p->next_->prev_ = p->prev_;
+    p->prev_->next_ = p->next_;
+    p = p->prev_;
+
+    if (--nverts == 4)
+      break;
+
+    p->delta_ = p->next_->v2d_ - p->v2d_;
+    p->norm_.x() = -p->delta_.y();
+    p->norm_.y() = p->delta_.x();
+    p->d_ = p->norm_.dot(p->v2d_);
+
+    calcEarState(*p);
+    if (p->state_ != GapPoint::EAR)
+    {
+      p = p->next_;
+      calcEarState(*p);
+    }
+  }
+
+  // last 4 verts - add last 2 tris
+  addGapTri(p, direction);
+  addGapTri(p->next_->next_, direction);
 }
 
-void mesh_core::Mesh::fillGap(Edge* edge)
-{
-  std::vector<Edge*> edges;
-  edges.reserve(tris_.size());
-
-  edges.push_back(edge);
-
-  if (edge->tris_[0] < 0 || edge->tris_[1] >= 0)
-  {
-    logError("PROGRAMMING ERROR at %s:%d",__FILE__,__LINE__);
-    return;
-  }
-  Triangle *t = &tris_[edge->tris_[0]];
-  for (int dir = 0 ; dir < 3 ; ++dir)
-  {
-    if (t->edges_
-  }
-}
-#endif
