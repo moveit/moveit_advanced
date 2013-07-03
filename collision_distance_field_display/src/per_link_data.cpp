@@ -451,7 +451,7 @@ namespace moveit_rviz_plugin
 
       obj->addIntProperty("NTris", -1, "Number of tris to show");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
-      obj->addIntProperty("DivideCnt", 0, "number of times to split");
+      obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
       obj->addIntProperty("DivideShow", 0, "which result to show");
 
       per_link_objects.addVisObject(obj);
@@ -479,15 +479,43 @@ namespace moveit_rviz_plugin
           mesh_core::Mesh mesh;
           mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
 
+          mesh_core::Plane plane(mesh.getVerts());
+
+#if 1
+          {
+            ROS_INFO("Plane: %f %f %f %f", plane.getA(), plane.getB(), plane.getC(), plane.getD());
+            mesh_core::PlaneProjection proj(mesh.getVerts());
+            if (!shapes_)
+              shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+            shapes_->addAxis(proj.getOrientation(), proj.getOrigin());
+          }
+#endif
+          
+          mesh_core::Mesh a, b;
+          mesh.slice(plane, a, b);
+
+          // draw the mesh
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
                                             link_->getDisplay()->getDisplayContext(), 
                                             getSceneNode(), 
                                             NULL,
                                             base_->getColor()));
+#if 1
+          mesh_core::Mesh *mp = 
+                        base_->getIntProperty("WhichHalf")->getInt() == 0 ? &mesh :
+                        base_->getIntProperty("WhichHalf")->getInt() == 1 ? &a :
+                                                                            &b;
+          ROS_INFO("draw mesh with %d tris %d verts",mp->getTriCount(), mp->getVertCount());
+          mesh_shape_->reset(
+                        mp,
+                        base_->getIntProperty("FirstTri")->getInt(),
+                        base_->getIntProperty("NTris")->getInt());
+#else
           mesh_shape_->reset(
                         &mesh,
                         base_->getIntProperty("FirstTri")->getInt(),
                         base_->getIntProperty("NTris")->getInt());
+#endif
         }
         else
         {
