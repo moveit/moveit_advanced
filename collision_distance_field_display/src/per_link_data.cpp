@@ -452,7 +452,7 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("NTris", -1, "Number of tris to show");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
       obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
-      obj->addIntProperty("DivideShow", 0, "which result to show");
+      obj->addIntProperty("WhichGap", -1, "show one filled gap");
 
       per_link_objects.addVisObject(obj);
     }
@@ -463,6 +463,7 @@ namespace moveit_rviz_plugin
       centers_.clear();
       radii_.clear();
       mesh_shape_.reset();
+      neigbor_mesh_shape_.reset();
 
       if (!getBool())
         return;
@@ -476,6 +477,7 @@ namespace moveit_rviz_plugin
         const shapes::Mesh *mesh_shape = dynamic_cast<const shapes::Mesh*>(shape.get());
         if (mesh_shape)
         {
+          mesh_core::Mesh::enableDebugging(true);
           mesh_core::Mesh mesh;
           mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
           mesh.fillGaps();
@@ -488,7 +490,8 @@ namespace moveit_rviz_plugin
             mesh_core::PlaneProjection proj(mesh.getVerts());
             if (!shapes_)
               shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
-            shapes_->addAxis(proj.getOrientation(), proj.getOrigin());
+            shapes_->setDefaultColor(Eigen::Vector4f(1,1,1,0.3));
+            shapes_->addAxis(proj.getOrientation(), proj.getOrigin(), 0.2);
           }
 #endif
           
@@ -501,22 +504,49 @@ namespace moveit_rviz_plugin
                                             getSceneNode(), 
                                             NULL,
                                             base_->getColor()));
-#if 1
           mesh_core::Mesh *mp = 
                         base_->getIntProperty("WhichHalf")->getInt() == 0 ? &mesh :
                         base_->getIntProperty("WhichHalf")->getInt() == 1 ? &a :
                                                                             &b;
-          ROS_INFO("draw mesh with %d tris %d verts",mp->getTriCount(), mp->getVertCount());
-          mesh_shape_->reset(
-                        mp,
-                        base_->getIntProperty("FirstTri")->getInt(),
-                        base_->getIntProperty("NTris")->getInt());
-#else
-          mesh_shape_->reset(
-                        &mesh,
-                        base_->getIntProperty("FirstTri")->getInt(),
-                        base_->getIntProperty("NTris")->getInt());
-#endif
+
+          int which_gap = base_->getIntProperty("WhichGap")->getInt();
+          if (which_gap >= 0)
+          {
+            const std::vector<mesh_core::Mesh::GapDebugInfo>& gdi_list = mp->getGapDebugInfo();
+            if (which_gap < gdi_list.size())
+            {
+              const mesh_core::Mesh::GapDebugInfo& gdi = gdi_list[which_gap];
+
+              ROS_INFO("draw gap %d/%d with %d verts",which_gap, int(gdi_list.size()), int(gdi.verts_.size()));
+
+              neigbor_mesh_shape_.reset(new mesh_ros::RvizMeshShape(
+                                            link_->getDisplay()->getDisplayContext(), 
+                                            getSceneNode(), 
+                                            NULL,
+                                            Eigen::Vector4f(1,1,0,1)));
+              neigbor_mesh_shape_->reset(
+                            mp,
+                            gdi.neigbor_tris_,
+                            base_->getIntProperty("FirstTri")->getInt(),
+                            base_->getIntProperty("NTris")->getInt());
+
+              mesh_shape_->reset(
+                          mp,
+                          gdi.gap_tris_,
+                          base_->getIntProperty("FirstTri")->getInt(),
+                          base_->getIntProperty("NTris")->getInt());
+            }
+          }
+          else
+          {
+            ROS_INFO("draw mesh with %d tris %d verts",mp->getTriCount(), mp->getVertCount());
+            mesh_shape_->reset(
+                          mp,
+                          base_->getIntProperty("FirstTri")->getInt(),
+                          base_->getIntProperty("NTris")->getInt());
+          }
+
+
         }
         else
         {
@@ -526,6 +556,7 @@ namespace moveit_rviz_plugin
     }
   private:
     boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_shape_;
+    boost::shared_ptr<mesh_ros::RvizMeshShape> neigbor_mesh_shape_;
   };
 }
 
