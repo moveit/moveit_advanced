@@ -1102,7 +1102,6 @@ void mesh_core::Mesh::slice(
       Mesh& a,
       Mesh& b) const
 {
-  
   std::vector<signed char> clipcodes;
   std::vector<double> dists;
   clipcodes.resize(verts_.size());
@@ -1248,6 +1247,9 @@ void mesh_core::Mesh::slice(
         newmesh.add(v[0], v[2], v[3]);
     }
   }
+
+  a.fillGaps();
+  b.fillGaps();
 }
 
 
