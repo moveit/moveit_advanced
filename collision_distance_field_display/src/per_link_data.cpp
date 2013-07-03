@@ -449,7 +449,7 @@ namespace moveit_rviz_plugin
                                   PerLinkObjBase::SPHERES,
                                   0.005);
 
-      obj->addIntProperty("NTris", 1000000, "Number of tris to show");
+      obj->addIntProperty("NTris", -1, "Number of tris to show");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
       obj->addIntProperty("DivideCnt", 0, "number of times to split");
       obj->addIntProperty("DivideShow", 0, "which result to show");
@@ -479,35 +479,15 @@ namespace moveit_rviz_plugin
           mesh_core::Mesh mesh;
           mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
 
-logInform("00 Draw %d tris %d verts",mesh.getTriCount(), mesh.getVertCount());
-
-          // draw (part of) the mesh
-          std::vector<int> draw_tris;
-          mesh.getTris(draw_tris);
-
-
-          int tri_cnt = draw_tris.size() / 3;
-logInform("AA Draw %d tris", tri_cnt);
-          int tri_cnt_max = base_->getIntProperty("NTris")->getInt();
-          int tri0 = base_->getIntProperty("FirstTri")->getInt();
-
-          tri_cnt_max = std::max(1,tri_cnt_max);
-          tri0 = std::min(tri0, tri_cnt - 1);
-          tri0 = std::max(0,tri0);
-
-          int ntris = std::min(tri_cnt_max, tri_cnt);
-          if (ntris + tri0 > tri_cnt)
-            ntris = tri_cnt - tri0;
-
-          mesh_core::Mesh draw_mesh;
-logInform("BB Draw %d tris starting at %d   nverts=%d",ntris, tri0, mesh.getVerts().size());
-          draw_mesh.add(ntris, &draw_tris[tri0*3], mesh.getVerts());
-logInform("CC Draw %d tris %d verts",draw_mesh.getTriCount(), draw_mesh.getVertCount());
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
                                             link_->getDisplay()->getDisplayContext(), 
                                             getSceneNode(), 
-                                            &draw_mesh, 
+                                            NULL,
                                             base_->getColor()));
+          mesh_shape_->reset(
+                        &mesh,
+                        base_->getIntProperty("FirstTri")->getInt(),
+                        base_->getIntProperty("NTris")->getInt());
         }
         else
         {
