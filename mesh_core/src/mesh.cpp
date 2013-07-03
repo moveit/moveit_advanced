@@ -38,6 +38,8 @@
 #include <mesh_core/geom.h>
 #include <console_bridge/console.h>
 
+bool mesh_core::Mesh::debug_ = false;
+
 mesh_core::Mesh::Mesh(double epsilon)
   : have_degenerate_edges_(false)
   , number_of_submeshes_(-1)
@@ -838,6 +840,26 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
   }
   while (loop_start_index == -1);
 
+  int tri_cnt_before = tris_.size();
+  if (debug_)
+  {
+    gap_debug_.resize(gap_debug_.size() + 1);
+    GapDebugInfo& db = gap_debug_.back();
+    int nloop = loop.size() - loop_start_index;
+    db.points_.resize(nloop);
+    db.verts_.resize(nloop);
+    db.neigbor_tris_.resize(nloop);
+    db.gap_tris_.reserve(nloop);
+
+    for (int i = 0 ; i < nloop ; ++i)
+    {
+      GapEdge& ge = loop[loop_start_index + i];
+      db.verts_[i] = ge.vert_idx_;
+      db.points_[i] = verts_[ge.vert_idx_];
+      db.neigbor_tris_[i] = ge.tri_idx_;
+    }
+  }
+
   logInform("  GOT LOOP size=%d start=%d cnt=%d",
     int(loop.size()),
     loop_start_index,
@@ -856,6 +878,13 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
   ACORN_ASSERT(loop_verts.size() >= 3);
 
   generatePolygon(loop_verts, true);
+
+  if (debug_)
+  {
+    GapDebugInfo& db = gap_debug_.back();
+    for (int i = tri_cnt_before ; i < tris_.size() ; i++)
+      db.gap_tris_.push_back(i);
+  }
 }
 
 static inline double cross2d(const Eigen::Vector2d& a, const Eigen::Vector2d& b)
@@ -1059,14 +1088,32 @@ void mesh_core::Mesh::generatePolygon(
     calcEarState(points[i]);
   }
 
+  logInform("  enter loop");
+
+  int cnt = 0;
   GapPoint *p = &points[0];
   for (;;)
   {
+    logInform("  check point %3d  state=%d  nverts=%3d",
+      int(p - &points[0]),
+      int(p->state_),
+      nverts);
+
     if (p->state_ != GapPoint::EAR)
     {
+      cnt++;
+      if (cnt > nverts)
+      {
+        logWarn("  No ears and %d verts left in polygon -- ABORT",nverts);
+        return;
+      }
+
       p = p->next_;
       continue;
     }
+
+    logInform("  Remove ear %d",int(p - &points[0]));
+    cnt = 0;
 
     // found an ear
     addGapTri(p, direction);
@@ -1094,6 +1141,8 @@ void mesh_core::Mesh::generatePolygon(
   // last 4 verts - add last 2 tris
   addGapTri(p, direction);
   addGapTri(p->next_->next_, direction);
+
+  logInform("generatePolygon() DONE");
 }
 
 

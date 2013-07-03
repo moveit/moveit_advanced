@@ -227,6 +227,31 @@ public:
   // print index info
   void print() const;
 
+  // Info about a gap for debugging
+  struct GapDebugInfo
+  {
+    // vertices of gap loop
+    EigenSTL::vector_Vector3d points_;
+
+    // vertex indices of gap loop
+    std::vector<int> verts_;
+
+    // tris used to fill gap
+    std::vector<int> gap_tris_;
+    
+    // tris neighboring gap
+    std::vector<int> neigbor_tris_;
+  };
+
+  // get gap debug info
+  const std::vector<GapDebugInfo>& getGapDebugInfo() const
+  {
+    return gap_debug_;
+  }
+
+  // enable debugging (debugGapInfo())
+  static void enableDebugging(bool enable);
+
   int triIndex(const Triangle& tri) const
   {
     return &tri - &tris_[0];
@@ -349,10 +374,20 @@ private:
   // set true by setAdjacentTriangles()
   bool adjacent_tris_valid_;
 
+
+  // enable debugging features
+  static bool debug_;
+
+  // info about filled gaps
+  std::vector<GapDebugInfo> gap_debug_;
 };
 
 }
 
+inline void mesh_core::Mesh::enableDebugging(bool enable)
+{
+  debug_ = enable;
+}
 
 
 #if !MESH_CORE__MESH__ENABLE_DEBUG
