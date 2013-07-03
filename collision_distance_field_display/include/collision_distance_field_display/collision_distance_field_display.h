@@ -119,6 +119,8 @@ public:
   // debug iteration property value
   int getDebugIteration() const;
 
+  rviz::DisplayContext* getDisplayContext() { return context_; }
+
 protected:
   virtual void onInitialize();
   virtual void onEnable();

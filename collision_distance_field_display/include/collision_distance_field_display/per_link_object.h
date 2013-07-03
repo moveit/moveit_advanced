@@ -112,6 +112,15 @@ public:
 
   void subObjEnabled();
 
+  // add an extra property.  changed() is called when property changes.
+  void addIntProperty(
+                const std::string& name,
+                int value,
+                const std::string& descrip);
+
+  // return property created with addIntProperty()
+  rviz::IntProperty* getIntProperty(const std::string& name);
+
 protected:
   PerLinkObjBase(rviz::Property *parent,
                 const std::string& name,
@@ -132,6 +141,7 @@ private:
   rviz::ColorProperty* color_;
   rviz::FloatProperty* alpha_;
   rviz::FloatProperty* size_;
+  std::map<std::string, rviz::Property*> extra_property_map_;
   Style style_;
   std::vector<PerLinkSubObjBase*> sub_objs_;
   bool avoid_enable_update_;

@@ -49,6 +49,7 @@
 
 #include <mesh_core/mesh.h>
 #include <mesh_core/geom.h>
+#include <mesh_ros/mesh_rviz.h>
 
 
 namespace moveit_rviz_plugin
@@ -409,11 +410,11 @@ namespace moveit_rviz_plugin
       const shapes::ShapeConstPtr& shape = lm->getShape();
       if (shape)
       {
-        const shapes::Mesh *mesh = dynamic_cast<const shapes::Mesh*>(shape.get());
-        if (mesh)
+        const shapes::Mesh *mesh_shape = dynamic_cast<const shapes::Mesh*>(shape.get());
+        if (mesh_shape)
         {
           EigenSTL::vector_Vector3d points;
-          mesh_core::appendPoints(points, mesh->vertex_count, mesh->vertices);
+          mesh_core::appendPoints(points, mesh_shape->vertex_count, mesh_shape->vertices);
 
           shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
           shapes_->addPoints(points);
@@ -424,6 +425,105 @@ namespace moveit_rviz_plugin
         }
       }
     }
+  };
+}
+
+namespace moveit_rviz_plugin
+{
+  // Fit plane to link vertices and draw plane as an axis
+  class LinkObj_LinkMesh : public PerLinkSubObj
+  {
+  public:
+    LinkObj_LinkMesh(PerLinkObjBase *base, DFLink *link)
+      : PerLinkSubObj(base, link)
+    { }
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      PerLinkObj<LinkObj_LinkMesh>* obj = new PerLinkObj<LinkObj_LinkMesh>(
+                                  parent,
+                                  "Show Link Mesh",
+                                  "Show mesh for link, or subdivided partial mesh",
+                                  QColor(0, 255, 0),
+                                  1.0,
+                                  PerLinkObjBase::SPHERES,
+                                  0.005);
+
+      obj->addIntProperty("NTris", 1000000, "Number of tris to show");
+      obj->addIntProperty("FirstTri", 0, "first tri to show");
+
+      per_link_objects.addVisObject(obj);
+    }
+
+    virtual void changed()
+    {
+      shapes_.reset();
+      centers_.clear();
+      radii_.clear();
+      mesh_shape_.reset();
+
+      if (!getBool())
+        return;
+
+      robot_relative_ = false;
+
+      const robot_model::LinkModel* lm = link_->getLinkModel();
+      const shapes::ShapeConstPtr& shape = lm->getShape();
+      if (shape)
+      {
+        const shapes::Mesh *mesh_shape = dynamic_cast<const shapes::Mesh*>(shape.get());
+        if (mesh_shape)
+        {
+          mesh_core::Mesh mesh;
+          int tri_cnt = mesh_shape->triangle_count;
+          int tri_cnt_max = base_->getIntProperty("NTris")->getInt();
+          int tri0 = base_->getIntProperty("FirstTri")->getInt();
+
+          tri_cnt_max = std::max(1,tri_cnt_max);
+          tri0 = std::min(tri0, tri_cnt - 1);
+          tri0 = std::max(0,tri0);
+
+          int ntris = std::min(tri_cnt_max, tri_cnt);
+          if (ntris + tri0 > tri_cnt)
+            ntris = tri_cnt - tri0;
+          mesh.add(ntris, (int*)&mesh_shape->triangles[tri0 * 3], mesh_shape->vertices);
+
+if (ntris < 10)
+{
+  logInform("===========");
+  for (int i = 0; i < ntris ; i++)
+  {
+    logInform("tri[%4d] = %4d %4d %4d    (%7.3f %7.3f %7.3f) (%7.3f %7.3f %7.3f) (%7.3f %7.3f %7.3f)",
+        i+tri0,
+        mesh_shape->triangles[(i + tri0) * 3 + 0],
+        mesh_shape->triangles[(i + tri0) * 3 + 1],
+        mesh_shape->triangles[(i + tri0) * 3 + 2],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 0] * 3 + 0],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 0] * 3 + 1],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 0] * 3 + 2],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 1] * 3 + 0],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 1] * 3 + 1],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 1] * 3 + 2],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 2] * 3 + 0],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 2] * 3 + 1],
+        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 2] * 3 + 2]);
+  }
+}
+
+          mesh_shape_.reset(new mesh_ros::RvizMeshShape(
+                                            link_->getDisplay()->getDisplayContext(), 
+                                            getSceneNode(), 
+                                            &mesh, 
+                                            base_->getColor()));
+        }
+        else
+        {
+          ROS_WARN("link %s is not a mesh!",lm->getName().c_str());
+        }
+      }
+    }
+  private:
+    boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_shape_;
   };
 }
 
@@ -466,12 +566,12 @@ namespace moveit_rviz_plugin
       const shapes::ShapeConstPtr& shape = lm->getShape();
       if (shape)
       {
-        const shapes::Mesh *mesh = dynamic_cast<const shapes::Mesh*>(shape.get());
-        if (mesh)
+        const shapes::Mesh *mesh_shape = dynamic_cast<const shapes::Mesh*>(shape.get());
+        if (mesh_shape)
         {
           const Eigen::Affine3d& link_xform = link_->getLinkState()->getGlobalCollisionBodyTransform();
           EigenSTL::vector_Vector3d points;
-          mesh_core::appendPointsTransformed(points, link_xform, mesh->vertex_count, mesh->vertices);
+          mesh_core::appendPointsTransformed(points, link_xform, mesh_shape->vertex_count, mesh_shape->vertices);
           
 
           mesh_core::PlaneProjection proj(points);
@@ -574,6 +674,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
   LinkObj_SDFBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_VertBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_LinkVerts::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_LinkMesh::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_VertPlane::addSelf(sphere_gen_propety, *per_link_objects_);
 }
 

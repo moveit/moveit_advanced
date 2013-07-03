@@ -36,6 +36,7 @@
 
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
+#include <rviz/properties/int_property.h>
 
 
 void moveit_rviz_plugin::PerLinkObjList::addVisObject(PerLinkObjBase* obj)
@@ -144,6 +145,30 @@ void moveit_rviz_plugin::PerLinkObjBase::subObjEnabled()
     setValue(true);
     avoid_enable_update_ = false;
   }
+}
+
+void moveit_rviz_plugin::PerLinkObjBase::addIntProperty(
+      const std::string& name,
+      int value,
+      const std::string& descrip)
+{
+  rviz::IntProperty* prop = new rviz::IntProperty(
+                      name.c_str(),
+                      value,
+                      descrip.c_str(),
+                      this,
+                      SLOT( changedSlot() ),
+                      this );
+  extra_property_map_[name] = prop;
+}
+
+rviz::IntProperty* moveit_rviz_plugin::PerLinkObjBase::getIntProperty(
+      const std::string& name)
+{
+  std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
+  if (it != extra_property_map_.end())
+    return dynamic_cast<rviz::IntProperty*>(it->second);
+  return NULL;
 }
 
 void moveit_rviz_plugin::PerLinkObjBase::changedEnableSlot()
