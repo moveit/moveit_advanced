@@ -69,6 +69,19 @@ void mesh_core::Mesh::reserve(int ntris, int nverts)
   vert_info_.reserve(nverts);
 }
 
+void mesh_core::Mesh::getTris(std::vector<int>& tris) const
+{
+  int ntris = tris_.size();
+  tris.clear();
+  tris.resize(ntris * 3);
+  for (int i = 0 ; i < ntris ; ++i)
+  {
+    tris[i*3 + 0] = tris_[i].verts_[0];
+    tris[i*3 + 1] = tris_[i].verts_[1];
+    tris[i*3 + 2] = tris_[i].verts_[2];
+  }
+}
+
 void mesh_core::Mesh::add(
       int a,
       int b,

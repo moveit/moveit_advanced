@@ -207,6 +207,7 @@ public:
 
   const EigenSTL::vector_Vector3d& getVerts() const { return verts_; }
   const std::vector<Triangle>& getTris() const { return tris_; }
+  void getTris(std::vector<int>& tris) const;
 
   // slize this mesh in half along plane and create 2 new meshes
   //   a: contains only parts beyond plane
