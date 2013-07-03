@@ -181,28 +181,21 @@ public:
            double *c);
 
   /// add a list of triangles.
-  // tris is a pointer to ntris*3 ints.  Each triangle is represented by 3
-  // adjacent ints.  The ints are indices into the verts array.
-  void add(const EigenSTL::vector_Vector3d& verts,
-           int ntris,
-           int *tris);
+  // ntris - number of triangles to add
+  // tris - each tri is represented by 3 vertex indices
+  // verts - the vertices
+  void add(int ntris,
+           int *tris,
+           const EigenSTL::vector_Vector3d& verts);
 
   /// add a list of triangles.
-  // tris is a pointer to ntris*3 ints.  Each triangle is represented by 3
-  // adjacent ints.  The ints are vertex indices.
-  // verts contains 3 doubles per vertex: x, y, z
-  void add(double *verts,
-           int ntris,
-           int *tris);
+  // ntris - number of triangles to add
+  // tris - each tri is represented by 3 vertex indices
+  // verts - each vertex is 3 doubles: x,y,z
+  void add(int ntris,
+           int *tris,
+           double *verts);
   
-  // add triangles from a list.
-  // tri_cnt - number of triangles to add
-  // triangles - each tri is represented by 3 ints, each an index into vertices
-  // vertices - each vertex is 3 doubles.
-  void add(int tri_cnt,
-           int *triangles,
-           double *vertices);
-
   // set a different epsilon.  Does not affect existing vertices.
   void setEpsilon(double epsilon);
 

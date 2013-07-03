@@ -133,14 +133,14 @@ void mesh_core::Mesh::add(
 {
   Eigen::Vector3d av(a[0], a[1], a[2]);
   Eigen::Vector3d bv(b[0], b[1], b[2]);
-  Eigen::Vector3d cv(a[0], c[1], c[2]);
+  Eigen::Vector3d cv(c[0], c[1], c[2]);
   add(av, bv, cv);
 }
 
 void mesh_core::Mesh::add(
-      const EigenSTL::vector_Vector3d& verts,
       int ntris,
-      int *tris)
+      int *tris,
+      const EigenSTL::vector_Vector3d& verts)
 {
   tris_.reserve(tris_.size() + ntris);
   verts_.reserve(verts_.size() + (ntris * 3));
@@ -153,9 +153,9 @@ void mesh_core::Mesh::add(
 }
 
 void mesh_core::Mesh::add(
-      double *verts,
       int ntris,
-      int *tris)
+      int *tris,
+      double *verts)
 {
   tris_.reserve(tris_.size() + ntris);
   verts_.reserve(verts_.size() + (ntris * 3));
