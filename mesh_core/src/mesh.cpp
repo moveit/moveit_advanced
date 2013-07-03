@@ -1204,10 +1204,10 @@ void mesh_core::Mesh::slice(
       ACORN_ASSERT(cc[cur] > 0);
       while (cc[cur] >= 0)
       {
-        ACORN_ASSERT(cur != start);
         v[vcnt++] = verts_[tri->verts_[cur]];
         prev = cur;
         cur = (cur + 1) % 3;
+        ACORN_ASSERT(cur != start);
       }
 
       if (cc[prev] > 0)
@@ -1216,7 +1216,7 @@ void mesh_core::Mesh::slice(
         int prev_idx = tri->verts_[prev];
         int cur_idx  = tri->verts_[cur];
         double t = dists[prev_idx] / (dists[prev_idx] - dists[cur_idx]);
-        v[vcnt++] = t * verts_[prev_idx] + (1.0 - t) * verts_[cur_idx];
+        v[vcnt++] = (1.0 - t) * verts_[prev_idx] + t * verts_[cur_idx];
       }
 
       while (cc[cur] < 0)
@@ -1232,7 +1232,7 @@ void mesh_core::Mesh::slice(
         int prev_idx = tri->verts_[prev];
         int cur_idx  = tri->verts_[cur];
         double t = dists[cur_idx] / (dists[cur_idx] - dists[prev_idx]);
-        v[vcnt++] = t * verts_[cur_idx] + (1.0 - t) * verts_[prev_idx];
+        v[vcnt++] = (1.0 - t) * verts_[cur_idx] + t * verts_[prev_idx];
       }
 
       while (cur != start)
