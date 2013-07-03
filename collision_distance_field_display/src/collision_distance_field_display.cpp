@@ -375,9 +375,9 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
     collision_method_property_->setStdString(getPlanningSceneRO()->getActiveCollisionDetectorName());
   }
 
-
-
+#if 0
 /////////// TODO: REMOVE THIS DEBUG TEST CODE
+
   mesh_core::Mesh mesh;
 #if 0
   mesh.add( Eigen::Vector3d(0,0,0),
@@ -433,6 +433,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
   mesh.fillGaps();
 
   mesh_shape_.reset(new mesh_ros::RvizMeshShape(context_, planning_scene_node_, &mesh, Eigen::Vector4f(0,1,0,1)));
+#endif
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::dfPointExamineChanged()

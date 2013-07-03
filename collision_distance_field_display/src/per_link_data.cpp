@@ -451,6 +451,8 @@ namespace moveit_rviz_plugin
 
       obj->addIntProperty("NTris", 1000000, "Number of tris to show");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
+      obj->addIntProperty("DivideCnt", 0, "number of times to split");
+      obj->addIntProperty("DivideShow", 0, "which result to show");
 
       per_link_objects.addVisObject(obj);
     }
@@ -475,7 +477,17 @@ namespace moveit_rviz_plugin
         if (mesh_shape)
         {
           mesh_core::Mesh mesh;
-          int tri_cnt = mesh_shape->triangle_count;
+          mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
+
+logInform("00 Draw %d tris %d verts",mesh.getTriCount(), mesh.getVertCount());
+
+          // draw (part of) the mesh
+          std::vector<int> draw_tris;
+          mesh.getTris(draw_tris);
+
+
+          int tri_cnt = draw_tris.size() / 3;
+logInform("AA Draw %d tris", tri_cnt);
           int tri_cnt_max = base_->getIntProperty("NTris")->getInt();
           int tri0 = base_->getIntProperty("FirstTri")->getInt();
 
@@ -486,34 +498,15 @@ namespace moveit_rviz_plugin
           int ntris = std::min(tri_cnt_max, tri_cnt);
           if (ntris + tri0 > tri_cnt)
             ntris = tri_cnt - tri0;
-          mesh.add(ntris, (int*)&mesh_shape->triangles[tri0 * 3], mesh_shape->vertices);
 
-if (ntris < 10)
-{
-  logInform("===========");
-  for (int i = 0; i < ntris ; i++)
-  {
-    logInform("tri[%4d] = %4d %4d %4d    (%7.3f %7.3f %7.3f) (%7.3f %7.3f %7.3f) (%7.3f %7.3f %7.3f)",
-        i+tri0,
-        mesh_shape->triangles[(i + tri0) * 3 + 0],
-        mesh_shape->triangles[(i + tri0) * 3 + 1],
-        mesh_shape->triangles[(i + tri0) * 3 + 2],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 0] * 3 + 0],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 0] * 3 + 1],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 0] * 3 + 2],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 1] * 3 + 0],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 1] * 3 + 1],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 1] * 3 + 2],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 2] * 3 + 0],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 2] * 3 + 1],
-        mesh_shape->vertices[mesh_shape->triangles[(i + tri0) * 3 + 2] * 3 + 2]);
-  }
-}
-
+          mesh_core::Mesh draw_mesh;
+logInform("BB Draw %d tris starting at %d   nverts=%d",ntris, tri0, mesh.getVerts().size());
+          draw_mesh.add(ntris, &draw_tris[tri0*3], mesh.getVerts());
+logInform("CC Draw %d tris %d verts",draw_mesh.getTriCount(), draw_mesh.getVertCount());
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
                                             link_->getDisplay()->getDisplayContext(), 
                                             getSceneNode(), 
-                                            &mesh, 
+                                            &draw_mesh, 
                                             base_->getColor()));
         }
         else
