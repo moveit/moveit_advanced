@@ -117,28 +117,34 @@ mesh_ros::RvizMeshShape::~RvizMeshShape()
 }
 
 void mesh_ros::RvizMeshShape::reset(
-      const mesh_core::Mesh* mesh)
+      const mesh_core::Mesh* mesh,
+      int first_tri,
+      int tri_cnt)
 {
   manual_object_->clear();
 
   if (!mesh)
     return;
 
+  if (first_tri >= mesh->getTriCount() || tri_cnt==0)
+    return;
+
+  int end_tri = tri_cnt < 0 ? mesh->getTriCount() : first_tri + tri_cnt;
+
   manual_object_->estimateVertexCount(mesh->getTriCount() * 3);
   manual_object_->begin(material_name_, Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
-  std::vector<mesh_core::Mesh::Triangle>::const_iterator it = mesh->getTris().begin();
-  std::vector<mesh_core::Mesh::Triangle>::const_iterator end = mesh->getTris().end();
-  for ( ; it != end ; ++it)
+  for (int i = first_tri ; i < end_tri ; ++i)
   {
-    const Eigen::Vector3d& v0 = mesh->getVert(it->verts_[0]);
-    const Eigen::Vector3d& v1 = mesh->getVert(it->verts_[1]);
-    const Eigen::Vector3d& v2 = mesh->getVert(it->verts_[2]);
+    const mesh_core::Mesh::Triangle& tri = mesh->getTri(i);
+    const Eigen::Vector3d& v0 = mesh->getVert(tri.verts_[0]);
+    const Eigen::Vector3d& v1 = mesh->getVert(tri.verts_[1]);
+    const Eigen::Vector3d& v2 = mesh->getVert(tri.verts_[2]);
     Eigen::Vector3d norm = ((v1 - v0).cross(v2 - v0)).normalized();
 
     for (int i = 0 ; i < 3 ; ++i)
     {
-      const Eigen::Vector3d& v = mesh->getVert(it->verts_[i]);
+      const Eigen::Vector3d& v = mesh->getVert(tri.verts_[i]);
       manual_object_->position(v.x(), v.y(), v.z());
       manual_object_->normal(norm.x(), norm.y(), norm.z());
     }

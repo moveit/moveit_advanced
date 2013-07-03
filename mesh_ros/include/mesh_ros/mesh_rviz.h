@@ -72,7 +72,10 @@ public:
   ~RvizMeshShape();
 
   // reset to a new (or NULL) shape.
-  void reset(const mesh_core::Mesh* mesh = NULL);
+  // Start with first_tri. If tri_cnt>0 then use at most that many tris.
+  void reset(const mesh_core::Mesh* mesh = NULL,
+             int first_tri = 0,
+             int tri_cnt = -1);
 
   // set color and alpha
   void setColor(const Eigen::Vector4f& color);
