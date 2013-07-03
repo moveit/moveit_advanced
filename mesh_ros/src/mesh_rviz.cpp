@@ -129,6 +129,9 @@ void mesh_ros::RvizMeshShape::reset(
   if (first_tri >= mesh->getTriCount() || tri_cnt==0)
     return;
 
+  if (first_tri < 0)
+    first_tri = 0;
+
   int end_tri = tri_cnt < 0 ? mesh->getTriCount() : first_tri + tri_cnt;
 
   manual_object_->estimateVertexCount(mesh->getTriCount() * 3);
