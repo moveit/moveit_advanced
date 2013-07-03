@@ -422,3 +422,9 @@ void moveit_rviz_plugin::ShapesDisplay::addAxis(
   Eigen::Affine3d frame = Eigen::Translation3d(position) * orientation;
   addAxis(frame, size);
 }
+
+void moveit_rviz_plugin::ShapesDisplay::setDefaultColor(
+      const color_cast::Color& color)
+{
+  color_ = color.getColorf();
+}

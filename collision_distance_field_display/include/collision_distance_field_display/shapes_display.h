@@ -168,6 +168,8 @@ public:
                const Eigen::Vector3d& position,
                double size = 0.5);
 
+  // set default color for shapes added in the future
+  void setDefaultColor(const color_cast::Color& color);
 
 private:
 
