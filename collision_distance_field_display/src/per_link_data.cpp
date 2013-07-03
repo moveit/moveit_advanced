@@ -478,6 +478,7 @@ namespace moveit_rviz_plugin
         {
           mesh_core::Mesh mesh;
           mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
+          mesh.fillGaps();
 
           mesh_core::Plane plane(mesh.getVerts());
 
