@@ -39,6 +39,7 @@
 
 #include <OGRE/OgreMaterial.h>
 #include <Eigen/Geometry>
+#include <mesh_core/mesh.h>
 
 namespace mesh_core
 {
@@ -61,19 +62,38 @@ namespace Ogre
 namespace mesh_ros
 {
 
+// An object that displays a Mesh (or subset of a Mesh)
 class RvizMeshShape
 {
 public:
   RvizMeshShape(rviz::DisplayContext* context,
                 Ogre::SceneNode* parent_node,
                 const mesh_core::Mesh* mesh = NULL,
-                const Eigen::Vector4f& color = Eigen::Vector4f(1,1,1,1));
+                const Eigen::Vector4f& color = Eigen::Vector4f(1,1,1,1),
+                int first_tri = 0,
+                int tri_cnt = -1);
+
+  RvizMeshShape(rviz::DisplayContext* context,
+                Ogre::SceneNode* parent_node,
+                const mesh_core::Mesh* mesh,
+                const Eigen::Vector4f& color,
+                const std::vector<int>& tris,
+                int first_tri = 0,
+                int tri_cnt = -1);
 
   ~RvizMeshShape();
 
   // reset to a new (or NULL) shape.
   // Start with first_tri. If tri_cnt>0 then use at most that many tris.
   void reset(const mesh_core::Mesh* mesh = NULL,
+             int first_tri = 0,
+             int tri_cnt = -1);
+
+  // reset to new shape.
+  // Shape is triangles from mesh that are listed in tris
+  // if first_tri/tri_cnt are set they set the first/last entry from tris used.
+  void reset(const mesh_core::Mesh* mesh,
+             const std::vector<int>& tris,
              int first_tri = 0,
              int tri_cnt = -1);
 
@@ -86,6 +106,11 @@ public:
   const Ogre::Quaternion& getOrientation();
 
 private:
+  void initialize(const Eigen::Vector4f& color);
+  void addTri(
+      const mesh_core::Mesh* mesh,
+      const mesh_core::Mesh::Triangle& tri);
+
   Ogre::ManualObject* manual_object_;
   Ogre::MaterialPtr material_;
   std::string material_name_;

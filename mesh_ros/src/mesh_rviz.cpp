@@ -60,9 +60,33 @@ mesh_ros::RvizMeshShape::RvizMeshShape(
       rviz::DisplayContext* context,
       Ogre::SceneNode* parent_node,
       const mesh_core::Mesh* mesh,
-      const Eigen::Vector4f& color)
+      const Eigen::Vector4f& color,
+      int first_tri,
+      int tri_cnt)
   : context_(context)
   , scene_node_(parent_node->createChildSceneNode())
+{
+  initialize(color);
+  reset(mesh, first_tri, tri_cnt);
+}
+
+mesh_ros::RvizMeshShape::RvizMeshShape(
+      rviz::DisplayContext* context,
+      Ogre::SceneNode* parent_node,
+      const mesh_core::Mesh* mesh,
+      const Eigen::Vector4f& color,
+      const std::vector<int>& tris,
+      int first_tri,
+      int tri_cnt)
+  : context_(context)
+  , scene_node_(parent_node->createChildSceneNode())
+{
+  initialize(color);
+  reset(mesh, tris, first_tri, tri_cnt);
+}
+
+void mesh_ros::RvizMeshShape::initialize(
+      const Eigen::Vector4f& color)
 {
   static uint32_t count = 0;
   std::stringstream ss;
@@ -80,8 +104,14 @@ mesh_ros::RvizMeshShape::RvizMeshShape(
   //handler_.reset( new MarkerSelectionHandler( this, MarkerID( new_message->ns, new_message->id ), context_ ));
 
   setColor(color);
+}
 
-  reset(mesh);
+mesh_ros::RvizMeshShape::~RvizMeshShape()
+{
+  context_->getSceneManager()->destroyManualObject(manual_object_);
+  material_->unload();
+  Ogre::MaterialManager::getSingleton().remove(material_->getName());
+  context_->getSceneManager()->destroySceneNode(scene_node_);
 }
 
 void mesh_ros::RvizMeshShape::setColor(
@@ -108,12 +138,21 @@ void mesh_ros::RvizMeshShape::setColor(
 }
 
 
-mesh_ros::RvizMeshShape::~RvizMeshShape()
+void mesh_ros::RvizMeshShape::addTri(
+      const mesh_core::Mesh* mesh,
+      const mesh_core::Mesh::Triangle& tri)
 {
-  context_->getSceneManager()->destroyManualObject(manual_object_);
-  material_->unload();
-  Ogre::MaterialManager::getSingleton().remove(material_->getName());
-  context_->getSceneManager()->destroySceneNode(scene_node_);
+  const Eigen::Vector3d& v0 = mesh->getVert(tri.verts_[0]);
+  const Eigen::Vector3d& v1 = mesh->getVert(tri.verts_[1]);
+  const Eigen::Vector3d& v2 = mesh->getVert(tri.verts_[2]);
+  Eigen::Vector3d norm = ((v1 - v0).cross(v2 - v0)).normalized();
+
+  for (int j = 0 ; j < 3 ; ++j)
+  {
+    const Eigen::Vector3d& v = mesh->getVert(tri.verts_[j]);
+    manual_object_->position(v.x(), v.y(), v.z());
+    manual_object_->normal(norm.x(), norm.y(), norm.z());
+  }
 }
 
 void mesh_ros::RvizMeshShape::reset(
@@ -134,23 +173,50 @@ void mesh_ros::RvizMeshShape::reset(
 
   int end_tri = tri_cnt < 0 ? mesh->getTriCount() : first_tri + tri_cnt;
 
-  manual_object_->estimateVertexCount(mesh->getTriCount() * 3);
+  manual_object_->estimateVertexCount((end_tri - first_tri) * 3);
   manual_object_->begin(material_name_, Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
   for (int i = first_tri ; i < end_tri ; ++i)
   {
-    const mesh_core::Mesh::Triangle& tri = mesh->getTri(i);
-    const Eigen::Vector3d& v0 = mesh->getVert(tri.verts_[0]);
-    const Eigen::Vector3d& v1 = mesh->getVert(tri.verts_[1]);
-    const Eigen::Vector3d& v2 = mesh->getVert(tri.verts_[2]);
-    Eigen::Vector3d norm = ((v1 - v0).cross(v2 - v0)).normalized();
+    addTri(mesh, mesh->getTri(i));
+  }
 
-    for (int i = 0 ; i < 3 ; ++i)
+  manual_object_->end();
+
+  //handler_->addTrackedObject( manual_object_ );
+}
+
+void mesh_ros::RvizMeshShape::reset(
+      const mesh_core::Mesh* mesh,
+      const std::vector<int>& tris,
+      int first_tri,
+      int tri_cnt)
+{
+  manual_object_->clear();
+
+  if (!mesh)
+    return;
+
+  if (first_tri >= tris.size() || tri_cnt==0)
+    return;
+
+  if (first_tri < 0)
+    first_tri = 0;
+
+  int end_tri = tri_cnt < 0 ? tris.size() : first_tri + tri_cnt;
+
+  manual_object_->estimateVertexCount((end_tri - first_tri) * 3);
+  manual_object_->begin(material_name_, Ogre::RenderOperation::OT_TRIANGLE_LIST);
+
+  int mesh_tri_cnt = mesh->getTriCount();
+  for (int i = first_tri ; i < end_tri ; ++i)
+  {
+    if (tris[i] >= mesh_tri_cnt)
     {
-      const Eigen::Vector3d& v = mesh->getVert(tri.verts_[i]);
-      manual_object_->position(v.x(), v.y(), v.z());
-      manual_object_->normal(norm.x(), norm.y(), norm.z());
+      logError("mesh_ros::RvizMeshShape::reset() tris contains out of bound triangle index");
+      continue;
     }
+    addTri(mesh, mesh->getTri(tris[i]));
   }
 
   manual_object_->end();
