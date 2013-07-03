@@ -7,6 +7,7 @@ project(robot_sphere_representation)
 find_package(
   catkin
   REQUIRED COMPONENTS
+    mesh_core
     moveit_core
     moveit_setup_assistant
     roscpp
@@ -35,6 +36,7 @@ catkin_package(
   LIBRARIES
     moveit_robot_sphere_representation
   CATKIN_DEPENDS
+    mesh_core
     moveit_core
     moveit_setup_assistant
     roscpp
@@ -59,7 +61,6 @@ add_library(
     src/link_sphere_representation.cpp
     src/sphere_rep.cpp
     src/method_enums.cpp
-    src/bounding_sphere.cpp
     src/body_bounding_sphere.cpp
 )
 

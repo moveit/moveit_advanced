@@ -37,7 +37,6 @@
 #include "dfexamine.h"
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
-#include <moveit/robot_sphere_representation/bounding_sphere.h>
 #include <moveit/robot_sphere_representation/body_bounding_sphere.h>
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
@@ -47,6 +46,7 @@
 #include <rviz/properties/enum_property.h>
 #include <rviz/properties/int_property.h>
 
+#include <mesh_core/bounding_sphere.h>
 #include <mesh_core/mesh.h>
 #include <mesh_core/geom.h>
 #include <mesh_ros/mesh_rviz.h>
@@ -315,7 +315,7 @@ namespace moveit_rviz_plugin
 
           Eigen::Vector3d center;
           double radius;
-          robot_sphere_representation::generateBoundingSphere(
+          mesh_core::generateBoundingSphere(
             points,
             center,
             radius);

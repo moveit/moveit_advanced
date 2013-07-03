@@ -35,7 +35,7 @@
 /* Author: Acorn Pooley */
 
 #include <moveit/robot_sphere_representation/body_bounding_sphere.h>
-#include <moveit/robot_sphere_representation/bounding_sphere.h>
+#include <mesh_core/bounding_sphere.h>
 #include <geometric_shapes/shape_operations.h>
 #include <geometric_shapes/bodies.h>
 #include <console_bridge/console.h>
@@ -53,7 +53,7 @@ void robot_sphere_representation::findTightBoundingSphere(
       const bodies::ConvexMesh& mesh =
                         dynamic_cast<const bodies::ConvexMesh&>(body);
       const EigenSTL::vector_Vector3d& verts = mesh.getScaledVertices();
-      generateBoundingSphere(verts, center, radius);
+      mesh_core::generateBoundingSphere(verts, center, radius);
       break;
     }
   default:
@@ -96,7 +96,7 @@ void robot_sphere_representation::findTightBoundingSphere(
                                    mesh.vertices[i*3 + 1],
                                    mesh.vertices[i*3 + 2]);
       }
-      generateBoundingSphere(verts, center, radius);
+      mesh_core::generateBoundingSphere(verts, center, radius);
       break;
     }
   default:

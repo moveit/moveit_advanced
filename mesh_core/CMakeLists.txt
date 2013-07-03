@@ -60,6 +60,7 @@ add_library(
   ${LIB_NAME}
     src/mesh.cpp
     src/geom.cpp
+    src/bounding_sphere.cpp
 )
 
 target_link_libraries(

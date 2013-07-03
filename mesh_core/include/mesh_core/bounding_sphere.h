@@ -34,12 +34,12 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION__BOUNDING_SPHERE
-#define MOVEIT_ROBOT_SPHERE_REPRESENTATION__BOUNDING_SPHERE
+#ifndef MESH_CORE__BOUNDING_SPHERE
+#define MESH_CORE__BOUNDING_SPHERE
 
 #include <eigen_stl_containers/eigen_stl_containers.h>
 
-namespace robot_sphere_representation
+namespace mesh_core
 {
   // generate a sphere that tightly bounds all the points.
   void generateBoundingSphere(
@@ -76,7 +76,6 @@ namespace robot_sphere_representation
         const Eigen::Vector3d& c,
         const Eigen::Vector3d& d);
 }
-
 
 #endif
 

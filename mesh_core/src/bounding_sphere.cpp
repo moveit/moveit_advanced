@@ -34,7 +34,7 @@
 
 /* Author: Acorn Pooley */
 
-#include <moveit/robot_sphere_representation/bounding_sphere.h>
+#include <mesh_core/bounding_sphere.h>
 #include <console_bridge/console.h>
 #include <Eigen/LU>
 
@@ -44,7 +44,7 @@ static bool g_verbose = true;
 #define g_verbose (false)
 #endif
 
-void robot_sphere_representation::findSphereTouching2Points(
+void mesh_core::findSphereTouching2Points(
       Eigen::Vector3d& center,
       double& radius,
       const Eigen::Vector3d& a,
@@ -67,32 +67,20 @@ static void findSphereTouching3PointsColinear(
   if (ab_lensq > ac_lensq)
   {
     if (ab_lensq > bc_lensq)
-      robot_sphere_representation::findSphereTouching2Points(center,
-                                                             radius,
-                                                             a,
-                                                             b);
+      mesh_core::findSphereTouching2Points(center, radius, a, b);
     else
-      robot_sphere_representation::findSphereTouching2Points(center,
-                                                             radius,
-                                                             b,
-                                                             c);
+      mesh_core::findSphereTouching2Points(center, radius, b, c);
   }
   else
   {
     if (ac_lensq > bc_lensq)
-      robot_sphere_representation::findSphereTouching2Points(center,
-                                                             radius,
-                                                             a,
-                                                             c);
+      mesh_core::findSphereTouching2Points(center, radius, a, c);
     else
-      robot_sphere_representation::findSphereTouching2Points(center,
-                                                             radius,
-                                                             b,
-                                                             c);
+      mesh_core::findSphereTouching2Points(center, radius, b, c);
   }
 }
 
-void robot_sphere_representation::findSphereTouching3Points(
+void mesh_core::findSphereTouching3Points(
       Eigen::Vector3d& center,
       double& radius,
       const Eigen::Vector3d& a,
@@ -180,7 +168,7 @@ static void findSphereTouching4PointsCoplanar(
       const Eigen::Vector3d& c,
       const Eigen::Vector3d& d)
 {
-  robot_sphere_representation::findSphereTouching3Points(center,
+  mesh_core::findSphereTouching3Points(center,
                                                          radius,
                                                          a,
                                                          b,
@@ -199,7 +187,7 @@ static void findSphereTouching4PointsCoplanar(
   }
   if ((center - d).squaredNorm() <= radius*radius)
     return;
-  robot_sphere_representation::findSphereTouching3Points(center,
+  mesh_core::findSphereTouching3Points(center,
                                                          radius,
                                                          a,
                                                          b,
@@ -218,7 +206,7 @@ static void findSphereTouching4PointsCoplanar(
   }
   if ((center - c).squaredNorm() <= radius*radius)
     return;
-  robot_sphere_representation::findSphereTouching3Points(center,
+  mesh_core::findSphereTouching3Points(center,
                                                          radius,
                                                          a,
                                                          c,
@@ -237,7 +225,7 @@ static void findSphereTouching4PointsCoplanar(
   }
   if ((center - b).squaredNorm() <= radius*radius)
     return;
-  robot_sphere_representation::findSphereTouching3Points(center,
+  mesh_core::findSphereTouching3Points(center,
                                                          radius,
                                                          b,
                                                          c,
@@ -256,7 +244,7 @@ static void findSphereTouching4PointsCoplanar(
   }
 }
 
-void robot_sphere_representation::findSphereTouching4Points(
+void mesh_core::findSphereTouching4Points(
       Eigen::Vector3d& center,
       double& radius,
       const Eigen::Vector3d& a,
@@ -401,7 +389,7 @@ void SphereInfo::findSphere(
     radius_ = radius_expand;
     break;
   case 2:
-    robot_sphere_representation::findSphereTouching2Points(
+    mesh_core::findSphereTouching2Points(
             center_,
             radius_,
             *list_[0],
@@ -409,7 +397,7 @@ void SphereInfo::findSphere(
     radius_ += radius_expand;
     break;
   case 3:
-    robot_sphere_representation::findSphereTouching3Points(
+    mesh_core::findSphereTouching3Points(
             center_,
             radius_,
             *list_[0],
@@ -420,7 +408,7 @@ void SphereInfo::findSphere(
   default:
     logError("Bad nbound=%d for findSphere",nbound);
   case 4:
-    robot_sphere_representation::findSphereTouching4Points(
+    mesh_core::findSphereTouching4Points(
             center_,
             radius_,
             *list_[0],
@@ -587,7 +575,7 @@ void SphereInfo::findStartingPoints()
   std::swap(list_[5], list_[zmax - points_.begin()]);
 }
 
-void robot_sphere_representation::generateBoundingSphere(
+void mesh_core::generateBoundingSphere(
       const EigenSTL::vector_Vector3d& points,
       Eigen::Vector3d& center,
       double &radius)
