@@ -98,7 +98,7 @@ mesh_core::Plane::Plane(
 mesh_core::Plane::Plane(
       const EigenSTL::vector_Vector3d& points)
 {
-  leastSquaresFast(points);
+  leastSquaresGeneral(points);
 }
 
 void mesh_core::Plane::leastSquaresFast(
