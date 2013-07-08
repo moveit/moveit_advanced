@@ -38,9 +38,6 @@
 #include <mesh_core/geom.h>
 #include <console_bridge/console.h>
 
-bool acorn_debug = false;
-bool acorn_debug2 = false;
-
 bool mesh_core::Mesh::debug_ = false;
 
 mesh_core::Mesh::Mesh(double epsilon)
@@ -640,7 +637,6 @@ void mesh_core::Mesh::assertValidEdge(
 
 void mesh_core::Mesh::fillGaps()
 {
-int cnt=0;
   findSubmeshes();
 
   for (;;)
@@ -648,9 +644,6 @@ int cnt=0;
     Edge* edge = findGap();
     if (!edge)
       break;
-if (acorn_debug2)
-logInform("##################################### SLICE FILLGAPS   subgap %d",cnt);
-cnt++;
     fillGap(*edge);
   }
 
@@ -709,16 +702,12 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
   {
     loop[0].vert_idx_ = first_edge.verts_[0];
     current_vtx = first_edge.verts_[1];
-if (acorn_debug2)
-    logInform("  FWD: v0=%d v1=%d",loop[0].vert_idx_, current_vtx);
   }
   else
   {
     ACORN_ASSERT(first_tri.verts_[first_et.tri_dir_] == first_edge.verts_[1]);
     loop[0].vert_idx_ = first_edge.verts_[1];
     current_vtx = first_edge.verts_[0];
-if (acorn_debug2)
-    logInform("  BWD: v0=%d v1=%d",loop[0].vert_idx_, current_vtx);
   }
 
   std::vector<GapEdge> new_edges;
@@ -732,18 +721,9 @@ if (acorn_debug2)
     new_edges.clear();
     bool found_correct_winding = false;
 
-if (acorn_debug2)
-    logInform("  find edges for v=%d",current_vtx);
-
     // check all edges touching current vertex
     for (int i = 0 ; i < vtx.edges_.size() ; ++i)
     {
-if (acorn_debug2)
-      logInform("    check e=%d  v(%d,%d)",
-        vtx.edges_[i],
-        edges_[vtx.edges_[i]].verts_[0],
-        edges_[vtx.edges_[i]].verts_[1]);
-
       if (vtx.edges_[i] == current_edge)
         continue;
 
@@ -771,18 +751,9 @@ if (acorn_debug2)
         Triangle& tri = tris_[et.tri_idx_];
         ge.tri_idx_ = et.tri_idx_;
 
-if (acorn_debug2)
-        logInform("       tri %d v(%d,%d,%d)",
-          et.tri_idx_,
-          tri.verts_[0],
-          tri.verts_[1],
-          tri.verts_[2]);
-
         // does the edge go in positive winding around triangle?
         if (tri.verts_[et.tri_dir_] == current_vtx)
         {
-if (acorn_debug2)
-          logInform("         good winding");
           if (!found_correct_winding)
           {
             new_edges.clear();
@@ -793,8 +764,6 @@ if (acorn_debug2)
         }
         else if (!found_correct_winding)
         {
-if (acorn_debug2)
-          logInform("         bad winding");
           new_edges.push_back(ge);
         }
       }
@@ -808,9 +777,6 @@ if (acorn_debug2)
     {
       logWarn("mesh_core::Mesh::fillGap() found no good edges");
     }
-
-if (acorn_debug2)
-    logInform("    Found %d edges",int(new_edges.size()));
 
     if (new_edges.size() > 1)
     {
@@ -832,13 +798,6 @@ if (acorn_debug2)
 
     // Now we have a number of candidate edges.  Use the first one
     loop.push_back(new_edges[0]);
-
-if (acorn_debug2)
-    logInform("    use edge [%d] v=%d e=%d t=%d",
-      int(loop.size() - 1),
-      new_edges[0].vert_idx_,
-      new_edges[0].edge_idx_,
-      new_edges[0].tri_idx_);
 
     GapEdge& ge = loop.back();
     Edge& edge = edges_[ge.edge_idx_];
@@ -879,12 +838,6 @@ if (acorn_debug2)
     }
   }
 #endif
-
-if (acorn_debug2)
-  logInform("  GOT LOOP size=%d start=%d cnt=%d",
-    int(loop.size()),
-    loop_start_index,
-    int(loop.size()) - loop_start_index);
 
   // Now we have a loop of vertices around the gap.
   // Generate triangles to fill in the gap
@@ -1024,22 +977,6 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
   p2.d_ = -p2.norm_.dot(p2.v2d_);
   p[2] = &p2;
 
-if (acorn_debug)
-{
-  logInform("    EAR check for ear %d:",int(&point - &points[0]));
-  for (int k=0;k<3;k++)
-    logInform("      %3d (%7.3f %7.3f)  delta=(%7.3f %7.3f) norm=(%7.3f %7.3f) d=%7.3f",
-      (k==2)?(point.next_ - &points[0]):(p[k] - &points[0]),
-      p[k]->v2d_.x(),
-      p[k]->v2d_.y(),
-      p[k]->delta_.x(),
-      p[k]->delta_.y(),
-      p[k]->norm_.x(),
-      p[k]->norm_.y(),
-      p[k]->d_);
-}
-
-
   std::vector<GapPoint>::const_iterator pt_it = points.begin();
   std::vector<GapPoint>::const_iterator pt_end = points.end();
   for ( ; pt_it != pt_end ; ++pt_it)
@@ -1049,36 +986,18 @@ if (acorn_debug)
         &*pt_it == point.next_)
       continue;
 
-if (acorn_debug)
-{
-  logInform("    EAR points[%3d] = (%7.3f %7.3f)",
-    int(&*pt_it - &points[0]),
-    pt_it->v2d_.x(),
-    pt_it->v2d_.y());
-}
-
     for (int j = 0; j < 3 ; ++j)
     {
       // point is inside triangle.  Not an ear.
       if (j == 3)
       {
         point.state_ = GapPoint::CONVEX;
-        if (acorn_debug)
-          logInform("    EAR check for ear %d: IS CONVEX (not ear due to containing point %d)",
-            int(&point - &points[0]),
-            int(&*pt_it - &points[0]));
         return;
       }
 
       // outside the tri?  check next pt_it
       double dist = p[j]->norm_.dot(pt_it->v2d_) + p[j]->d_;
 
-if (acorn_debug)
-{
-  logInform("      edge[%d] dist=%f",
-    j,dist);
-}
-        
       if (dist <= 0.0)
         break;
     }
@@ -1086,10 +1005,6 @@ if (acorn_debug)
 
 #endif
 
-if (acorn_debug)
-{
-  logInform("    EAR check for ear %d: IS AN EAR",int(&point - &points[0]));
-}
   point.state_ = GapPoint::EAR;
 }
 
@@ -1120,12 +1035,6 @@ void mesh_core::Mesh::generatePolygon(
     bool partial_ok)
 {
   int nverts = verts.size();
-
-if (acorn_debug2)
-{
-  logInform("generatePolygon() nverts=%d",nverts);
-acorn_debug = (nverts==120);
-}
 
   if (nverts < 3)
     return;
@@ -1261,19 +1170,10 @@ acorn_debug = (nverts==120);
     calcEarState(points[i], points);
   }
 
-if (acorn_debug2)
-  logInform("  enter loop");
-
   int cnt = 0;
   GapPoint *p = &points[0];
   for (;;)
   {
-if (acorn_debug2)
-    logInform("  check point %3d  state=%d  nverts=%3d",
-      int(p - &points[0]),
-      int(p->state_),
-      nverts);
-
     if (p->state_ != GapPoint::EAR)
     {
       cnt++;
@@ -1287,8 +1187,6 @@ if (acorn_debug2)
       continue;
     }
 
-if (acorn_debug2)
-    logInform("  Remove ear %d",int(p - &points[0]));
     cnt = 0;
 
     // found an ear
@@ -1306,22 +1204,17 @@ if (acorn_debug2)
     p->norm_.y() = p->delta_.x();
     p->d_ = -p->norm_.dot(p->v2d_);
 
-//acorn_debug = (tris_.size() == 935);  // tri 113 is tri 935 here
     calcEarState(*p, points);
     if (p->state_ != GapPoint::EAR)
     {
       p = p->next_;
       calcEarState(*p, points);
     }
-//acorn_debug=false;
   }
 
   // last 4 verts - add last 2 tris
   addGapTri(p, direction);
   addGapTri(p->next_->next_, direction);
-
-if (acorn_debug2)
-  logInform("generatePolygon() DONE");
 }
 
 
@@ -1330,17 +1223,6 @@ void mesh_core::Mesh::slice(
       Mesh& a,
       Mesh& b) const
 {
-if (acorn_debug2)
-{
-logInform("##################################### SLICE");
-logInform("##################################### SLICE");
-logInform("##################################### SLICE");
-logInform("##################################### SLICE");
-logInform("##################################### SLICE");
-logInform("##################################### SLICE");
-logInform("##################################### SLICE");
-}
-
   std::vector<signed char> clipcodes;
   std::vector<double> dists;
   clipcodes.resize(verts_.size());
@@ -1487,11 +1369,7 @@ logInform("##################################### SLICE");
     }
   }
 
-if (acorn_debug2)
-logInform("##################################### SLICE FILLGAPS a");
   a.fillGaps();
-if (acorn_debug2)
-logInform("##################################### SLICE FILLGAPS b");
   b.fillGaps();
 }
 
