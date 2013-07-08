@@ -446,7 +446,7 @@ namespace moveit_rviz_plugin
                                   "Show mesh for link, or subdivided partial mesh",
                                   QColor(0, 255, 0),
                                   1.0,
-                                  PerLinkObjBase::SPHERES,
+                                  PerLinkObjBase::POINTS,
                                   0.005);
 
       obj->addIntProperty("NTris", -1, "Number of tris to show");
@@ -490,12 +490,13 @@ namespace moveit_rviz_plugin
 
           mesh_core::Plane plane(mesh.getVerts());
 
+          if (!shapes_)
+            shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+
 #if 1
           {
             ROS_INFO("Plane: %f %f %f %f", plane.getA(), plane.getB(), plane.getC(), plane.getD());
             mesh_core::PlaneProjection proj(mesh.getVerts());
-            if (!shapes_)
-              shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
             shapes_->setDefaultColor(Eigen::Vector4f(1,1,1,0.3));
             shapes_->addAxis(proj.getOrientation(), proj.getOrigin(), 0.2);
           }
@@ -556,6 +557,10 @@ int(gdi.gap_tris_.size()));
               {
                 shapes_->addPoint(gdi.points_[showpt], Eigen::Vector4f(1,0,1,1));
               }
+
+
+
+
             }
           }
           else
