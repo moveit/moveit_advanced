@@ -912,62 +912,6 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
   ACORN_ASSERT(p[0] != p[1]);
   ACORN_ASSERT(p[0] != p[2]);
 
-#if 0
-#if 0
-  // THIS VERSION BROKEN -- need to check ALL verts, not just remaining ones
-
-  const GapPoint *o = p[2]->next_;
-  ACORN_ASSERT(p[0] != o);
-
-  // any other vertices inside the triangle?  If so it is not an ear.
-  for (; o != p[0] ; o = o->next_)
-  {
-    for (int j = 0; j < 3 ; ++j)
-    {
-      // point is inside triangle.  Not an ear.
-      if (j == 3)
-      {
-        point.state_ = GapPoint::CONVEX;
-        return;
-      }
-        
-      double dist = p[j]->norm_.dot(o->v2d_) + p[j]->d_;
-      if (dist <= 0.0)
-        break;
-    }
-  }
-#else
-
-  // BROKEN - does not use correct norm for edge 2-0
-  std::vector<GapPoint>::const_iterator pt_it = points.begin();
-  std::vector<GapPoint>::const_iterator pt_end = points.end();
-  for ( ; pt_it != pt_end ; ++pt_it)
-  {
-    if (&*pt_it == p[0] ||
-        &*pt_it == p[1] ||
-        &*pt_it == p[2])
-      continue;
-
-    for (int j = 0; j < 3 ; ++j)
-    {
-      // point is inside triangle.  Not an ear.
-      if (j == 3)
-      {
-        point.state_ = GapPoint::CONVEX;
-        return;
-      }
-        
-      // outside the tri?  check next pt_it
-      double dist = p[j]->norm_.dot(pt_it->v2d_) + p[j]->d_;
-      if (dist <= 0.0)
-        break;
-    }
-  }
-
-#endif
-#else
-
-
   // generate new p[2] with an edge from p[2] to p[0]
   GapPoint p2;
   p2.v2d_ = p[2]->v2d_;
@@ -1002,8 +946,6 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
         break;
     }
   }
-
-#endif
 
   point.state_ = GapPoint::EAR;
 }
