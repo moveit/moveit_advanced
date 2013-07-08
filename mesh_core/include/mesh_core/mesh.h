@@ -339,7 +339,9 @@ private:
   void addGapTri(const GapPoint *p, double direction);
 
   // check whether point is an ear.  Used by fillGap().
-  static void calcEarState(GapPoint& point);
+  static void calcEarState(
+                      GapPoint& point,
+                      const std::vector<GapPoint>& points);
 
   // Debug asserts
   void assertValidTri(const Triangle& tri, const char *msg) const;
