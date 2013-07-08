@@ -731,13 +731,7 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
       if (vedge.tris_.size() == 2)
         continue;
 
-#if 0
-      new_edges.resize(new_edges.size() + 1);
-      GapEdge& ge = new_edges.back();
-#else
       GapEdge ge;
-#endif
-
       ge.vert_idx_ = current_vtx;
       ge.edge_idx_ = vtx.edges_[i];
       ge.tri_idx_ = -1; // filled in below
