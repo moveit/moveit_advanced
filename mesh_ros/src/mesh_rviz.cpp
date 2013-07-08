@@ -172,6 +172,8 @@ void mesh_ros::RvizMeshShape::reset(
     first_tri = 0;
 
   int end_tri = tri_cnt < 0 ? mesh->getTriCount() : first_tri + tri_cnt;
+  if (end_tri > mesh->getTriCount())
+    end_tri = mesh->getTriCount();
 
   manual_object_->estimateVertexCount((end_tri - first_tri) * 3);
   manual_object_->begin(material_name_, Ogre::RenderOperation::OT_TRIANGLE_LIST);
@@ -204,6 +206,8 @@ void mesh_ros::RvizMeshShape::reset(
     first_tri = 0;
 
   int end_tri = tri_cnt < 0 ? tris.size() : first_tri + tri_cnt;
+  if (end_tri > tris.size())
+    end_tri = tris.size();
 
   manual_object_->estimateVertexCount((end_tri - first_tri) * 3);
   manual_object_->begin(material_name_, Ogre::RenderOperation::OT_TRIANGLE_LIST);
