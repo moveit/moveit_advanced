@@ -451,8 +451,14 @@ namespace moveit_rviz_plugin
 
       obj->addIntProperty("NTris", -1, "Number of tris to show");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
+#if 0
       obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
       obj->addIntProperty("WhichGap", -1, "show one filled gap");
+#else
+      obj->addIntProperty("WhichHalf", 2, "which half of split to show 0=all 1=left 2=right");
+      obj->addIntProperty("WhichGap", 0, "show one filled gap");
+      obj->addIntProperty("ShowPoint", -1, "w");
+#endif
 
       per_link_objects.addVisObject(obj);
     }
@@ -535,6 +541,21 @@ namespace moveit_rviz_plugin
                           gdi.gap_tris_,
                           base_->getIntProperty("FirstTri")->getInt(),
                           base_->getIntProperty("NTris")->getInt());
+ROS_INFO("draw %s gap %d tri[113]=%d of %d total",
+mp==&a?"a":
+mp==&b?"b":
+mp==&mesh?"mesh":
+"???",
+which_gap,
+gdi.gap_tris_.size()>113?gdi.gap_tris_[113]:-1,
+int(gdi.gap_tris_.size()));
+
+
+              int showpt = base_->getIntProperty("ShowPoint")->getInt();
+              if (showpt >=0 && showpt < gdi.points_.size())
+              {
+                shapes_->addPoint(gdi.points_[showpt], Eigen::Vector4f(1,0,1,1));
+              }
             }
           }
           else
