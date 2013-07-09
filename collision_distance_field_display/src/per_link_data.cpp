@@ -437,6 +437,7 @@ extern EigenSTL::vector_Vector3d acorn_db_slice_pts_clip;
 extern EigenSTL::vector_Vector3d acorn_db_slice_pts_0;
 extern EigenSTL::vector_Vector3d acorn_db_slice_pts_in;
 extern EigenSTL::vector_Vector3d acorn_db_slice_pts_out;
+extern bool acorn_debug_ear_state;
 
 
 
@@ -463,15 +464,11 @@ namespace moveit_rviz_plugin
 
       obj->addIntProperty("NTris", -1, "Number of tris to show");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
-#if 0
       obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
       obj->addIntProperty("WhichGap", -1, "show one filled gap");
-#else
-      obj->addIntProperty("WhichHalf", 2, "which half of split to show 0=all 1=left 2=right");
-      obj->addIntProperty("WhichGap", 0, "show one filled gap");
-      obj->addIntProperty("ShowPoint", -2, "w");
-      obj->addIntProperty("WhichClip", -1, "w");
-#endif
+      obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap");
+      obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
+      obj->addIntProperty("ShowPlane", 0, "Show the slice plane?");
 
       per_link_objects.addVisObject(obj);
     }
@@ -506,14 +503,13 @@ namespace moveit_rviz_plugin
           if (!shapes_)
             shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
 
-#if 1
+          if (base_->getIntProperty("ShowPlane")->getInt() != 0)
           {
             ROS_INFO("Plane: %f %f %f %f", plane.getA(), plane.getB(), plane.getC(), plane.getD());
             mesh_core::PlaneProjection proj(mesh.getVerts());
             shapes_->setDefaultColor(Eigen::Vector4f(1,1,1,0.3));
             shapes_->addAxis(proj.getOrientation(), proj.getOrigin(), 0.2);
           }
-#endif
 
 #if 1
           acorn_db_slice_showclip = base_->getIntProperty("WhichClip")->getInt();
@@ -521,6 +517,14 @@ namespace moveit_rviz_plugin
 
           mesh.fillGaps();
 
+          if (base_->getIntProperty("NTris")->getInt() == -2)
+          {
+            acorn_debug_ear_state = true;
+          }
+          else
+          {
+            acorn_debug_ear_state = false;
+          }
           
 #if 0
           mesh_core::Mesh a,b;
@@ -579,11 +583,34 @@ namespace moveit_rviz_plugin
                             base_->getIntProperty("FirstTri")->getInt(),
                             base_->getIntProperty("NTris")->getInt());
 
+              if (base_->getIntProperty("NTris")->getInt() == 1)
+              {
+                int t = base_->getIntProperty("FirstTri")->getInt();
+                int num = gdi.neigbor_tris_.size();
+                logInform("XXXXXXXX Show neigbor tri %d of %d which is tri index %d",
+                  t,
+                  num,
+                  (t>=0 && t<num) ? gdi.neigbor_tris_[t] : -1);
+                  
+              }
+
               mesh_shape_->reset(
                           mp,
                           gdi.gap_tris_,
                           base_->getIntProperty("FirstTri")->getInt(),
                           base_->getIntProperty("NTris")->getInt());
+
+              if (base_->getIntProperty("NTris")->getInt() == 1)
+              {
+                int t = base_->getIntProperty("FirstTri")->getInt();
+                int num = gdi.gap_tris_.size();
+                logInform("XXXXXXXX Show gap tri %d of %d which is tri index %d",
+                  t,
+                  num,
+                  (t>=0 && t<num) ? gdi.gap_tris_[t] : -1);
+                  
+              }
+
 ROS_INFO("draw %s gap %d tri[113]=%d of %d total",
 mp==&a?"a":
 mp==&b?"b":
@@ -594,7 +621,7 @@ gdi.gap_tris_.size()>113?gdi.gap_tris_[113]:-1,
 int(gdi.gap_tris_.size()));
 
 
-              int showpt = base_->getIntProperty("ShowPoint")->getInt();
+              int showpt = base_->getIntProperty("ShowGapLoopPoint")->getInt();
               if (showpt >=0 && showpt < gdi.points_.size())
               {
                 shapes_->addPoint(gdi.points_[showpt], Eigen::Vector4f(1,0,1,1));
