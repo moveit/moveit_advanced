@@ -41,6 +41,7 @@
 bool mesh_core::Mesh::debug_ = false;
 
 bool acorn_debug_show_vertex_consolidate = false;
+bool acorn_debug_ear_state = false;
 
 
 mesh_core::Mesh::Mesh(double epsilon)
@@ -935,10 +936,19 @@ struct mesh_core::Mesh::GapPoint
 // Decide if point is an ear or not.
 void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>& points)
 {
+  if (acorn_debug_ear_state)
+  {
+    logInform("Calc EarState for gap points[%d]",int(&point - &points[0]));
+  }
+
   double cr = cross2d(point.prev_->delta_, point.delta_);
   if (cr < 0.0)
   {
     point.state_ = GapPoint::REFLEX;
+    if (acorn_debug_ear_state)
+    {
+      logInform("                state=REFLEX");
+    }
     return;
   }
 
@@ -959,6 +969,37 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
   p2.d_ = -p2.norm_.dot(p2.v2d_);
   p[2] = &p2;
 
+  if (acorn_debug_ear_state)
+  {
+    logInform("      pt[%3d] (%8.4f %8.4f)  norm=(%8.4f %8.4f) d=%8.4f  dot0= %f %f (should be 0 0)",
+      int(point.prev_  - &points[0]),
+      p[0]->v2d_.x(),
+      p[0]->v2d_.y(),
+      p[0]->norm_.x(),
+      p[0]->norm_.y(),
+      p[0]->d_,
+      p[0]->norm_.dot(p[0]->v2d_) + p[0]->d_,
+      p[0]->norm_.dot(p[1]->v2d_) + p[0]->d_);
+    logInform("      pt[%3d] (%8.4f %8.4f)  norm=(%8.4f %8.4f) d=%8.4f  dot0= %f %f (should be 0 0)",
+      int(&point  - &points[0]),
+      p[1]->v2d_.x(),
+      p[1]->v2d_.y(),
+      p[1]->norm_.x(),
+      p[1]->norm_.y(),
+      p[1]->d_,
+      p[1]->norm_.dot(p[1]->v2d_) + p[1]->d_,
+      p[1]->norm_.dot(p[2]->v2d_) + p[1]->d_);
+    logInform("      pt[%3d] (%8.4f %8.4f)  norm=(%8.4f %8.4f) d=%8.4f  dot0= %f %f (should be 0 0)",
+      int(point.next_  - &points[0]),
+      p[2]->v2d_.x(),
+      p[2]->v2d_.y(),
+      p[2]->norm_.x(),
+      p[2]->norm_.y(),
+      p[2]->d_,
+      p[2]->norm_.dot(p[2]->v2d_) + p[2]->d_,
+      p[2]->norm_.dot(p[0]->v2d_) + p[2]->d_);
+  }
+
   std::vector<GapPoint>::const_iterator pt_it = points.begin();
   std::vector<GapPoint>::const_iterator pt_end = points.end();
   for ( ; pt_it != pt_end ; ++pt_it)
@@ -968,23 +1009,43 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
         &*pt_it == point.next_)
       continue;
 
-    for (int j = 0; j < 3 ; ++j)
+    if (acorn_debug_ear_state)
+    {
+      logInform("                   check point[%d] (%8.4f %8.4f)",
+        (&*pt_it - &points[0]),
+        pt_it->v2d_.x(),
+        pt_it->v2d_.y());
+    }
+
+    for (int j = 0;; ++j)
     {
       // point is inside triangle.  Not an ear.
       if (j == 3)
       {
         point.state_ = GapPoint::CONVEX;
+        if (acorn_debug_ear_state)
+        {
+          logInform("                state=CONVEX");
+        }
         return;
       }
 
+
       // outside the tri?  check next pt_it
       double dist = p[j]->norm_.dot(pt_it->v2d_) + p[j]->d_;
+
+      if (acorn_debug_ear_state)
+        logInform("                      dist[%d]=%f",j,dist);
 
       if (dist <= 0.0)
         break;
     }
   }
 
+  if (acorn_debug_ear_state)
+  {
+    logInform("                state=EAR");
+  }
   point.state_ = GapPoint::EAR;
 }
 
@@ -1015,6 +1076,16 @@ void mesh_core::Mesh::generatePolygon(
     bool partial_ok)
 {
   int nverts = verts.size();
+
+//acorn_debug_ear_state = true;
+  if (acorn_debug_ear_state)
+  {
+    logInform("#####################");
+    logInform("#####################");
+    logInform("#####################");
+    logInform("#####################");
+    logInform("##################### generatePolygon nverts=%d",nverts);
+  }
 
   if (nverts < 3)
     return;
@@ -1154,6 +1225,11 @@ void mesh_core::Mesh::generatePolygon(
   GapPoint *p = &points[0];
   for (;;)
   {
+    if (acorn_debug_ear_state)
+    {
+      logInform("  Check point %d  EarState=%d",int(p - &points[0]),int(p->state_));
+    }
+
     if (p->state_ != GapPoint::EAR)
     {
       cnt++;
@@ -1169,8 +1245,20 @@ void mesh_core::Mesh::generatePolygon(
 
     cnt = 0;
 
+int old_tri_size = tris_.size();
+    if (acorn_debug_ear_state)
+    {
+      logInform("  Fill Ear    %d  as tri %d",int(p - &points[0]), tris_.size());
+    }
+
     // found an ear
     addGapTri(p, direction);
+
+    if (acorn_debug_ear_state && old_tri_size+1 != tris_.size())
+    {
+      logInform("  NO TRIANGLE CREATED!!");
+    }
+
 
     p->next_->prev_ = p->prev_;
     p->prev_->next_ = p->next_;
