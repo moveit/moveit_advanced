@@ -160,7 +160,7 @@ public:
   // construct an empty mesh
   // vertices closer than epsilon will be combined.
   // degenerate triangles are removed as they are added.
-  Mesh(double epsilon=0.001);
+  Mesh(double epsilon=0.00001);
 
   /// remove everything and be left with empty mesh
   void clear();
