@@ -428,6 +428,18 @@ namespace moveit_rviz_plugin
   };
 }
 
+extern int acorn_db_slice_showclip;
+extern int acorn_db_slice_current;
+extern Eigen::Vector3d acorn_db_slice_in;
+extern Eigen::Vector3d acorn_db_slice_out;
+extern Eigen::Vector3d acorn_db_slice_clip;
+extern EigenSTL::vector_Vector3d acorn_db_slice_pts_clip;
+extern EigenSTL::vector_Vector3d acorn_db_slice_pts_0;
+extern EigenSTL::vector_Vector3d acorn_db_slice_pts_in;
+extern EigenSTL::vector_Vector3d acorn_db_slice_pts_out;
+
+
+
 namespace moveit_rviz_plugin
 {
   // Fit plane to link vertices and draw plane as an axis
@@ -457,7 +469,8 @@ namespace moveit_rviz_plugin
 #else
       obj->addIntProperty("WhichHalf", 2, "which half of split to show 0=all 1=left 2=right");
       obj->addIntProperty("WhichGap", 0, "show one filled gap");
-      obj->addIntProperty("ShowPoint", -1, "w");
+      obj->addIntProperty("ShowPoint", -2, "w");
+      obj->addIntProperty("WhichClip", -1, "w");
 #endif
 
       per_link_objects.addVisObject(obj);
@@ -501,9 +514,38 @@ namespace moveit_rviz_plugin
             shapes_->addAxis(proj.getOrientation(), proj.getOrigin(), 0.2);
           }
 #endif
+
+#if 1
+          acorn_db_slice_showclip = base_->getIntProperty("WhichClip")->getInt();
+#endif
+
+          mesh.fillGaps();
+
           
-          mesh_core::Mesh a, b;
+#if 0
+          mesh_core::Mesh a,b;
+#else
+          mesh_core::Mesh a(0.00001);
+          mesh_core::Mesh b(0.00001);
+#endif
           mesh.slice(plane, a, b);
+
+
+          if (acorn_db_slice_showclip>=0 && acorn_db_slice_showclip < acorn_db_slice_current)
+          {
+            logInform("Show clip %d of %d",acorn_db_slice_showclip,acorn_db_slice_current);
+            //shapes_->addPoint(acorn_db_slice_in, Eigen::Vector4f(1,0,0,1));
+            //shapes_->addPoint(acorn_db_slice_out, Eigen::Vector4f(0,1,0,1));
+            //shapes_->addPoint(acorn_db_slice_clip, Eigen::Vector4f(0,0,1,1));
+    
+            shapes_->addPoints(acorn_db_slice_pts_clip, Eigen::Vector4f(1,0,1,1));
+            shapes_->addPoints(acorn_db_slice_pts_in, Eigen::Vector4f(0,0,1,1));
+            shapes_->addPoints(acorn_db_slice_pts_0, Eigen::Vector4f(1,1,1,1));
+            shapes_->addPoints(acorn_db_slice_pts_out, Eigen::Vector4f(1,0,0,1));
+
+
+          }
+
 
           // draw the mesh
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
@@ -557,7 +599,10 @@ int(gdi.gap_tris_.size()));
               {
                 shapes_->addPoint(gdi.points_[showpt], Eigen::Vector4f(1,0,1,1));
               }
-
+              else if (showpt == -1)
+              {
+                shapes_->addPoints(gdi.points_, Eigen::Vector4f(1,0,1,1));
+              }
 
 
 
