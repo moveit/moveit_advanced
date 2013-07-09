@@ -209,6 +209,14 @@ public:
   const std::vector<Triangle>& getTris() const { return tris_; }
   void getTris(std::vector<int>& tris) const;
 
+  // get tight bounding sphere around mesh
+  void getBoundingSphere(Eigen::Vector3d& center,
+                         double &radius) const;
+
+  // get tight bounding sphere around mesh
+  void getAABB(Eigen::Vector3d& min,
+               Eigen::Vector3d& max) const;
+
   // slize this mesh in half along plane and create 2 new meshes
   //   a: contains only parts beyond plane
   //   b: contains only parts before plane
@@ -382,6 +390,15 @@ private:
   // set true by setAdjacentTriangles()
   bool adjacent_tris_valid_;
 
+  // bounding sphere
+  mutable bool bounding_sphere_valid_;
+  mutable Eigen::Vector3d bounding_sphere_center_;
+  mutable double bounding_sphere_radius_;
+
+  // aabb
+  mutable bool aabb_valid_;
+  mutable Eigen::Vector3d aabb_min_;
+  mutable Eigen::Vector3d aabb_max_;
 
   // enable debugging features
   static bool debug_;

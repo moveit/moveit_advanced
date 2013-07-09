@@ -36,6 +36,8 @@
 
 #include <mesh_core/mesh.h>
 #include <mesh_core/geom.h>
+#include <mesh_core/aabb.h>
+#include <mesh_core/bounding_sphere.h>
 #include <console_bridge/console.h>
 
 bool mesh_core::Mesh::debug_ = false;
@@ -48,6 +50,8 @@ mesh_core::Mesh::Mesh(double epsilon)
   : have_degenerate_edges_(false)
   , number_of_submeshes_(-1)
   , adjacent_tris_valid_(false)
+  , aabb_valid_(false)
+  , bounding_sphere_valid_(false)
 {
   setEpsilon(epsilon);
 }
@@ -1641,6 +1645,32 @@ acorn_debug_show_vertex_consolidate = false;
   a.fillGaps();
 acorn_db_slice_pts_loop.clear();
   b.fillGaps();
+}
+
+void mesh_core::Mesh::getBoundingSphere(
+      Eigen::Vector3d& center,
+      double &radius) const
+{
+  if (!bounding_sphere_valid_)
+  {
+    generateBoundingSphere(verts_, bounding_sphere_center_, bounding_sphere_radius_);
+    bounding_sphere_valid_ = true;
+  }
+  center = bounding_sphere_center_;
+  radius = bounding_sphere_radius_;
+}
+
+void mesh_core::Mesh::getAABB(
+      Eigen::Vector3d& min,
+      Eigen::Vector3d& max) const
+{
+  if (!aabb_valid_)
+  {
+    generateAABB(verts_, aabb_min_, aabb_max_);
+    aabb_valid_ = true;
+  }
+  min = aabb_min_;
+  max = aabb_max_;
 }
 
 
