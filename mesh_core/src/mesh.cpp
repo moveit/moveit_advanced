@@ -40,6 +40,9 @@
 
 bool mesh_core::Mesh::debug_ = false;
 
+bool acorn_debug_show_vertex_consolidate = false;
+
+
 mesh_core::Mesh::Mesh(double epsilon)
   : have_degenerate_edges_(false)
   , number_of_submeshes_(-1)
@@ -103,6 +106,12 @@ void mesh_core::Mesh::add(
 
   number_of_submeshes_ = -1; // need to recalculate
   adjacent_tris_valid_ = false;
+
+  if (acorn_debug_show_vertex_consolidate)
+  {
+    logInform("Add tri[%d] with vidx=%d %d %d",
+      tri_idx, a,b,c);
+  }
 
   // find 3 edges
   for (int dir = 0; dir < 3 ; ++dir)
@@ -259,12 +268,47 @@ int mesh_core::Mesh::addVertex(const Eigen::Vector3d& a)
   for ( ; it != end ; ++it)
   {
     if ((*it - a).squaredNorm() < epsilon_squared_)
+    {
+      if (acorn_debug_show_vertex_consolidate)
+      {
+        logInform("Use existing vertex (%8.4f %8.4f %8.4f) idx=%d     dist=%f  eps=%f  dsq=%f  esq=%f",
+          it->x(),
+          it->y(),
+          it->z(),
+          int(it - verts_.begin()),
+          (*it - a).norm(),
+          epsilon_,
+          (*it - a).squaredNorm(),
+          epsilon_squared_);
+        logInform("                for (%8.4f %8.4f %8.4f)",
+          a.x(),
+          a.y(),
+          a.z());
+      }
       return it - verts_.begin();
+    }
   }
   verts_.push_back(a);
 
   vert_info_.resize(verts_.size());
   vert_info_[verts_.size() - 1].edges_.reserve(8);
+
+  if (acorn_debug_show_vertex_consolidate)
+  {
+    logInform("Use NEW      vertex (%8.4f %8.4f %8.4f) idx=%d   dist=%f  eps=%f  dsq=%f  esq=%f",
+      verts_[verts_.size()-1].x(),
+      verts_[verts_.size()-1].y(),
+      verts_[verts_.size()-1].z(),
+      int(verts_.size() - 1),
+      (*it - a).norm(),
+      epsilon_,
+      (*it - a).squaredNorm(),
+      epsilon_squared_);
+    logInform("                for (%8.4f %8.4f %8.4f)",
+      a.x(),
+      a.y(),
+      a.z());
+  }
 
   return verts_.size() - 1;
 }
@@ -1153,12 +1197,31 @@ void mesh_core::Mesh::generatePolygon(
   addGapTri(p->next_->next_, direction);
 }
 
+int acorn_db_slice_showmin=-1;
+int acorn_db_slice_showmax=-1;
+int acorn_db_slice_showclip=-1;
+int acorn_db_slice_current=0;
+Eigen::Vector3d acorn_db_slice_in = Eigen::Vector3d(0,0,0);
+Eigen::Vector3d acorn_db_slice_out = Eigen::Vector3d(0,0,0);
+Eigen::Vector3d acorn_db_slice_clip = Eigen::Vector3d(0,0,0);
+EigenSTL::vector_Vector3d acorn_db_slice_pts_clip;
+EigenSTL::vector_Vector3d acorn_db_slice_pts_0;
+EigenSTL::vector_Vector3d acorn_db_slice_pts_in;
+EigenSTL::vector_Vector3d acorn_db_slice_pts_out;
+
+EigenSTL::vector_Vector3d acorn_db_slice_pts_loop;
 
 void mesh_core::Mesh::slice(
       const Plane& plane,
       Mesh& a,
       Mesh& b) const
 {
+acorn_db_slice_current = 0;
+acorn_db_slice_pts_clip.clear();
+acorn_db_slice_pts_0.clear();
+acorn_db_slice_pts_in.clear();
+acorn_db_slice_pts_out.clear();
+
   std::vector<signed char> clipcodes;
   std::vector<double> dists;
   clipcodes.resize(verts_.size());
@@ -1189,8 +1252,10 @@ void mesh_core::Mesh::slice(
   a.clear();
   b.clear();
 
+#if 0
   a.epsilon_ = b.epsilon_ = epsilon_;
   a.epsilon_squared_ = b.epsilon_squared_ = epsilon_squared_;
+#endif
 
   if (bcnt == 0)
   {
@@ -1217,6 +1282,19 @@ void mesh_core::Mesh::slice(
       int ab_sign = ab ? -1 : 1;
       Mesh& newmesh = ab ? b : a;
 
+if (ab==1)
+{
+  acorn_db_slice_current++;
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+    acorn_db_slice_pts_clip.clear();
+    acorn_db_slice_pts_0.clear();
+    acorn_db_slice_pts_in.clear();
+    acorn_db_slice_pts_out.clear();
+  }
+}
+
+
       // categorize triangle - inside, outside, or needs to be clipped?
       int cc[3];
       int in_cnt = 0;
@@ -1234,11 +1312,26 @@ void mesh_core::Mesh::slice(
         {
           out_cnt++;
         }
+if (ab==1)
+{
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+    if (cc[i] == 0)
+      acorn_db_slice_pts_0.push_back(verts_[tri->verts_[i]]);
+    else if (cc[i] > 0)
+      acorn_db_slice_pts_in.push_back(verts_[tri->verts_[i]]);
+    else if (cc[i] < 0)
+      acorn_db_slice_pts_out.push_back(verts_[tri->verts_[i]]);
+  }
+}
+
       }
 
       // entire triangle is out?
       if (in_cnt < 1)
+      {
         continue;
+      }
 
       // entire triangle is in?
       if (out_cnt < 1)
@@ -1273,6 +1366,42 @@ void mesh_core::Mesh::slice(
         int cur_idx  = tri->verts_[cur];
         double t = dists[prev_idx] / (dists[prev_idx] - dists[cur_idx]);
         v[vcnt++] = (1.0 - t) * verts_[prev_idx] + t * verts_[cur_idx];
+
+
+if (ab==1)
+{
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+    acorn_db_slice_pts_clip.push_back(v[vcnt-1]);
+
+            acorn_db_slice_in = verts_[prev_idx];
+            acorn_db_slice_out = verts_[cur_idx];
+            acorn_db_slice_clip = v[vcnt-1];
+            logInform("Clip %d:  t=%f = %f / ( %f - %f )   v[%d]   in->out",
+              acorn_db_slice_current,
+              t,
+              dists[prev_idx],dists[prev_idx],dists[cur_idx],
+              vcnt-1);
+            logInform("     in: (%8.4f %8.4f %8.4f)",
+              acorn_db_slice_in.x(),
+              acorn_db_slice_in.y(),
+              acorn_db_slice_in.z());
+            logInform("    out: (%8.4f %8.4f %8.4f)",
+              acorn_db_slice_out.x(),
+              acorn_db_slice_out.y(),
+              acorn_db_slice_out.z());
+            logInform("    clp: (%8.4f %8.4f %8.4f)",
+              acorn_db_slice_clip.x(),
+              acorn_db_slice_clip.y(),
+              acorn_db_slice_clip.z());
+            logInform("    pln: (%8.4f %8.4f %8.4f) %8.4f",
+              plane.getA(),
+              plane.getB(),
+              plane.getC(),
+              plane.getD());
+  }
+}
+
       }
 
       while (cc[cur] < 0)
@@ -1289,6 +1418,41 @@ void mesh_core::Mesh::slice(
         int cur_idx  = tri->verts_[cur];
         double t = dists[cur_idx] / (dists[cur_idx] - dists[prev_idx]);
         v[vcnt++] = (1.0 - t) * verts_[cur_idx] + t * verts_[prev_idx];
+
+if (ab==1)
+{
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+    acorn_db_slice_pts_clip.push_back(v[vcnt-1]);
+            acorn_db_slice_in = verts_[cur_idx];
+            acorn_db_slice_out = verts_[prev_idx];
+            acorn_db_slice_clip = v[vcnt-1];
+            logInform("Clip %d:  t=%f = %f / ( %f - %f )   v[%d]  out->in",
+              acorn_db_slice_current,
+              t,
+              dists[cur_idx],dists[cur_idx],dists[prev_idx],
+              vcnt-1);
+            logInform("     in: (%8.4f %8.4f %8.4f)",
+              acorn_db_slice_in.x(),
+              acorn_db_slice_in.y(),
+              acorn_db_slice_in.z());
+            logInform("    out: (%8.4f %8.4f %8.4f)",
+              acorn_db_slice_out.x(),
+              acorn_db_slice_out.y(),
+              acorn_db_slice_out.z());
+            logInform("    clp: (%8.4f %8.4f %8.4f)",
+              acorn_db_slice_clip.x(),
+              acorn_db_slice_clip.y(),
+              acorn_db_slice_clip.z());
+            logInform("    pln: (%8.4f %8.4f %8.4f) %8.4f",
+              plane.getA(),
+              plane.getB(),
+              plane.getC(),
+              plane.getD());
+  }
+}
+
+
       }
 
       while (cur != start)
@@ -1299,13 +1463,95 @@ void mesh_core::Mesh::slice(
       }
       
       ACORN_ASSERT(vcnt >= 3 && vcnt <= 4);
+
+if (ab==1)
+{
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+            logInform("    ADD: tris.size=%d            (vcnt=%d)",newmesh.tris_.size(), vcnt);
+            logInform("    ADD: (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f)",
+              v[0].x(),
+              v[0].y(),
+              v[0].z(),
+              v[1].x(),
+              v[1].y(),
+              v[1].z(),
+              v[2].x(),
+              v[2].y(),
+              v[2].z());
+    acorn_debug_show_vertex_consolidate = true;
+  }
+}
+
       newmesh.add(v[0], v[1], v[2]);
+
+if (ab==1)
+{
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+            logInform("     as: tris.size=%d",newmesh.tris_.size());
+            logInform("     as: (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f)",
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[0]].x(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[0]].y(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[0]].z(),
+
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[1]].x(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[1]].y(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[1]].z(),
+
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[2]].x(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[2]].y(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[2]].z());
+  }
+}
+
       if (vcnt == 4)
+      {
+
+if (ab==1)
+{
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+            logInform("    ADD: (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f)",
+              v[0].x(),
+              v[0].y(),
+              v[0].z(),
+              v[2].x(),
+              v[2].y(),
+              v[2].z(),
+              v[3].x(),
+              v[3].y(),
+              v[3].z());
+  }
+}
+
         newmesh.add(v[0], v[2], v[3]);
+
+if (ab==1)
+{
+  if (acorn_db_slice_current == acorn_db_slice_showclip)
+  {
+            logInform("     as: (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f) (%8.4f %8.4f %8.4f)",
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[0]].x(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[0]].y(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[0]].z(),
+
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[1]].x(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[1]].y(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[1]].z(),
+
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[2]].x(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[2]].y(),
+              newmesh.verts_[newmesh.tris_[newmesh.tris_.size()-1].verts_[2]].z());
+  }
+}
+      }
+acorn_debug_show_vertex_consolidate = false;
     }
   }
 
   a.fillGaps();
+acorn_db_slice_pts_loop.clear();
   b.fillGaps();
 }
 
