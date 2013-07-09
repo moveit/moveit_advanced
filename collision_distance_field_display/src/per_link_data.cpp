@@ -469,6 +469,8 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap");
       obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
       obj->addBoolProperty("ShowPlane", false, "Show the slice plane?");
+      obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
+      obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
 
       per_link_objects.addVisObject(obj);
     }
@@ -644,6 +646,23 @@ int(gdi.gap_tris_.size()));
                           base_->getIntProperty("NTris")->getInt());
           }
 
+          if (base_->getBoolProperty("ShowBoundingSphere")->getBool())
+          {
+            Eigen::Vector3d center;
+            double radius;
+            mp->getBoundingSphere(center, radius);
+            shapes_->addSphere(center, radius, Eigen::Vector4f(0,0,1,0.5));
+          }
+
+          if (base_->getBoolProperty("ShowAABB")->getBool())
+          {
+            Eigen::Vector3d min, max;
+            mp->getAABB(min, max);
+            shapes_->addBox(
+                  Eigen::Affine3d(Eigen::Translation3d((min+max)*0.5)),
+                  max-min,
+                  Eigen::Vector4f(0,0,1,0.5));
+          }
 
         }
         else
