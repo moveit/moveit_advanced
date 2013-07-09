@@ -224,6 +224,11 @@ public:
   // fill in gaps (cracks or holes) in the mesh
   void fillGaps();
 
+public:
+  //#########################################################################
+  //############################### DEBUG ###################################
+  //#########################################################################
+
   // print index info
   void print() const;
 
@@ -252,6 +257,7 @@ public:
   // enable debugging (debugGapInfo())
   static void enableDebugging(bool enable);
 
+private:
   int triIndex(const Triangle& tri) const
   {
     return &tri - &tris_[0];
@@ -277,7 +283,7 @@ public:
                               edge.verts_[0];
   }
 
-private:
+
   /// add a triangle defined by 3 existing vertices. 
   void add(int a,
            int b,
