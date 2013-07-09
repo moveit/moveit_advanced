@@ -162,12 +162,36 @@ void moveit_rviz_plugin::PerLinkObjBase::addIntProperty(
   extra_property_map_[name] = prop;
 }
 
+void moveit_rviz_plugin::PerLinkObjBase::addBoolProperty(
+      const std::string& name,
+      bool value,
+      const std::string& descrip)
+{
+  rviz::BoolProperty* prop = new rviz::BoolProperty(
+                      name.c_str(),
+                      value,
+                      descrip.c_str(),
+                      this,
+                      SLOT( changedSlot() ),
+                      this );
+  extra_property_map_[name] = prop;
+}
+
 rviz::IntProperty* moveit_rviz_plugin::PerLinkObjBase::getIntProperty(
       const std::string& name)
 {
   std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
   if (it != extra_property_map_.end())
     return dynamic_cast<rviz::IntProperty*>(it->second);
+  return NULL;
+}
+
+rviz::BoolProperty* moveit_rviz_plugin::PerLinkObjBase::getBoolProperty(
+      const std::string& name)
+{
+  std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
+  if (it != extra_property_map_.end())
+    return dynamic_cast<rviz::BoolProperty*>(it->second);
   return NULL;
 }
 

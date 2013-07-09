@@ -468,7 +468,7 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("WhichGap", -1, "show one filled gap");
       obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap");
       obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
-      obj->addIntProperty("ShowPlane", 0, "Show the slice plane?");
+      obj->addBoolProperty("ShowPlane", false, "Show the slice plane?");
 
       per_link_objects.addVisObject(obj);
     }
@@ -503,7 +503,7 @@ namespace moveit_rviz_plugin
           if (!shapes_)
             shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
 
-          if (base_->getIntProperty("ShowPlane")->getInt() != 0)
+          if (base_->getBoolProperty("ShowPlane")->getBool())
           {
             ROS_INFO("Plane: %f %f %f %f", plane.getA(), plane.getB(), plane.getC(), plane.getD());
             mesh_core::PlaneProjection proj(mesh.getVerts());

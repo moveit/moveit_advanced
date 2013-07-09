@@ -117,9 +117,14 @@ public:
                 const std::string& name,
                 int value,
                 const std::string& descrip);
+  void addBoolProperty(
+                const std::string& name,
+                bool value,
+                const std::string& descrip);
 
-  // return property created with addIntProperty()
+  // return property created with add*Property()
   rviz::IntProperty* getIntProperty(const std::string& name);
+  rviz::BoolProperty* getBoolProperty(const std::string& name);
 
 protected:
   PerLinkObjBase(rviz::Property *parent,
