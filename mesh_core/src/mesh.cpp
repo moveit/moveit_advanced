@@ -338,6 +338,7 @@ int mesh_core::Mesh::addEdge(int vertidx_a, int vertidx_b)
   e.verts_[0] = vertidx_a;
   e.verts_[1] = vertidx_b;
   e.tris_.reserve(2);
+  e.hack_ignore_gap_ = false;
 
   edge_map_[key] = edge_idx;
 
@@ -706,10 +707,31 @@ mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
   std::vector<Edge>::iterator edge_end = edges_.end();
   for (; edge != edge_end ; ++edge)
   {
+    if (edge->hack_ignore_gap_)
+      continue;
+
     // edge has only 1 tri?
     if (edge->tris_.size() == 1)
+    {
+      logInform("Found gap: edge %d has 1 tri",int(&*edge - &edges_[0]));
       return &*edge;
+    }
   }
+
+  edge = edges_.begin();
+  for (; edge != edge_end ; ++edge)
+  {
+    if (edge->hack_ignore_gap_)
+      continue;
+
+    // edge has odd number of triangles
+    if (edge->tris_.size() & 1)
+    {
+      logInform("Found gap: edge %d has %d tri",int(&*edge - &edges_[0]), edge->tris_.size());
+      return &*edge;
+    }
+  }
+
   return NULL; // no gaps found
 }
 
@@ -722,13 +744,17 @@ struct GapEdge
   bool connected_to_same_tri_;
 };
 
+#define ACORN_DEBUG_FILL_GAP 0
+
 void mesh_core::Mesh::fillGap(Edge& first_edge)
 {
   ACORN_ASSERT(first_edge.tris_.size() == 1);
 
-#if 0
+#if 0 && ACORN_DEBUG_FILL_GAP
   print();
-  logInform("================ Fill gap in edge %d  v(%d,%d)",
+#endif
+#if ACORN_DEBUG_FILL_GAP
+  logInform("================ Fill gap in edge[%d]  v(%d,%d)",
     edgeIndex(first_edge),
     first_edge.verts_[0],
     first_edge.verts_[1]);
@@ -771,14 +797,26 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
     new_edges.clear();
     bool found_correct_winding = false;
 
+#if ACORN_DEBUG_FILL_GAP
+    logInform("  check edges for vert[%d]",current_vtx);
+#endif
+
     // check all edges touching current vertex
     for (int i = 0 ; i < vtx.edges_.size() ; ++i)
     {
+#if ACORN_DEBUG_FILL_GAP
+      logInform("   check edge[%d] v(%d,%d)  ntris=%d",
+        vtx.edges_[i],
+        edges_[vtx.edges_[i]].verts_[0],
+        edges_[vtx.edges_[i]].verts_[1],
+        edges_[vtx.edges_[i]].tris_.size());
+#endif
+
       if (vtx.edges_[i] == current_edge)
         continue;
 
       Edge& vedge = edges_[vtx.edges_[i]];
-      if (vedge.tris_.size() == 2)
+      if ((vedge.tris_.size() & 1) == 0)
         continue;
 
       GapEdge ge;
@@ -811,6 +849,15 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
           new_edges.push_back(ge);
         }
       }
+    }
+
+    // TODO: remove this workaround
+    if (new_edges.empty())
+    {
+      logWarn("Unable to close gap in edge %d -- ignoring.",
+          int(&first_edge - &edges_[0]));
+      first_edge.hack_ignore_gap_ = true;
+      return;
     }
 
     ACORN_ASSERT(!new_edges.empty());
@@ -1728,13 +1775,14 @@ void mesh_core::Mesh::getSphereRep(
           std::vector <double> sphere_radii,
           SphereRepNode **mesh_tree) const
 {
+  logInform("################### CALL getSphereRep()");
   SphereRepNode *tree = NULL;
   sphere_centers.clear();
   sphere_radii.clear();
 
   if (tris_.size() > 0)
   {
-    SphereRepNode *tree = new SphereRepNode;
+    tree = new SphereRepNode;
 
     tree->mesh_ = this;
     tree->parent_ = NULL;
@@ -1742,6 +1790,8 @@ void mesh_core::Mesh::getSphereRep(
     tree->next_sibling_ = tree;
     tree->prev_sibling_ = tree;
     tree->tmp_mesh_ = NULL;
+    tree->depth_ = 0;
+    tree->id_ = 1;
     
     calculateSphereRep(tolerance, tree);
 
@@ -1759,11 +1809,23 @@ void mesh_core::Mesh::calculateSphereRep(
           double tolerance,
           SphereRepNode *mesh_node) const
 {
+
+// TODO: remove this hack
+if (mesh_node->depth_ > 3)
+{
+  logInform("HACK: Skipping split below depth 3");
+  return;
+}
+
+
   if (!calculateSphereRepTreeSplit(tolerance, mesh_node))
     return;
 
+  ACORN_ASSERT(mesh_node->first_child_);
+  ACORN_ASSERT(mesh_node->first_child_->next_sibling_);
   calculateSphereRep(tolerance, mesh_node->first_child_);
   calculateSphereRep(tolerance, mesh_node->first_child_->next_sibling_);
+
 }
 
 bool mesh_core::Mesh::calculateSphereRepTreeSplit(
@@ -1785,6 +1847,8 @@ bool mesh_core::Mesh::calculateSphereRepTreeSplit(
   a->first_child_ = NULL;
   a->next_sibling_ = b;
   a->prev_sibling_ = b;
+  a->depth_ = mesh_node->depth_ + 1;
+  a->id_ = mesh_node->id_ << 1;
   
   b->mesh_ = mesh_b;
   b->tmp_mesh_ = mesh_b;
@@ -1792,7 +1856,12 @@ bool mesh_core::Mesh::calculateSphereRepTreeSplit(
   b->first_child_ = NULL;
   b->next_sibling_ = a;
   b->prev_sibling_ = a;
+  b->depth_ = mesh_node->depth_ + 1;
+  b->id_ = a->id_ | 1;
   
+  ACORN_ASSERT(mesh_node->first_child_ == NULL);
+  mesh_node->first_child_ = a;
+
   return true;
 }
 
@@ -1810,7 +1879,10 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
 
   *mesh_a = new Mesh;
   *mesh_b = new Mesh;
+
   mesh_node->mesh_->slice(plane, **mesh_a, **mesh_b);
+
+  mesh_node->plane_ = plane;
 
   if ((*mesh_a)->getTriCount() > 0 && (*mesh_b)->getTriCount() > 0)
     return true;
@@ -1836,6 +1908,7 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
   int ntris = tris_.size();
   ACORN_ASSERT(nverts >= 3);
 
+
   Eigen::Vector3d center;
   double radius;
   mesh_node->mesh_->getBoundingSphere(center, radius);
@@ -1852,6 +1925,12 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
       close_vidx = i;
     }
   }
+
+  mesh_node->closest_point = verts_[close_vidx];
+  mesh_node->closes_triangle_.resize(3);
+  mesh_node->closes_triangle_[0] = Eigen::Vector3d::Zero();
+  mesh_node->closes_triangle_[1] = Eigen::Vector3d::Zero();
+  mesh_node->closes_triangle_[2] = Eigen::Vector3d::Zero();
 
   // find point on mesh closest to center of bounding sphere
   Eigen::Vector3d closest_point = verts_[close_vidx];
@@ -1873,6 +1952,9 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
                       closest_dist);
     if (dist < closest_dist)
     {
+      mesh_node->closes_triangle_[0] = verts_[tri.verts_[0]];
+      mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
+      mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
       closest_dist = dist;
       closest_point = close_point;
       closest_tri = i;
@@ -2003,15 +2085,29 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
 
 
   EigenSTL::vector_Vector3d points;
+  points.reserve(4);
+#if 0
+  points.push_back(center);
+#endif
+
   points.push_back(closest_point);
   if (closest2_tri >=0)
     points.push_back(closest2_point);
   if (closest3_tri >=0)
     points.push_back(closest3_point);
-  if (points.size() < 3)
+  while (points.size() < 3)
     points.push_back(center);
 
+
+  // debug
+  mesh_node->plane_points_ = points;
+
+
+#if 0
   plane = Plane(points);
+#else
+  plane.from3Points(points);
+#endif
 
   return true;
 }

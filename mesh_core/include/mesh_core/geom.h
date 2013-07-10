@@ -105,6 +105,11 @@ public:
   // dist < 0 if normal points from plane away from point
   double dist(const Eigen::Vector3d& point) const;
 
+  // Set to plane through 0-3 points.
+  // If colinear, normal is arbitrary.
+  // If 0 points, result is through origin.
+  void from3Points(const EigenSTL::vector_Vector3d& points);
+
 protected:
   // set plane from least squares fit of points.
   // Optionally return average of points.

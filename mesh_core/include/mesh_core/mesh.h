@@ -39,6 +39,7 @@
 
 #include <eigen_stl_containers/eigen_stl_containers.h>
 #include <console_bridge/console.h>
+#include <mesh_core/geom.h>
 
 #define MESH_CORE__MESH__ENABLE_DEBUG 1
 
@@ -147,6 +148,10 @@ public:
     // info about adjacent tris.
     // In a well formed mesh there should be 2 tris adjacent to every edge.
     std::vector<EdgeTri> tris_;
+
+    // hack to work around deficiencies of fillGap()
+    // TODO: can this be fixed?
+    bool hack_ignore_gap_;
   };
 
   struct Vertex
@@ -228,6 +233,25 @@ public:
     // same as mesh_ if this is a temporary mesh that should be deleted.
     // Otherwise NULL.
     Mesh *tmp_mesh_;
+
+    // below is for debugging
+
+    int depth_;   // number of parents
+
+    Plane plane_; // plane used to split children
+
+    // 1<<depth_ always set
+    // 1<<level indicates which child of that level
+    int id_;
+
+    // points used to pick plane
+    EigenSTL::vector_Vector3d plane_points_;
+
+    // closest vertex to center of sphere
+    Eigen::Vector3d closest_point;
+
+    // closest triangle to center of sphere
+    EigenSTL::vector_Vector3d closes_triangle_;
   };
 
   // generate a set of spheres that represents the mesh

@@ -98,7 +98,55 @@ mesh_core::Plane::Plane(
 mesh_core::Plane::Plane(
       const EigenSTL::vector_Vector3d& points)
 {
-  leastSquaresGeneral(points);
+  if (points.size() <= 3)
+    from3Points(points);
+  else
+    leastSquaresGeneral(points);
+}
+
+void mesh_core::Plane::from3Points(
+      const EigenSTL::vector_Vector3d& points)
+{
+  Eigen::Vector3d ab, ac, norm;
+  int npoints = points.size();
+  if (npoints > 2)
+  {
+    ab = points[1] - points[0];
+    ac = points[2] - points[0];
+    norm = ab.cross(ac);
+  }
+  else if (npoints == 2)
+  {
+    ab = points[1] - points[0];
+    ac(0) = ab(1);
+    ac(1) = ab(2);
+    ac(2) = ab(0);
+    norm = ab.cross(ac);
+  }
+  else if (npoints == 1)
+  {
+    *this = Plane(Eigen::Vector3d(0,0,1), points[0]);
+    return;
+  }
+  else
+  {
+    *this = Plane();
+    return;
+  }
+
+  if (norm.squaredNorm() <= std::numeric_limits<double>::epsilon())
+  {
+    ac(0) = ab(1);
+    ac(1) = ab(2);
+    ac(2) = ab(0);
+    norm = ab.cross(ac);
+    if (norm.squaredNorm() <= std::numeric_limits<double>::epsilon())
+    {
+      norm = Eigen::Vector3d(0,0,1);
+    }
+  }
+
+  *this = Plane(norm, points[0]);
 }
 
 void mesh_core::Plane::leastSquaresFast(
@@ -415,6 +463,8 @@ bool mesh_core::LineSegment2D::intersect(
 
 #if 1
 
+bool acorn_closest_debug = false;
+
 // return closest point on line segment to the given point, and the distance
 // betweeen them.
 double mesh_core::closestPointOnLine(
@@ -471,22 +521,85 @@ double mesh_core::closestPointOnTriangle(
 
   closest_point = point - dist * norm;
 
+if (acorn_closest_debug)
+{
+  logInform(" CDB: tri_a     (%8.4f %8.4f %8.4f)",
+    tri_a.x(),
+    tri_a.y(),
+    tri_a.z());
+  logInform(" CDB: tri_b     (%8.4f %8.4f %8.4f)",
+    tri_b.x(),
+    tri_b.y(),
+    tri_b.z());
+  logInform(" CDB: tri_c     (%8.4f %8.4f %8.4f)",
+    tri_c.x(),
+    tri_c.y(),
+    tri_c.z());
+  logInform(" CDB: point     (%8.4f %8.4f %8.4f)",
+    point.x(),
+    point.y(),
+    point.z());
+  logInform(" CDB: intersect (%8.4f %8.4f %8.4f)",
+    closest_point.x(),
+    closest_point.y(),
+    closest_point.z());
+}
+
   Eigen::Vector3d ab_norm = ab.cross(norm);
+if (acorn_closest_debug)
+{
+  logInform(" CDB: ab_norm   (%8.4f %8.4f %8.4f) dp=%8.4f >? da=%8.4f",
+    ab_norm.x(),
+    ab_norm.y(),
+    ab_norm.z(),
+      ab_norm.dot(point),
+      ab_norm.dot(tri_a));
+}
   if (ab_norm.dot(point) > ab_norm.dot(tri_a))
   {
+if (acorn_closest_debug)
+{
+  logInform(" CDB: beyond ab");
+}
     return closestPointOnLine(tri_a, tri_b, point, closest_point);
   }
   
   Eigen::Vector3d ac_norm = ac.cross(norm);
-  if (ac_norm.dot(point) < ab_norm.dot(tri_a))
+if (acorn_closest_debug)
+{
+  logInform(" CDB: ac_norm   (%8.4f %8.4f %8.4f) dp=%8.4f <? da=%8.4f",
+    ac_norm.x(),
+    ac_norm.y(),
+    ac_norm.z(),
+      ac_norm.dot(point),
+      ac_norm.dot(tri_a));
+}
+  if (ac_norm.dot(point) < ac_norm.dot(tri_a))
   {
+if (acorn_closest_debug)
+{
+  logInform(" CDB: beyond ac");
+}
     return closestPointOnLine(tri_a, tri_c, point, closest_point);
   }
   
   Eigen::Vector3d bc = tri_c - tri_b;
   Eigen::Vector3d bc_norm = bc.cross(norm);
+if (acorn_closest_debug)
+{
+  logInform(" CDB: ab_norm   (%8.4f %8.4f %8.4f) dp=%8.4f >? db=%8.4f",
+    bc_norm.x(),
+    bc_norm.y(),
+    bc_norm.z(),
+      bc_norm.dot(point),
+      bc_norm.dot(tri_b));
+}
   if (bc_norm.dot(point) > bc_norm.dot(tri_b))
   {
+if (acorn_closest_debug)
+{
+  logInform(" CDB: beyond bc");
+}
     return closestPointOnLine(tri_b, tri_c, point, closest_point);
   }
   
