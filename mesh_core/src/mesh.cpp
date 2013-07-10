@@ -39,6 +39,7 @@
 #include <mesh_core/aabb.h>
 #include <mesh_core/bounding_sphere.h>
 #include <console_bridge/console.h>
+#include <set>
 
 bool mesh_core::Mesh::debug_ = false;
 
@@ -1671,6 +1672,348 @@ void mesh_core::Mesh::getAABB(
   }
   min = aabb_min_;
   max = aabb_max_;
+}
+
+void mesh_core::Mesh::deleteSphereRepTree(SphereRepNode *mesh_tree)
+{
+  if (!mesh_tree)
+    return;
+
+  SphereRepNode *sibling = mesh_tree->next_sibling_;
+  if (sibling != mesh_tree)
+  {
+    mesh_tree->next_sibling_->prev_sibling_ = mesh_tree->prev_sibling_;
+    mesh_tree->prev_sibling_->next_sibling_ = mesh_tree->next_sibling_;
+    deleteSphereRepTree(sibling);
+  }
+  deleteSphereRepTree(mesh_tree->first_child_);
+  delete mesh_tree->tmp_mesh_;
+  delete mesh_tree;
+}
+
+// harvest spheres from leaves of tree
+void mesh_core::Mesh::collectSphereRepSpheres(
+      SphereRepNode *mesh_tree,
+      EigenSTL::vector_Vector3d& sphere_centers,
+      std::vector <double> sphere_radii,
+      int max_depth)
+{
+  if (!mesh_tree)
+    return;
+
+  SphereRepNode *sibling = mesh_tree;
+  do
+  {
+    if (sibling->first_child_ && max_depth != 0)
+    {
+      collectSphereRepSpheres(sibling->first_child_, sphere_centers, sphere_radii, max_depth - 1);
+    }
+    else
+    {
+      Eigen::Vector3d center;
+      double radius;
+      mesh_tree->mesh_->getBoundingSphere(center, radius);
+      sphere_centers.push_back(center);
+      sphere_radii.push_back(radius);
+    }
+
+    sibling = sibling->next_sibling_;
+  }
+  while (sibling != mesh_tree);
+}
+
+void mesh_core::Mesh::getSphereRep(
+          double tolerance,
+          EigenSTL::vector_Vector3d& sphere_centers,
+          std::vector <double> sphere_radii,
+          SphereRepNode **mesh_tree) const
+{
+  SphereRepNode *tree = NULL;
+  sphere_centers.clear();
+  sphere_radii.clear();
+
+  if (tris_.size() > 0)
+  {
+    SphereRepNode *tree = new SphereRepNode;
+
+    tree->mesh_ = this;
+    tree->parent_ = NULL;
+    tree->first_child_ = NULL;
+    tree->next_sibling_ = tree;
+    tree->prev_sibling_ = tree;
+    tree->tmp_mesh_ = NULL;
+    
+    calculateSphereRep(tolerance, tree);
+
+    collectSphereRepSpheres(tree, sphere_centers, sphere_radii);
+  }
+
+  if (mesh_tree)
+    *mesh_tree = tree;
+  else
+    deleteSphereRepTree(tree);
+}
+
+// recursively divide into 2 pieces until the piece is fit well by a sphere
+void mesh_core::Mesh::calculateSphereRep(
+          double tolerance,
+          SphereRepNode *mesh_node) const
+{
+  if (!calculateSphereRepTreeSplit(tolerance, mesh_node))
+    return;
+
+  calculateSphereRep(tolerance, mesh_node->first_child_);
+  calculateSphereRep(tolerance, mesh_node->first_child_->next_sibling_);
+}
+
+bool mesh_core::Mesh::calculateSphereRepTreeSplit(
+          double tolerance,
+          SphereRepNode *mesh_node) const
+{
+  Mesh *mesh_a = NULL;
+  Mesh *mesh_b = NULL;
+
+  if (!calculateSphereRepMeshSplit(tolerance, mesh_node, &mesh_a, &mesh_b))
+    return false;
+
+  SphereRepNode *a = new SphereRepNode;
+  SphereRepNode *b = new SphereRepNode;
+
+  a->mesh_ = mesh_a;
+  a->tmp_mesh_ = mesh_a;
+  a->parent_ = mesh_node;
+  a->first_child_ = NULL;
+  a->next_sibling_ = b;
+  a->prev_sibling_ = b;
+  
+  b->mesh_ = mesh_b;
+  b->tmp_mesh_ = mesh_b;
+  b->parent_ = mesh_node;
+  b->first_child_ = NULL;
+  b->next_sibling_ = a;
+  b->prev_sibling_ = a;
+  
+  return true;
+}
+
+// If split needed, split mesh_node and return true.
+// Else return false.
+bool mesh_core::Mesh::calculateSphereRepMeshSplit(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Mesh **mesh_a,
+          Mesh **mesh_b) const
+{
+  Plane plane;
+  if (!calculateSphereRepSplitPlane(tolerance, mesh_node, plane))
+    return false;
+
+  *mesh_a = new Mesh;
+  *mesh_b = new Mesh;
+  mesh_node->mesh_->slice(plane, **mesh_a, **mesh_b);
+
+  if ((*mesh_a)->getTriCount() > 0 && (*mesh_b)->getTriCount() > 0)
+    return true;
+
+  logWarn("Split resulted in 0-triangle mesh.  Sphere bound is not within tolerance.");
+
+  delete *mesh_a;
+  delete *mesh_b;
+  *mesh_a = NULL;
+  *mesh_b = NULL;
+  return false;
+}
+
+
+// If mesh_node should be split, calculate a splitting plane and return true.
+// If no split needed, return false.
+bool mesh_core::Mesh::calculateSphereRepSplitPlane(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const
+{
+  int nverts = verts_.size();
+  int ntris = tris_.size();
+  ACORN_ASSERT(nverts >= 3);
+
+  Eigen::Vector3d center;
+  double radius;
+  mesh_node->mesh_->getBoundingSphere(center, radius);
+
+  // find mesh vertex closest to center of bounding sphere
+  int close_vidx = 0;
+  double close_vidx_dsq = std::numeric_limits<double>::max();
+  for (int i = 0; i < nverts ; i++)
+  {
+    double dsq = (verts_[i] - center).squaredNorm();
+    if (dsq < close_vidx_dsq)
+    {
+      close_vidx_dsq = dsq;
+      close_vidx = i;
+    }
+  }
+
+  // find point on mesh closest to center of bounding sphere
+  Eigen::Vector3d closest_point = verts_[close_vidx];
+  ACORN_ASSERT(vert_info_.size() > close_vidx);
+  ACORN_ASSERT(vert_info_[close_vidx].edges_.size() > 0);
+  ACORN_ASSERT(edges_[vert_info_[close_vidx].edges_[0]].tris_.size() > 0);
+  int closest_tri = edges_[vert_info_[close_vidx].edges_[0]].tris_[0].tri_idx_;
+  double closest_dist = std::sqrt(close_vidx_dsq);
+  for (int i = 0 ; i < ntris ; ++i)
+  {
+    const Triangle& tri = tris_[i];
+    Eigen::Vector3d close_point;
+    double dist = closestPointOnTriangle(
+                      verts_[tri.verts_[0]],
+                      verts_[tri.verts_[1]],
+                      verts_[tri.verts_[2]],
+                      center,
+                      close_point,
+                      closest_dist);
+    if (dist < closest_dist)
+    {
+      closest_dist = dist;
+      closest_point = close_point;
+      closest_tri = i;
+    }
+  }
+
+  // No need to split.  Sphere bounding is within tolerance.
+  if (closest_dist + tolerance >= radius)
+    return false;
+
+  // find nearby points that are also close to center of sphere
+  Eigen::Vector3d closest2_point = closest_point;
+  Eigen::Vector3d closest3_point = closest_point;
+  double closest2_dist = std::numeric_limits<double>::max();
+  double closest3_dist = std::numeric_limits<double>::max();
+  int closest2_tri = -1;
+  int closest3_tri = -1;
+
+  static const double EPSILON = std::numeric_limits<double>::epsilon() * 100;
+  static const double EPSILON_SQ = EPSILON * EPSILON;
+
+  {
+    std::set<int> tris_set;   // which triangles we have added already
+    std::vector<int> tris1;
+    std::vector<int> tris2;
+
+    tris_set.insert(closest_tri);
+
+    // initialize tris1 with all triangles adjacent to the closest tri
+    for (int i = 0 ; i < 3 ; ++i)
+    {
+      const Edge& edge = edges_[tris_[closest_tri].edges_[i].edge_idx_];
+      int netris = edge.tris_.size();
+      for (int j = 0 ; j < netris ; ++j)
+      {
+        int tidx = edge.tris_[j].tri_idx_;
+        if (!tris_set.insert(tidx).second)
+          tris1.push_back(tidx);    // not seen yet; add it
+      }
+    }
+
+    for (;;)
+    {
+      while (!tris1.empty())
+      {
+        int tidx = tris1.back();
+        tris1.pop_back();
+
+        const Triangle& tri = tris_[tidx];
+        Eigen::Vector3d close_point;
+        double dist = closestPointOnTriangle(
+                          verts_[tri.verts_[0]],
+                          verts_[tri.verts_[1]],
+                          verts_[tri.verts_[2]],
+                          center,
+                          close_point,
+                          closest2_dist);
+        Eigen::Vector3d edgevec_a = close_point - closest_point;
+        Eigen::Vector3d edgevec_b = close_point - closest2_point;
+        Eigen::Vector3d edgevec_c = close_point - closest3_point;
+        if (dist < closest2_dist)
+        {
+          if (edgevec_a.squaredNorm() > EPSILON_SQ)
+          {
+            if (closest2_tri == -1)
+            {
+              closest2_dist = dist;
+              closest2_point = close_point;
+              closest2_tri = tidx;
+            }
+            else if (edgevec_b.squaredNorm() > EPSILON_SQ &&
+                     edgevec_a.cross(edgevec_b).squaredNorm() > EPSILON_SQ)
+            {
+              closest3_dist = closest2_dist;
+              closest3_point = closest2_point;
+              closest3_tri = closest2_tri;
+
+              closest2_dist = dist;
+              closest2_point = close_point;
+              closest2_tri = tidx;
+            }
+            else if (edgevec_c.squaredNorm() > EPSILON_SQ &&
+                     edgevec_a.cross(edgevec_c).squaredNorm() > EPSILON_SQ)
+            {
+              closest2_dist = dist;
+              closest2_point = close_point;
+              closest2_tri = tidx;
+            }
+          }
+        }
+        else if (dist < closest3_dist)
+        {
+          if (edgevec_a.squaredNorm() > EPSILON_SQ &&
+              edgevec_b.squaredNorm() > EPSILON_SQ &&
+              edgevec_a.cross(edgevec_b).squaredNorm() > EPSILON_SQ)
+          {
+            closest3_dist = dist;
+            closest3_point = close_point;
+            closest3_tri = tidx;
+          }
+        }
+
+        for (int i = 0 ; i < 3 ; ++i)
+        {
+          const Edge& edge = edges_[tri.edges_[i].edge_idx_];
+          int netris = edge.tris_.size();
+          for (int j = 0 ; j < netris ; ++j)
+          {
+            int tidx = edge.tris_[j].tri_idx_;
+            if (!tris_set.insert(tidx).second)
+              tris2.push_back(tidx);  // not seen yet; add it
+          }
+        }
+      }
+
+      // found 3 orthogonal points?
+      if (closest3_tri != -1)
+        break;
+
+      // no more points to consider?
+      if (tris2.empty())
+        break;
+      
+      // try the next set of adjacent triangles
+      std::swap(tris1, tris2);
+    }
+  }
+
+
+  EigenSTL::vector_Vector3d points;
+  points.push_back(closest_point);
+  if (closest2_tri >=0)
+    points.push_back(closest2_point);
+  if (closest3_tri >=0)
+    points.push_back(closest3_point);
+  if (points.size() < 3)
+    points.push_back(center);
+
+  plane = Plane(points);
+
+  return true;
 }
 
 

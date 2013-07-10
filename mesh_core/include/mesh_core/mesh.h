@@ -217,6 +217,45 @@ public:
   void getAABB(Eigen::Vector3d& min,
                Eigen::Vector3d& max) const;
 
+  struct SphereRepNode
+  {
+    SphereRepNode *parent_;
+    SphereRepNode *first_child_;
+    SphereRepNode *next_sibling_;
+    SphereRepNode *prev_sibling_;
+    const Mesh *mesh_;
+
+    // same as mesh_ if this is a temporary mesh that should be deleted.
+    // Otherwise NULL.
+    Mesh *tmp_mesh_;
+  };
+
+  // generate a set of spheres that represents the mesh
+  //   tolerance - how well the spheres must fit.
+  //   sphere_centers - result
+  //   sphere_radii   - result
+  //   mesh_tree - optional - returns sub meshes for debugging.
+  void getSphereRep(
+          double tolerance,
+          EigenSTL::vector_Vector3d& sphere_centers,
+          std::vector <double> sphere_radii,
+          SphereRepNode **mesh_tree = NULL) const;
+
+  // delete a mesh_tree returned by getSphereRep()
+  static void deleteSphereRepTree(SphereRepNode *mesh_tree);
+
+  // harvest spheres from leaves of tree.
+  // Nodes at max_depth are treated as leaves.
+  // Using max_depth = 0 will return just spheres from mesh_tree and its
+  // siblings (if any).
+  // Using max_depth = -1 (default) will return all spheres.
+  static void collectSphereRepSpheres(
+                      SphereRepNode *mesh_tree,
+                      EigenSTL::vector_Vector3d& sphere_centers,
+                      std::vector <double> sphere_radii,
+                      int max_depth = -1);
+
+
   // slize this mesh in half along plane and create 2 new meshes
   //   a: contains only parts beyond plane
   //   b: contains only parts before plane
@@ -356,6 +395,29 @@ private:
   static void calcEarState(
                       GapPoint& point,
                       const std::vector<GapPoint>& points);
+
+  // recursive helper for getSphereRep()
+  void calculateSphereRep(
+          double tolerance,
+          SphereRepNode *mesh_tree) const;
+
+  // create 2 children for mesh_node (used by getSphereRep())
+  bool calculateSphereRepTreeSplit(
+          double tolerance,
+          SphereRepNode *mesh_node) const;
+
+  // split mesh in 2 for getSphereRep()
+  bool calculateSphereRepMeshSplit(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Mesh **mesh_a,
+          Mesh **mesh_b) const;
+
+  // calculate splitting plane for getSphereRep()
+  bool calculateSphereRepSplitPlane(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const;
 
   // Debug asserts
   void assertValidTri(const Triangle& tri, const char *msg) const;

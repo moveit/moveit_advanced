@@ -413,3 +413,86 @@ bool mesh_core::LineSegment2D::intersect(
   }
 }
 
+#if 1
+
+// return closest point on line segment to the given point, and the distance
+// betweeen them.
+double mesh_core::closestPointOnLine(
+      const Eigen::Vector3d& line_a,
+      const Eigen::Vector3d& line_b,
+      const Eigen::Vector3d& point,
+      Eigen::Vector3d& closest_point)
+{
+  Eigen::Vector3d ab = line_b - line_a;
+  Eigen::Vector3d ab_norm = ab.normalized();
+  Eigen::Vector3d ap = point - line_a;
+
+  Eigen::Vector3d closest_point_rel = ab_norm.dot(ap) * ab_norm;
+
+  double dp = ab.dot(closest_point_rel);
+  if (dp < 0.0)
+  {
+    closest_point = line_a;
+  }
+  else if (dp > ab.squaredNorm())
+  {
+    closest_point = line_b;
+  }
+  else
+  {
+    closest_point = line_a + closest_point_rel;
+  }
+
+  return (closest_point - point).norm();
+}
+
+// return closest point on triangle to the given point, and the distance
+// betweeen them.
+// If distance is greater than max_dist then skip the calculations and just return the approximate distance (anything greater than max_dist).
+double mesh_core::closestPointOnTriangle(
+      const Eigen::Vector3d& tri_a,
+      const Eigen::Vector3d& tri_b,
+      const Eigen::Vector3d& tri_c,
+      const Eigen::Vector3d& point,
+      Eigen::Vector3d& closest_point,
+      double max_dist)
+{
+  Eigen::Vector3d ab = tri_b - tri_a;
+  Eigen::Vector3d ac = tri_c - tri_a;
+  Eigen::Vector3d n = ab.cross(ac);
+  Eigen::Vector3d norm = n.normalized();
+
+  Eigen::Vector3d ap = point - tri_a;
+  double dist = norm.dot(ap);
+  double abs_dist = std::abs(dist);
+  
+  if (abs_dist >= max_dist)
+    return abs_dist;
+
+  closest_point = point - dist * norm;
+
+  Eigen::Vector3d ab_norm = ab.cross(norm);
+  if (ab_norm.dot(point) > ab_norm.dot(tri_a))
+  {
+    return closestPointOnLine(tri_a, tri_b, point, closest_point);
+  }
+  
+  Eigen::Vector3d ac_norm = ac.cross(norm);
+  if (ac_norm.dot(point) < ab_norm.dot(tri_a))
+  {
+    return closestPointOnLine(tri_a, tri_c, point, closest_point);
+  }
+  
+  Eigen::Vector3d bc = tri_c - tri_b;
+  Eigen::Vector3d bc_norm = bc.cross(norm);
+  if (bc_norm.dot(point) > bc_norm.dot(tri_b))
+  {
+    return closestPointOnLine(tri_b, tri_c, point, closest_point);
+  }
+  
+  return abs_dist;
+}
+
+#endif
+
+

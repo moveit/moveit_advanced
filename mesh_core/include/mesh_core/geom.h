@@ -60,6 +60,27 @@ void appendPointsTransformed(
     int npoints,
     const double *data);
 
+
+// return closest point on triangle to the given point, and the distance
+// betweeen them.
+// If distance is greater than max_dist then skip the calculations and just
+// return the approximate distance (anything greater than max_dist).
+double closestPointOnTriangle(
+      const Eigen::Vector3d& tri_a,
+      const Eigen::Vector3d& tri_b,
+      const Eigen::Vector3d& tri_c,
+      const Eigen::Vector3d& point,
+      Eigen::Vector3d& closest_point,
+      double max_dist = std::numeric_limits<double>::max());
+
+// return closest point on line segment to the given point, and the distance
+// betweeen them.
+double closestPointOnLine(
+      const Eigen::Vector3d& line_a,
+      const Eigen::Vector3d& line_b,
+      const Eigen::Vector3d& point,
+      Eigen::Vector3d& closest_point);
+
 class Plane
 {
 public:
