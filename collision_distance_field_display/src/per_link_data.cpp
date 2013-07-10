@@ -438,11 +438,65 @@ extern EigenSTL::vector_Vector3d acorn_db_slice_pts_0;
 extern EigenSTL::vector_Vector3d acorn_db_slice_pts_in;
 extern EigenSTL::vector_Vector3d acorn_db_slice_pts_out;
 extern bool acorn_debug_ear_state;
+extern bool acorn_closest_debug;
 
 
 
 namespace moveit_rviz_plugin
 {
+
+  mesh_core::Mesh::SphereRepNode *findSphereTreeNode(
+        mesh_core::Mesh::SphereRepNode *node,
+        int id)
+  {
+    if (node->id_ == id)
+      return node;
+    if (!node->first_child_)
+      return NULL;
+    mesh_core::Mesh::SphereRepNode *nn = findSphereTreeNode(node->first_child_, id);
+    ACORN_ASSERT(node->first_child_->next_sibling_);
+    if (nn)
+      return nn;
+    return findSphereTreeNode(node->first_child_->next_sibling_, id);
+  }
+  void showSphereTree(
+        const mesh_core::Mesh::SphereRepNode *node, 
+        const mesh_core::Mesh::SphereRepNode *mark,
+        char *name = NULL,
+        int depth = 0)
+  {
+    static char name0[1000];
+    if (!name)
+    {
+      name = name0;
+      name0[0] = 0;
+    }
+    logInform("  %8x=%10d %s %*s%08lx %s",
+      node->id_,
+      node->id_,
+      node==mark?"*":" ",
+      depth,"",
+      long(node),
+      name);
+
+    int l = strlen(name);
+    name[l+1] = 0;
+    if (node->first_child_)
+    {
+      name[l] = 'L';
+      showSphereTree(node->first_child_, mark, name, depth+1);
+      ACORN_ASSERT(node->first_child_->next_sibling_);
+      ACORN_ASSERT(node->first_child_->next_sibling_ != node->first_child_);
+      ACORN_ASSERT(node->first_child_->next_sibling_->next_sibling_ == node->first_child_);
+      name[l] = 'R';
+      showSphereTree(node->first_child_->next_sibling_, mark, name, depth+1);
+    }
+    name[l] = 0;
+  }
+
+
+
+
   // Fit plane to link vertices and draw plane as an axis
   class LinkObj_LinkMesh : public PerLinkSubObj
   {
@@ -553,51 +607,85 @@ namespace moveit_rviz_plugin
               shapes_->addSpheres(sphere_centers, sphere_radii, Eigen::Vector4f(1,1,0,0.5));
             }
 
-            if (sphere_rep_index >= 0 || sphere_rep_level >= -1)
+            if (sphere_rep_index >= 0)
             {
+#if 0
+              int bits = sphere_rep_index;
               mesh_core::Mesh::SphereRepNode *node = sphere_tree;
-              std::vector<int> level_next_child;
-              level_next_child.push_back(0);
-              for (int i = 0 ; node && i < sphere_rep_index ; i++)
+              std::stringstream ss;
+              while(bits > 1 && node->first_child_)
               {
-                // find next node
-                ACORN_ASSERT(!level_next_child.empty());
-                mesh_core::Mesh::SphereRepNode *child = node->first_child_;
-                if (!child)
-                {
-                  node = node->parent_;
-                  level_next_child.pop_back();
-                  continue;
-                }
+                int right = (bits & 1);
 
-                for (int j = 0 ; j < level_next_child.back() ; ++j)
+                Eigen::Vector3d center;
+                double radius;
+                node->mesh_->getBoundingSphere(center, radius);
+                shapes_->addArrow(
+                  center,
+                  center + (right ? -1.0 : 1.0) * radius * node->plane_.getNormal(),
+                  Eigen::Vector4f(1,0,1,0.5));
+
+                node = right ? node->first_child_->next_sibling_ : node->first_child_;
+                ss << (right ? "R" : "L");
+                bits >>= 1;
+              }
+#endif
+              mesh_core::Mesh::SphereRepNode *node = findSphereTreeNode(sphere_tree, sphere_rep_index);
+
+              showSphereTree(sphere_tree, node);
+
+              if (node)
+              {
+                if (node->parent_)
                 {
-                  child = child ? child->next_sibling_ : NULL;
-                  if (!child || child == node->first_child_)
+                  mesh_core::Mesh::SphereRepNode *n = node;
+                  while (n->parent_)
                   {
-                    // saw all children.  Pop up one level
-                    node = node->parent_;
-                    level_next_child.pop_back();
-                    break;
+                    mesh_core::Mesh::SphereRepNode *p = n->parent_;
+                    bool is_left = n == p->first_child_;
+
+                    Eigen::Vector3d center;
+                    double radius;
+                    p->mesh_->getBoundingSphere(center, radius);
+                    shapes_->addArrow(
+                      center,
+                      center + (is_left ? 1.0 : -1.0) * radius * p->plane_.getNormal(),
+                      Eigen::Vector4f(1,0,1,0.5));
+
+                    n = p;
+                  }
+
+                  if (node->parent_->plane_points_.size() > 0)
+                    shapes_->addPoint(node->parent_->plane_points_[0], Eigen::Vector4f(0.5,0,0,1));
+                  if (node->parent_->plane_points_.size() > 1)
+                    shapes_->addPoint(node->parent_->plane_points_[1], Eigen::Vector4f(0,0.5,0,1));
+                  if (node->parent_->plane_points_.size() > 2)
+                    shapes_->addPoint(node->parent_->plane_points_[2], Eigen::Vector4f(0,0,0.5,1));
+                  if (node->parent_->plane_points_.size() > 3)
+                    shapes_->addPoint(node->parent_->plane_points_[3], Eigen::Vector4f(0.5,0.5,0.5,1));
+                  shapes_->addPoint(node->parent_->closest_point, Eigen::Vector4f(0,0,0,1));
+                  if (node->parent_->closes_triangle_.size() == 3)
+                  {
+                    shapes_->addSpheres(node->parent_->closes_triangle_, 0.001, Eigen::Vector4f(1,1,0,1));
+
+Eigen::Vector3d center;
+Eigen::Vector3d closest;
+double radius;
+node->parent_->mesh_->getBoundingSphere(center, radius);
+acorn_closest_debug = true;
+mesh_core::closestPointOnTriangle(
+  node->parent_->closes_triangle_[0],
+  node->parent_->closes_triangle_[1],
+  node->parent_->closes_triangle_[2],
+  center,
+  closest,
+  1000.0);
+acorn_closest_debug = false;
                   }
                 }
 
-                // found new child.  traverse into child
-                level_next_child.back()++;
-                level_next_child.push_back(0);
-                node = child;
+                mp = node->mesh_;
               }
-
-              std::stringstream ss;
-              for (int i = 0 ; i < level_next_child.size() ; ++i)
-              {
-                ss << (level_next_child[i] - 1) << "  ";
-              }
-              logInform("Showing SphereRep <%s> node=0x%08lx",
-                  ss.str().c_str(),
-                  long(node));
-
-              mp = node->mesh_;
             }
           }
           
@@ -622,8 +710,6 @@ namespace moveit_rviz_plugin
               shapes_->addPoints(acorn_db_slice_pts_in, Eigen::Vector4f(0,0,1,1));
               shapes_->addPoints(acorn_db_slice_pts_0, Eigen::Vector4f(1,1,1,1));
               shapes_->addPoints(acorn_db_slice_pts_out, Eigen::Vector4f(1,0,0,1));
-
-
             }
           }
 
