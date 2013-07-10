@@ -471,6 +471,9 @@ namespace moveit_rviz_plugin
       obj->addBoolProperty("ShowPlane", false, "Show the slice plane?");
       obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
       obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
+      obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
+      obj->addFloatProperty("SphereRepTolerance", 0.01, "Tolerance for filling spheres");
+      obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
 
       per_link_objects.addVisObject(obj);
     }
@@ -527,29 +530,101 @@ namespace moveit_rviz_plugin
           {
             acorn_debug_ear_state = false;
           }
+
+          const mesh_core::Mesh *mp = &mesh;
+
+
+          mesh_core::Mesh::SphereRepNode *sphere_tree = NULL;
+          int sphere_rep_index = base_->getIntProperty("SphereRepIndex")->getInt();
+          int sphere_rep_level = base_->getIntProperty("ShowSphereRepSpheresLevel")->getInt();
+          if (sphere_rep_index >= 0 || sphere_rep_level >= -1)
+          {
+            double tolerance = base_->getFloatProperty("SphereRepTolerance")->getFloat();
+            EigenSTL::vector_Vector3d sphere_centers;
+            std::vector<double> sphere_radii;
+            logInform("Generate sphere tree");
+            mp->getSphereRep(tolerance, sphere_centers, sphere_radii, &sphere_tree);
+
+            if (sphere_rep_level >= -1)
+            {
+              sphere_centers.clear();
+              sphere_radii.clear();
+              mp->collectSphereRepSpheres(sphere_tree, sphere_centers, sphere_radii, sphere_rep_level);
+              shapes_->addSpheres(sphere_centers, sphere_radii, Eigen::Vector4f(1,1,0,0.5));
+            }
+
+            if (sphere_rep_index >= 0 || sphere_rep_level >= -1)
+            {
+              mesh_core::Mesh::SphereRepNode *node = sphere_tree;
+              std::vector<int> level_next_child;
+              level_next_child.push_back(0);
+              for (int i = 0 ; node && i < sphere_rep_index ; i++)
+              {
+                // find next node
+                ACORN_ASSERT(!level_next_child.empty());
+                mesh_core::Mesh::SphereRepNode *child = node->first_child_;
+                if (!child)
+                {
+                  node = node->parent_;
+                  level_next_child.pop_back();
+                  continue;
+                }
+
+                for (int j = 0 ; j < level_next_child.back() ; ++j)
+                {
+                  child = child ? child->next_sibling_ : NULL;
+                  if (!child || child == node->first_child_)
+                  {
+                    // saw all children.  Pop up one level
+                    node = node->parent_;
+                    level_next_child.pop_back();
+                    break;
+                  }
+                }
+
+                // found new child.  traverse into child
+                level_next_child.back()++;
+                level_next_child.push_back(0);
+                node = child;
+              }
+
+              std::stringstream ss;
+              for (int i = 0 ; i < level_next_child.size() ; ++i)
+              {
+                ss << (level_next_child[i] - 1) << "  ";
+              }
+              logInform("Showing SphereRep <%s> node=0x%08lx",
+                  ss.str().c_str(),
+                  long(node));
+
+              mp = node->mesh_;
+            }
+          }
           
-#if 0
-          mesh_core::Mesh a,b;
-#else
+          
           mesh_core::Mesh a(0.00001);
           mesh_core::Mesh b(0.00001);
-#endif
-          mesh.slice(plane, a, b);
-
-
-          if (acorn_db_slice_showclip>=0 && acorn_db_slice_showclip < acorn_db_slice_current)
+          int which_half = base_->getIntProperty("WhichHalf")->getInt();
+          if (which_half >= 1 && which_half <= 2)
           {
-            logInform("Show clip %d of %d",acorn_db_slice_showclip,acorn_db_slice_current);
-            //shapes_->addPoint(acorn_db_slice_in, Eigen::Vector4f(1,0,0,1));
-            //shapes_->addPoint(acorn_db_slice_out, Eigen::Vector4f(0,1,0,1));
-            //shapes_->addPoint(acorn_db_slice_clip, Eigen::Vector4f(0,0,1,1));
-    
-            shapes_->addPoints(acorn_db_slice_pts_clip, Eigen::Vector4f(1,0,1,1));
-            shapes_->addPoints(acorn_db_slice_pts_in, Eigen::Vector4f(0,0,1,1));
-            shapes_->addPoints(acorn_db_slice_pts_0, Eigen::Vector4f(1,1,1,1));
-            shapes_->addPoints(acorn_db_slice_pts_out, Eigen::Vector4f(1,0,0,1));
+            mp->slice(plane, a, b);
+            mp = which_half == 1 ? &a : &b;
 
 
+            if (acorn_db_slice_showclip>=0 && acorn_db_slice_showclip < acorn_db_slice_current)
+            {
+              logInform("Show clip %d of %d",acorn_db_slice_showclip,acorn_db_slice_current);
+              //shapes_->addPoint(acorn_db_slice_in, Eigen::Vector4f(1,0,0,1));
+              //shapes_->addPoint(acorn_db_slice_out, Eigen::Vector4f(0,1,0,1));
+              //shapes_->addPoint(acorn_db_slice_clip, Eigen::Vector4f(0,0,1,1));
+      
+              shapes_->addPoints(acorn_db_slice_pts_clip, Eigen::Vector4f(1,0,1,1));
+              shapes_->addPoints(acorn_db_slice_pts_in, Eigen::Vector4f(0,0,1,1));
+              shapes_->addPoints(acorn_db_slice_pts_0, Eigen::Vector4f(1,1,1,1));
+              shapes_->addPoints(acorn_db_slice_pts_out, Eigen::Vector4f(1,0,0,1));
+
+
+            }
           }
 
 
@@ -559,10 +634,6 @@ namespace moveit_rviz_plugin
                                             getSceneNode(), 
                                             NULL,
                                             base_->getColor()));
-          mesh_core::Mesh *mp = 
-                        base_->getIntProperty("WhichHalf")->getInt() == 0 ? &mesh :
-                        base_->getIntProperty("WhichHalf")->getInt() == 1 ? &a :
-                                                                            &b;
 
           int which_gap = base_->getIntProperty("WhichGap")->getInt();
           if (which_gap >= 0)
@@ -664,6 +735,7 @@ int(gdi.gap_tris_.size()));
                   Eigen::Vector4f(0,0,1,0.5));
           }
 
+          mesh_core::Mesh::deleteSphereRepTree(sphere_tree);
         }
         else
         {

@@ -162,6 +162,21 @@ void moveit_rviz_plugin::PerLinkObjBase::addIntProperty(
   extra_property_map_[name] = prop;
 }
 
+void moveit_rviz_plugin::PerLinkObjBase::addFloatProperty(
+      const std::string& name,
+      double value,
+      const std::string& descrip)
+{
+  rviz::FloatProperty* prop = new rviz::FloatProperty(
+                      name.c_str(),
+                      value,
+                      descrip.c_str(),
+                      this,
+                      SLOT( changedSlot() ),
+                      this );
+  extra_property_map_[name] = prop;
+}
+
 void moveit_rviz_plugin::PerLinkObjBase::addBoolProperty(
       const std::string& name,
       bool value,
@@ -183,6 +198,15 @@ rviz::IntProperty* moveit_rviz_plugin::PerLinkObjBase::getIntProperty(
   std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
   if (it != extra_property_map_.end())
     return dynamic_cast<rviz::IntProperty*>(it->second);
+  return NULL;
+}
+
+rviz::FloatProperty* moveit_rviz_plugin::PerLinkObjBase::getFloatProperty(
+      const std::string& name)
+{
+  std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
+  if (it != extra_property_map_.end())
+    return dynamic_cast<rviz::FloatProperty*>(it->second);
   return NULL;
 }
 
