@@ -664,6 +664,7 @@ namespace moveit_rviz_plugin
                   if (node->parent_->plane_points_.size() > 3)
                     shapes_->addPoint(node->parent_->plane_points_[3], Eigen::Vector4f(0.5,0.5,0.5,1));
                   shapes_->addPoint(node->parent_->closest_point, Eigen::Vector4f(0,0,0,1));
+                  shapes_->addPoint(node->parent_->farthest_point_, Eigen::Vector4f(1,1,1,1));
                   if (node->parent_->closes_triangle_.size() == 3)
                   {
                     shapes_->addSpheres(node->parent_->closes_triangle_, 0.001, Eigen::Vector4f(1,1,0,1));
