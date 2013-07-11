@@ -1811,7 +1811,7 @@ void mesh_core::Mesh::calculateSphereRep(
 {
 
 // TODO: remove this hack
-if (mesh_node->depth_ > 3)
+if (mesh_node->depth_ > 8)
 {
   logInform("HACK: Skipping split below depth 3");
   return;
