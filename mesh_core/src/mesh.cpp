@@ -1903,8 +1903,8 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
           SphereRepNode *mesh_node,
           Plane& plane) const
 {
-  return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
-  //return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
+  //return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
+  return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
 }
 
 
@@ -1935,8 +1935,7 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_far(
                             center, 
                             closest_point,
                             closest_tri);
-  // debug
-  if (1)
+  if (1) // DEBUG
   {
     mesh_node->closest_point = closest_point;
     const Triangle& tri = tris_[closest_tri];
@@ -1944,6 +1943,9 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_far(
     mesh_node->closes_triangle_[0] = verts_[tri.verts_[0]];
     mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
     mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
+
+    mesh_node->farthest_point_ = Eigen::Vector3d::Zero();
+    mesh_node->plane_points_.clear();
   }
 
   // No need to split.  Sphere bounding is within tolerance.
@@ -1962,6 +1964,11 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_far(
       far_vidx_dsq = dsq;
       far_vidx = i;
     }
+  }
+
+  if (1) // DEBUG
+  {
+    mesh_node->farthest_point_ = mesh_node_mesh.verts_[far_vidx];
   }
 
   Eigen::Vector3d norm = mesh_node_mesh.verts_[far_vidx] - center;
