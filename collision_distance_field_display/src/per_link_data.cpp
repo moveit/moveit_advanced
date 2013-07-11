@@ -547,6 +547,7 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
       obj->addFloatProperty("SphereRepTolerance", 0.01, "Tolerance for filling spheres");
       obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
+      obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
 
       per_link_objects.addVisObject(obj);
     }
@@ -651,7 +652,8 @@ namespace moveit_rviz_plugin
 #endif
               mesh_core::Mesh::SphereRepNode *node = findSphereTreeNode(sphere_tree, sphere_rep_index);
 
-              showSphereTree(sphere_tree, node);
+              if (base_->getBoolProperty("PrintTree")->getBool())
+                showSphereTree(sphere_tree, node);
 
               if (node)
               {
