@@ -1993,55 +1993,6 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_closeFar(
   double radius;
   mesh_node->mesh_->getBoundingSphere(center, radius);
 
-#if 0
-  // find mesh vertex closest to center of bounding sphere
-  int close_vidx = 0;
-  double close_vidx_dsq = std::numeric_limits<double>::max();
-  for (int i = 0; i < nverts ; i++)
-  {
-    double dsq = (verts_[i] - center).squaredNorm();
-    if (dsq < close_vidx_dsq)
-    {
-      close_vidx_dsq = dsq;
-      close_vidx = i;
-    }
-  }
-
-  mesh_node->closest_point = verts_[close_vidx];
-  mesh_node->closes_triangle_.resize(3);
-  mesh_node->closes_triangle_[0] = Eigen::Vector3d::Zero();
-  mesh_node->closes_triangle_[1] = Eigen::Vector3d::Zero();
-  mesh_node->closes_triangle_[2] = Eigen::Vector3d::Zero();
-
-  // find point on mesh closest to center of bounding sphere
-  Eigen::Vector3d closest_point = verts_[close_vidx];
-  ACORN_ASSERT(vert_info_.size() > close_vidx);
-  ACORN_ASSERT(vert_info_[close_vidx].edges_.size() > 0);
-  ACORN_ASSERT(edges_[vert_info_[close_vidx].edges_[0]].tris_.size() > 0);
-  int closest_tri = edges_[vert_info_[close_vidx].edges_[0]].tris_[0].tri_idx_;
-  double closest_dist = std::sqrt(close_vidx_dsq);
-  for (int i = 0 ; i < ntris ; ++i)
-  {
-    const Triangle& tri = tris_[i];
-    Eigen::Vector3d close_point;
-    double dist = closestPointOnTriangle(
-                      verts_[tri.verts_[0]],
-                      verts_[tri.verts_[1]],
-                      verts_[tri.verts_[2]],
-                      center,
-                      close_point,
-                      closest_dist);
-    if (dist < closest_dist)
-    {
-      mesh_node->closes_triangle_[0] = verts_[tri.verts_[0]];
-      mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
-      mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
-      closest_dist = dist;
-      closest_point = close_point;
-      closest_tri = i;
-    }
-  }
-#else
   Eigen::Vector3d closest_point;
   int closest_tri;
   double closest_dist = findClosestPoint(
@@ -2059,7 +2010,6 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_closeFar(
     mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
     mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
   }
-#endif
 
   // No need to split.  Sphere bounding is within tolerance.
   if (closest_dist + tolerance >= radius)
