@@ -463,35 +463,54 @@ namespace moveit_rviz_plugin
         const mesh_core::Mesh::SphereRepNode *node, 
         const mesh_core::Mesh::SphereRepNode *mark,
         char *name = NULL,
+        char *prefix = NULL,
         int depth = 0)
   {
     static char name0[1000];
+    static char prefix0[1000];
     if (!name)
     {
       name = name0;
       name0[0] = 0;
+      prefix = prefix0;
+      prefix0[0] = '+';
+      prefix0[1] = '-';
+      prefix0[2] = 0;
     }
-    logInform("  %8x=%10d %s %*s%08lx %s",
+    int l = strlen(name);
+    int lp = strlen(prefix);
+
+    prefix[lp - 2] = (!node->parent_ || node->next_sibling_ == node->parent_->first_child_) ? '`' : '+';
+    prefix[lp - 1] = '-';
+
+    logInform("  %8x=%10d %s %s%08lx %s",
       node->id_,
       node->id_,
       node==mark?"*":" ",
-      depth,"",
+      prefix,
       long(node),
       name);
 
-    int l = strlen(name);
+    prefix[lp - 2] = (prefix[lp - 2] == '+') ? '|' : ' ';
+    prefix[lp - 1] = ' ';
+    prefix[lp + 0] = '+';
+    prefix[lp + 1] = '-';
+    prefix[lp + 2] = 0;
+
     name[l+1] = 0;
     if (node->first_child_)
     {
       name[l] = 'L';
-      showSphereTree(node->first_child_, mark, name, depth+1);
+      prefix[lp] = 'L';
+      showSphereTree(node->first_child_, mark, name, prefix, depth+1);
       ACORN_ASSERT(node->first_child_->next_sibling_);
       ACORN_ASSERT(node->first_child_->next_sibling_ != node->first_child_);
       ACORN_ASSERT(node->first_child_->next_sibling_->next_sibling_ == node->first_child_);
       name[l] = 'R';
-      showSphereTree(node->first_child_->next_sibling_, mark, name, depth+1);
+      showSphereTree(node->first_child_->next_sibling_, mark, name, prefix, depth+1);
     }
     name[l] = 0;
+    prefix[lp] = 0;
   }
 
 
