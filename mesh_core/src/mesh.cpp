@@ -1896,10 +1896,90 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
   return false;
 }
 
-
 // If mesh_node should be split, calculate a splitting plane and return true.
 // If no split needed, return false.
 bool mesh_core::Mesh::calculateSphereRepSplitPlane(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const
+{
+  return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
+  //return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
+}
+
+
+
+// If mesh_node should be split, calculate a splitting plane and return true.
+// If no split needed, return false.
+//
+// This version works by:
+//   1) split plane goes through center of split-mesh bounding sphere.
+//   2) find farthest vertex from center.  Plane is perpendicular to center-farpoint
+bool mesh_core::Mesh::calculateSphereRepSplitPlane_far(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const
+{
+  const Mesh& mesh_node_mesh = *mesh_node->mesh_;
+  int node_nverts = mesh_node_mesh.verts_.size();
+  ACORN_ASSERT(node_nverts >= 3);
+
+  Eigen::Vector3d center;
+  double radius;
+  mesh_node_mesh.getBoundingSphere(center, radius);
+
+  // decide whether we need to split
+  Eigen::Vector3d closest_point;
+  int closest_tri;
+  double closest_dist = findClosestPoint(
+                            center, 
+                            closest_point,
+                            closest_tri);
+  // debug
+  if (1)
+  {
+    mesh_node->closest_point = closest_point;
+    const Triangle& tri = tris_[closest_tri];
+    mesh_node->closes_triangle_.resize(3);
+    mesh_node->closes_triangle_[0] = verts_[tri.verts_[0]];
+    mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
+    mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
+  }
+
+  // No need to split.  Sphere bounding is within tolerance.
+  if (closest_dist + tolerance >= radius)
+    return false;
+
+
+  // find mesh vertex farthest from center of bounding sphere
+  int far_vidx = 0;
+  double far_vidx_dsq = -1.0;
+  for (int i = 0; i < node_nverts ; i++)
+  {
+    double dsq = (mesh_node_mesh.verts_[i] - center).squaredNorm();
+    if (dsq < far_vidx_dsq)
+    {
+      far_vidx_dsq = dsq;
+      far_vidx = i;
+    }
+  }
+
+  Eigen::Vector3d norm = mesh_node_mesh.verts_[far_vidx] - center;
+  if (norm.squaredNorm() < tolerance*tolerance)
+    return false;
+
+  plane = Plane(norm, center);
+  return true;
+}
+
+// If mesh_node should be split, calculate a splitting plane and return true.
+// If no split needed, return false.
+//
+// This version works by:
+//   1) split plane goes through center of split-mesh bounding sphere.
+//   2) find closest point on original mesh to center of split-mesh bounding sphere.  It will be on split plane.
+//   3) find farthest point from the line of points 1 and 1.  Plane avoids this point.
+bool mesh_core::Mesh::calculateSphereRepSplitPlane_closeFar(
           double tolerance,
           SphereRepNode *mesh_node,
           Plane& plane) const
@@ -1913,6 +1993,7 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
   double radius;
   mesh_node->mesh_->getBoundingSphere(center, radius);
 
+#if 0
   // find mesh vertex closest to center of bounding sphere
   int close_vidx = 0;
   double close_vidx_dsq = std::numeric_limits<double>::max();
@@ -1960,11 +2041,31 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
       closest_tri = i;
     }
   }
+#else
+  Eigen::Vector3d closest_point;
+  int closest_tri;
+  double closest_dist = findClosestPoint(
+                            center, 
+                            closest_point,
+                            closest_tri);
+
+  // debug
+  if (1)
+  {
+    mesh_node->closest_point = closest_point;
+    const Triangle& tri = tris_[closest_tri];
+    mesh_node->closes_triangle_.resize(3);
+    mesh_node->closes_triangle_[0] = verts_[tri.verts_[0]];
+    mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
+    mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
+  }
+#endif
 
   // No need to split.  Sphere bounding is within tolerance.
   if (closest_dist + tolerance >= radius)
     return false;
 
+#if 0
   // find nearby points that are also close to center of sphere
   Eigen::Vector3d closest2_point = closest_point;
   Eigen::Vector3d closest3_point = closest_point;
@@ -2086,9 +2187,7 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
 
   EigenSTL::vector_Vector3d points;
   points.reserve(4);
-#if 0
   points.push_back(center);
-#endif
 
   points.push_back(closest_point);
   if (closest2_tri >=0)
@@ -2098,10 +2197,48 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
   while (points.size() < 3)
     points.push_back(center);
 
+#else
+  // split line is line from closest_point to center.  Need to find split plane
+  // containing that line
+  Eigen::Vector3d x_axis = closest_point - center;
+  if (x_axis.squaredNorm() <  std::numeric_limits<double>::epsilon())
+    x_axis = Eigen::Vector3d(1,0,0);
+
+  PlaneProjection proj(x_axis, center);
+
+  // find farthest point from split line
+  const Mesh& mesh_node_mesh = *mesh_node->mesh_;
+  int node_nverts = mesh_node_mesh.verts_.size();
+  int far_vidx = 0;
+  double far_vidx_dsq = -1.0;
+  for (int i = 0; i < node_nverts ; i++)
+  {
+    Eigen::Vector2d p = proj.project(mesh_node_mesh.verts_[i]);
+
+    double dsq = p.squaredNorm();
+    if (dsq > far_vidx_dsq)
+    {
+      far_vidx_dsq = dsq;
+      far_vidx = i;
+    }
+  }
+
+  // debug
+  mesh_node->farthest_point_ = mesh_node_mesh.verts_[far_vidx];
+
+  // y_axis is another line that should be in the plane
+  Eigen::Vector3d y_axis = (mesh_node_mesh.verts_[far_vidx] - center).cross(x_axis);
+
+
+  EigenSTL::vector_Vector3d points;
+  points.reserve(4);
+  points.push_back(center);
+  points.push_back(closest_point);
+  points.push_back(center + y_axis);
+#endif
 
   // debug
   mesh_node->plane_points_ = points;
-
 
 #if 0
   plane = Plane(points);
@@ -2113,3 +2250,65 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
 }
 
 
+// find point on surface of mesh closest to given point.
+// return closest_point which is on mesh.
+// return distance from point to that point.
+// return index of triangle 
+double mesh_core::Mesh::findClosestPoint(
+      const Eigen::Vector3d& point,
+      Eigen::Vector3d& closest_point,
+      int& closest_tri) const
+{
+  int nverts = verts_.size();
+  int ntris = tris_.size();
+  ACORN_ASSERT(nverts >= 3);
+
+  if (ntris < 0)
+  {
+    logError("findClosestPoint() called on empty mesh.");
+    closest_tri = -1;
+    closest_point = point;
+    return 0.0;
+  }
+
+  // find mesh vertex closest to point
+  int close_vidx = 0;
+  double close_vidx_dsq = std::numeric_limits<double>::max();
+  for (int i = 0; i < nverts ; i++)
+  {
+    double dsq = (verts_[i] - point).squaredNorm();
+    if (dsq < close_vidx_dsq)
+    {
+      close_vidx_dsq = dsq;
+      close_vidx = i;
+    }
+  }
+
+  // find point on mesh closest to point
+  closest_point = verts_[close_vidx];
+  ACORN_ASSERT(vert_info_.size() > close_vidx);
+  ACORN_ASSERT(vert_info_[close_vidx].edges_.size() > 0);
+  ACORN_ASSERT(edges_[vert_info_[close_vidx].edges_[0]].tris_.size() > 0);
+  closest_tri = edges_[vert_info_[close_vidx].edges_[0]].tris_[0].tri_idx_;
+  double closest_dist = std::sqrt(close_vidx_dsq);
+  for (int i = 0 ; i < ntris ; ++i)
+  {
+    const Triangle& tri = tris_[i];
+    Eigen::Vector3d close_point;
+    double dist = closestPointOnTriangle(
+                      verts_[tri.verts_[0]],
+                      verts_[tri.verts_[1]],
+                      verts_[tri.verts_[2]],
+                      point,
+                      close_point,
+                      closest_dist);
+    if (dist < closest_dist)
+    {
+      closest_dist = dist;
+      closest_point = close_point;
+      closest_tri = i;
+    }
+  }
+
+  return closest_dist;
+}

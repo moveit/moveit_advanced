@@ -250,6 +250,9 @@ public:
     // closest vertex to center of sphere
     Eigen::Vector3d closest_point;
 
+    // farthest vertex from center axis
+    Eigen::Vector3d farthest_point_;
+
     // closest triangle to center of sphere
     EigenSTL::vector_Vector3d closes_triangle_;
   };
@@ -295,6 +298,15 @@ public:
   // fill in gaps (cracks or holes) in the mesh
   void fillGaps();
 
+  // find point on surface of mesh closest to given point.
+  // return closest_point which is on mesh surface.
+  // return index of triangle 
+  // return distance from point to closest_point.
+  //
+  // Mesh must not be empty.  If it is -1.0 is returned.
+  double findClosestPoint(const Eigen::Vector3d& point,
+                          Eigen::Vector3d& closest_point,
+                          int& closest_tri) const;
 public:
   //#########################################################################
   //############################### DEBUG ###################################
@@ -442,6 +454,26 @@ private:
           double tolerance,
           SphereRepNode *mesh_node,
           Plane& plane) const;
+
+  // implement calculateSphereRepSplitPlane() by finding plane perpendular to
+  // liner between bounding sphere center and farthest vertex from bounding
+  // sphere center.
+  bool calculateSphereRepSplitPlane_far(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const;
+
+  // implement calculateSphereRepSplitPlane() by
+  //  1) find closest point on original mesh to center of bounding sphere
+  //  2) y_axis to line through that point and bsphere center
+  //  3) find farthest vertex on submesh from y_axis
+  //  4) z_axis is from y_axis to farthest point
+  //  5) plane contains y_axis and perpendicular to z_axis
+  bool calculateSphereRepSplitPlane_closeFar(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const;
+
 
   // Debug asserts
   void assertValidTri(const Triangle& tri, const char *msg) const;
