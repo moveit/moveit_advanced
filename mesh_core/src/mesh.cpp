@@ -1914,7 +1914,7 @@ void mesh_core::Mesh::collectSphereRepSpheres(
     {
       Eigen::Vector3d center;
       double radius;
-      mesh_tree->mesh_->getBoundingSphere(center, radius);
+      sibling->mesh_->getBoundingSphere(center, radius);
       sphere_centers.push_back(center);
       sphere_radii.push_back(radius);
     }
