@@ -138,6 +138,9 @@ void mesh_core::Mesh::add(
     // have more than 2 tris per edge?
     if (edge.tris_.size() > 2)
       have_degenerate_edges_ = true;
+
+    // add to per vertex list of tris
+    vert_info_[t.verts_[dir]].tris_.push_back(tri_idx);
   }
 
   assertValidTri_PreAdjacentValid(t, "add tri");
@@ -297,7 +300,8 @@ int mesh_core::Mesh::addVertex(const Eigen::Vector3d& a)
   verts_.push_back(a);
 
   vert_info_.resize(verts_.size());
-  vert_info_[verts_.size() - 1].edges_.reserve(8);
+  vert_info_[verts_.size() - 1].edges_.reserve(7);
+  vert_info_[verts_.size() - 1].tris_.reserve(7);
 
   if (acorn_debug_show_vertex_consolidate)
   {
@@ -355,10 +359,30 @@ int mesh_core::Mesh::addEdge(int vertidx_a, int vertidx_b)
 void mesh_core::Mesh::print() const
 {
   logInform("Mesh 0x%08lx",(long)this);
+  for (int i = 0; i < verts_.size() ; ++i)
+  {
+    std::stringstream ss_tris;
+    std::stringstream ss_edges;
+    for (int j = 0 ; j < vert_info_[i].tris_.size() ; ++j)
+    {
+      ss_tris << vert_info_[i].tris_[j] << ", ";
+    }
+    for (int j = 0 ; j < vert_info_[i].edges_.size() ; ++j)
+    {
+      ss_edges << vert_info_[i].edges_[j] << ", ";
+    }
+    logInform("   Vert[%4d] (%8.4f, %8.4f, %8.4f) tris=<%s> edges=<%s>",
+      i,
+      verts_[i].x(),
+      verts_[i].y(),
+      verts_[i].z(),
+      ss_tris.str().c_str(),
+      ss_edges.str().c_str());
+  }
   for (int i = 0; i < tris_.size() ; ++i)
   {
     const Triangle& tri = tris_[i];
-    logInform("   Tri[%3d] v(%3d,%3d,%3d) e(%3d,%3d,%3d) tadj=(%3d,%3d,%3d)",
+    logInform("   Tri[%4d] v(%4d,%4d,%4d) e(%4d,%4d,%4d) tadj=(%4d,%4d,%4d) sumbesh=%d",
       i,
       tri.verts_[0],
       tri.verts_[1],
@@ -368,16 +392,23 @@ void mesh_core::Mesh::print() const
       tri.edges_[2].edge_idx_,
       tri.edges_[0].adjacent_tri_,
       tri.edges_[1].adjacent_tri_,
-      tri.edges_[2].adjacent_tri_);
+      tri.edges_[2].adjacent_tri_,
+      tri.submesh_);
   }
   for (int i = 0; i < edges_.size() ; ++i)
   {
     const Edge& edge = edges_[i];
-    logInform("   Edge[%3d] v(%3d,%3d)  ntris=%d",
+    std::stringstream ss1;
+    for (int j = 0 ; j < edge.tris_.size() ; ++j)
+    {
+      ss1 << edge.tris_[j].tri_idx_ << ", ";
+    }
+    logInform("   Edge[%4d] v(%4d,%4d)  ntris=%d <%s>",
       i,
       edge.verts_[0],
       edge.verts_[1],
-      int(edge.tris_.size()));
+      int(edge.tris_.size()),
+      ss1.str().c_str());
   }
 }
 
@@ -449,7 +480,7 @@ void mesh_core::Mesh::setAdjacentTriangles()
   adjacent_tris_valid_ = true;
 }
 
-// make all windings point the same way
+// make all windings CCW
 void mesh_core::Mesh::fixWindings()
 {
   int mark = 0;
@@ -462,16 +493,16 @@ void mesh_core::Mesh::fixWindings()
   {
     int tri_cnt = 0;
     int flip_cnt = 0;
-    fixWindings(
+    fixSubmeshWindings(
               tris_[submesh_tris_[i]],
               false,
               ++mark,
               tri_cnt,
               flip_cnt);
-    if (flip_cnt > tri_cnt/2)
+    if (!isWindingCCW(i))
     {
       // guessed wrong - flip them all back the opposite way
-      fixWindings(
+      fixSubmeshWindings(
               tris_[submesh_tris_[i]],
               true,
               ++mark,
@@ -479,6 +510,111 @@ void mesh_core::Mesh::fixWindings()
               flip_cnt);
     }
   }
+
+
+  if (1) // DEBUG
+  {
+    clearMark(mark);  // this sanity checks all triangles
+  }
+}
+
+bool mesh_core::Mesh::isWindingCCW(int submesh) const
+{
+  double minx_x = std::numeric_limits<double>::max();
+  int minx_vidx = -1;
+
+  std::vector<Triangle>::const_iterator tri = tris_.begin();
+  std::vector<Triangle>::const_iterator tri_end = tris_.end();
+  for ( ; tri != tri_end ; ++tri)
+  {
+    if (tri->submesh_ != submesh)
+      continue;
+
+    for (int j = 0; j < 3 ; ++j)
+    {
+      if (verts_[tri->verts_[j]].x() < minx_x)
+      {
+        minx_x = verts_[tri->verts_[j]].x();
+        minx_vidx = tri->verts_[j];
+      }
+    }
+  }
+
+  // no triangles in this submesh?
+  if (minx_vidx < 0)
+    return true;
+
+  ACORN_ASSERT(minx_vidx < vert_info_.size());
+  const Vertex& vinfo = vert_info_[minx_vidx];
+
+  const Eigen::Vector3d& minx_vert = verts_[minx_vidx];
+
+  // find edge with smallest abs(x/yz) slope
+  double best_slope = std::numeric_limits<double>::max();
+  int best_eidx = -1;
+  for (int e = vinfo.edges_.size() - 1 ; e >= 0 ; --e)
+  {
+    int eidx = vinfo.edges_[e];
+    const Edge& edge = edges_[eidx];
+
+    // edge is part of same submesh?
+    for (int t = edge.tris_.size() - 1 ; t >= 0 ; --t)
+    {
+      if (tris_[edge.tris_[t].tri_idx_].submesh_ == submesh)
+      {
+        int other_vidx = otherVertIndex(edge, minx_vidx);
+        const Eigen::Vector3d& other_vert = verts_[other_vidx];
+
+        const Eigen::Vector3d& edge_vec = other_vert - minx_vert;
+        double yz = std::sqrt(edge_vec.y() * edge_vec.y() + edge_vec.z() * edge_vec.z());
+        if (yz < std::numeric_limits<double>::epsilon())
+          continue;
+        double slope = edge_vec.x() / yz;
+
+if (slope < 0.0)
+{
+  print();
+  logInform("isWindingCCW negative slope %f",slope);
+  logInform("minx_vidx=%4d  (%f %f %f)",minx_vidx, minx_vert.x(), minx_vert.y(), minx_vert.z());
+  logInform("other_vid=%4d  (%f %f %f)",other_vidx, other_vert.x(), other_vert.y(), other_vert.z());
+  logInform("edge_vex =      (%f %f %f)",edge_vec.x(), edge_vec.y(), edge_vec.z());
+  logInform("minx_x=%f",minx_x);
+}
+
+        ACORN_ASSERT(slope >= 0.0);
+        if (slope < best_slope)
+        {
+          best_slope = slope;
+          best_eidx = eidx;
+        }
+        break;
+      }
+    }
+  }
+
+  ACORN_ASSERT(best_eidx >= 0);
+  if (best_eidx < 0)
+    return true;
+  
+  // of triangles touching that edge find one whose normal is closest to x axis
+  double best_xabs = -1.0;
+  double best_x = 0.0;
+  for (int t = edges_[best_eidx].tris_.size() - 1 ; t >= 0 ; --t)
+  {
+    const Triangle &tri = tris_[edges_[best_eidx].tris_[t].tri_idx_];
+
+    Eigen::Vector3d ab = verts_[tri.verts_[1]] - verts_[tri.verts_[0]];
+    Eigen::Vector3d bc = verts_[tri.verts_[2]] - verts_[tri.verts_[1]];
+    Eigen::Vector3d norm = ab.cross(bc).normalized();
+    double xabs = std::abs(norm.x());
+    if (xabs > best_xabs)
+    {
+      best_xabs = xabs;
+      best_x = norm.x();
+    }
+  }
+
+  return best_x <= 0.0;
 }
 
 bool mesh_core::Mesh::isWindingSame(Triangle& tri, int dir)
@@ -505,7 +641,7 @@ struct FlipInfo
 // Should only be called from fixWindings().
 // Returns the total number of triangles in the submesh and the number of triangles flipped.
 // If flip_this_tri is true, the initial triangle's winding is flipped.
-void mesh_core::Mesh::fixWindings(
+void mesh_core::Mesh::fixSubmeshWindings(
       Triangle& first_tri,
       bool flip_first_tri,
       int mark,
@@ -561,7 +697,7 @@ void mesh_core::Mesh::fixWindings(
 
       if (head - &list[0] > list.size())
       {
-        logError("fixWindings OVERFLOWED!");
+        logError("fixSubmeshWindings OVERFLOWED!");
         return;
       }
     }
@@ -698,6 +834,8 @@ void mesh_core::Mesh::fillGaps()
     fillGap(*edge);
   }
 
+  fixWindings();
+
   //print();
 }
 
@@ -713,7 +851,7 @@ mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
     // edge has only 1 tri?
     if (edge->tris_.size() == 1)
     {
-      logInform("Found gap: edge %d has 1 tri",int(&*edge - &edges_[0]));
+      //logInform("Found gap: edge %d has 1 tri",int(&*edge - &edges_[0]));
       return &*edge;
     }
   }
@@ -727,7 +865,7 @@ mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
     // edge has odd number of triangles
     if (edge->tris_.size() & 1)
     {
-      logInform("Found gap: edge %d has %d tri",int(&*edge - &edges_[0]), edge->tris_.size());
+      //logInform("Found gap: edge %d has %d tri",int(&*edge - &edges_[0]), edge->tris_.size());
       return &*edge;
     }
   }
@@ -1721,6 +1859,15 @@ void mesh_core::Mesh::getAABB(
   max = aabb_max_;
 }
 
+const EigenSTL::vector_Vector3d& mesh_core::Mesh::getFaceNormals() const
+{
+  if (face_normals_.size() != tris_.size())
+  {
+
+  }
+  return face_normals_;
+}
+
 void mesh_core::Mesh::deleteSphereRepTree(SphereRepNode *mesh_tree)
 {
   if (!mesh_tree)
@@ -1813,7 +1960,7 @@ void mesh_core::Mesh::calculateSphereRep(
 // TODO: remove this hack
 if (mesh_node->depth_ > 8)
 {
-  logInform("HACK: Skipping split below depth 3");
+  logInform("HACK: Skipping split below depth 8");
   return;
 }
 
@@ -1905,9 +2052,29 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
 {
   //return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
   return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
+  //return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
 }
 
+#if 0
+// If mesh_node should be split, calculate a splitting plane and return true.
+// If no split needed, return false.
+//
+// This version works by:
+//   1) choose 3 axes based on min and 2nd min dimentions
+//   2) split on largest axis
+bool mesh_core::Mesh::calculateSphereRepSplitPlane_ortho(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane,
+          const Eigen::Matrix3d* axes = NULL) const
+{
+  if (!axes)
+  {
 
+  }
+
+}
+#endif
 
 // If mesh_node should be split, calculate a splitting plane and return true.
 // If no split needed, return false.

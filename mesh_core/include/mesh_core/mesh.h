@@ -160,6 +160,9 @@ public:
 
     // indices of edges touching this vertex.
     std::vector<int> edges_;
+
+    // indices of triangles touching this vertex.
+    std::vector<int> tris_;
   };
 
   // construct an empty mesh
@@ -221,6 +224,9 @@ public:
   // get tight bounding sphere around mesh
   void getAABB(Eigen::Vector3d& min,
                Eigen::Vector3d& max) const;
+
+  // get face normals (one for each tri, indexed by tri index)
+  const EigenSTL::vector_Vector3d& getFaceNormals() const;
 
   struct SphereRepNode
   {
@@ -292,7 +298,8 @@ public:
              Mesh& b) const;
 
   // make windings agree on adjacent triangles, so adjacent tris have
-  // consistent normals.
+  // consistent normals.  Attempts to make all windings CCW when looking from
+  // outside the mesh to inside.
   void fixWindings();
 
   // fill in gaps (cracks or holes) in the mesh
@@ -390,7 +397,7 @@ private:
   void assignSubmesh(Triangle& t, int submesh);
 
   // helper for fixWindings()()
-  void fixWindings(
+  void fixSubmeshWindings(
       Triangle& tri,
       bool flip_first_tri,
       int mark,
@@ -401,6 +408,10 @@ private:
   // true if adjacent triangle winding is consistent with this triangle.
   // false if they differ or there are more/less than 1 adjacent tri in that dir
   bool isWindingSame(Triangle& tri, int dir);
+
+  // true if winding for this mesh appears to be CCW.
+  // Only guaranteed to work for gapless nonintersecting submeshes
+  bool isWindingCCW(int submesh) const;
 
   // set the mark_ field in all triangles to the given value
   void clearMark(int value = 0);
@@ -517,6 +528,9 @@ private:
   mutable bool aabb_valid_;
   mutable Eigen::Vector3d aabb_min_;
   mutable Eigen::Vector3d aabb_max_;
+
+  // face normals
+  mutable EigenSTL::vector_Vector3d face_normals_;
 
   // enable debugging features
   static bool debug_;
