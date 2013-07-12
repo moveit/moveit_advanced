@@ -11,11 +11,14 @@ from moveit_ork import ObjectDetector, ObjectBroadcaster
 def auto_trigger(detector, wait):
     rospy.loginfo("Auto-triggering object detection every %s seconds" % str(wait))
     r = rospy.Rate(1.0 / wait)
+    detector.trigger_detection()
+    detector.wait_for_detection()
     while not rospy.is_shutdown():
         r.sleep()
-        rospy.loginfo("Auto-triggering new object detection...")
-        detector.trigger_detection()
-        detector.wait_for_detection()
+        if detector.trigger_1_detection == True:
+            detector.trigger_detection()
+            detector.wait_for_detection()
+            detector.trigger_1_detection = False
     
 if __name__ == '__main__':
 
@@ -35,6 +38,9 @@ if __name__ == '__main__':
     broadcaster = ObjectBroadcaster()
     broadcaster.set_minimum_confidence(cmd_args['min_confidence'])
     detector = ObjectDetector(broadcaster.broadcast)
+    detector.start_on_off_client()
+
+    rospy.loginfo("Inside the object recognition trigger")
 
     if cmd_args['topic'] is True:
         detector.start_continuous_monitor_client() 

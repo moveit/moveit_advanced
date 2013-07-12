@@ -50,12 +50,12 @@ from std_msgs.msg import Bool
 
 class ObjectDetector:
     """ Listen to recognized objects over a topic or using an action server. Trigger a callback when objects are found """
-
     def __init__(self, on_object_found):
         self._on_object_found_callback = on_object_found
         if not hasattr(on_object_found, '__call__'):
             raise RuntimeError("Callable object must be supplied to constructor")
         self._action_client = None
+        self.trigger_1_detection = False
 
     def detected_object(self, ob):
         if self._on_object_found_callback is not None:
@@ -64,15 +64,21 @@ class ObjectDetector:
     def start_action_client(self, name = 'recognize_objects'):
         rospy.loginfo("Starting %s action" % name)
         self._action_client = actionlib.SimpleActionClient(name, ObjectRecognitionAction)
+        rospy.loginfo("Waiting for %s server" % name)
         self._action_client.wait_for_server()
+        rospy.loginfo("Done waiting for %s server" % name)
 
     def start_continuous_monitor_client(self, topic = '/recognized_object_array'):
         self._subscriber = rospy.Subscriber(topic, RecognizedObjectArray, self.on_topic_data)
+
+    def start_on_off_client(self, topic= '/recognize_objects_switch'):
+        self._subscriber_on_off = rospy.Subscriber(topic, Bool, self.on_switch_data)
 
     def trigger_detection(self):
         if self._action_client is None:
             self.start_action_client()
         goal = ObjectRecognitionGoal()
+        rospy.loginfo("Triggering detection inside object detector")
         self._action_client.send_goal(goal, done_cb=self.on_action_result)
 
     def wait_for_detection(self):
@@ -82,6 +88,11 @@ class ObjectDetector:
     def on_action_result(self, status, result):
         self.detected_object(result.recognized_objects.objects)
     
+    def on_switch_data(self, msg):
+        if msg.data is True:
+            rospy.loginfo("Triggering 1 detection")
+            self.trigger_1_detection = True
+
     def on_topic_data(self, msg):
         self.detected_object(msg.objects)
 
@@ -94,10 +105,14 @@ class ObjectBroadcaster:
         self._min_confidence = 0.5
         self._lock = Lock()
         self._get_object_info = rospy.ServiceProxy('get_object_info', GetObjectInformation)
+        self._last_broadcast_time = rospy.Time.now()
 
     def broadcast_one(self, ob):
         if ob.confidence < self._min_confidence:
             rospy.loginfo("Not publishing object of type %s because confidence %s < %s" % (ob.type.key, str(ob.confidence), str(self._min_confidence)))
+            return
+
+        if ob.type.key != '18691':
             return
 
         info = None

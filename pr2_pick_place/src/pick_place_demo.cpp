@@ -50,24 +50,58 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include <tf/transform_listener.h>
+#include <std_msgs/Bool.h>
 
 static const std::string ROBOT_DESCRIPTION="robot_description";
 
 class PickPlaceGroup
 {
 public:
-  PickPlaceGroup(moveit::planning_interface::MoveGroup &group): group_(group), place_resolution_(0.1), listen_tables_(false)
+  PickPlaceGroup(moveit::planning_interface::MoveGroup &group, 
+		 moveit::planning_interface::PlanningSceneInterface &planning_scene_interface): planning_scene_interface_(planning_scene_interface), 
+												group_(group), 
+												place_resolution_(0.05), 
+												listen_tables_(false), 
+												place_left_(true)
   {
     table_dirty_ = false;
     table_subscriber_ = node_handle_.subscribe("table_array", 1, &PickPlaceGroup::tableCallback, this);
+    recognition_trigger_publisher_ = node_handle_.advertise<std_msgs::Bool>("/recognize_objects_switch", 20);
+    octomap_trigger_publisher_ = node_handle_.advertise<std_msgs::Bool>("/move_group/depth_image_update_wait", 20);
     visualization_publisher_ = node_handle_.advertise<visualization_msgs::MarkerArray>("visualize_place", 20, true);
     collision_object_publisher_ = node_handle_.advertise<moveit_msgs::CollisionObject>("/collision_object", 20);
   }
 
   bool pick(const std::string &object)
   {
+    if(!setupTables())
+      return false;
+    group_.setSupportSurfaceName("table");
     return group_.pick(object);
   }
+
+  bool triggerDetection()
+  {
+    std_msgs::Bool msg;
+    msg.data = true;
+    recognition_trigger_publisher_.publish(msg);
+  }
+  
+  /*
+  bool octomapUpdatesOn()
+  {
+    std_msgs::Bool msg;
+    msg.data = false;
+    octomap_trigger_publisher_.publish(msg);
+  }
+
+  bool octomapUpdatesOff()
+  {
+    std_msgs::Bool msg;
+    msg.data = true;
+    octomap_trigger_publisher_.publish(msg);
+  }
+  */
 
   void visualize(const std::vector<geometry_msgs::PoseStamped> &poses) const
   {
@@ -102,7 +136,7 @@ public:
     boost::mutex::scoped_lock tlock(table_lock_);
     if(table_array_.tables.empty())
     {
-      ROS_ERROR_STREAM("No tables found to place object on");
+      ROS_ERROR_STREAM("No tables found");
       return false;
     }
     moveit_msgs::CollisionObject co;
@@ -128,11 +162,14 @@ public:
     collision_object_publisher_.publish(co);     
   }
 
-  bool place(const std::string &object, double height_above_table)
+  bool place(const std::string &object, 
+	     double height_above_table, 
+	     double delta_height=0.01, 
+	     unsigned int num_heights=2)
   {
     std::vector<geometry_msgs::PoseStamped> poses;
     ROS_DEBUG("Finding possible place positions");
-    findPossiblePlacePoses(poses, height_above_table);
+    findPossiblePlacePoses(poses, height_above_table, delta_height, num_heights);
     visualize(poses);
     if(!setupTables())
       return false;
@@ -140,10 +177,11 @@ public:
     return group_.place(object, poses);
   }
 
-
   std::vector<geometry_msgs::PoseStamped> generatePlacePoses(const object_recognition_msgs::TableArray &table_array,
 							     double resolution, 
 							     double height_above_table,
+							     double delta_height = 0.01,
+							     unsigned int num_heights = 2,
 							     double min_distance_from_edge = 0.10) const
   {
     std::vector<geometry_msgs::PoseStamped> place_poses;
@@ -173,7 +211,6 @@ public:
 		  cv::Scalar( 255 ), 3, 8 ); 
       }
 
-
       unsigned int num_x = fabs(table_array.tables[i].x_max-table_array.tables[i].x_min)/resolution + 1;
       unsigned int num_y = fabs(table_array.tables[i].y_max-table_array.tables[i].y_min)/resolution + 1;
 
@@ -188,25 +225,31 @@ public:
 	int point_x = j * resolution * scale_factor;
 	for(std::size_t k=0; k < num_y; ++k)
 	{
-	  int point_y = k * resolution * scale_factor;
-	  cv::Point2f point(point_x, point_y);
-	  double result = cv::pointPolygonTest(contours[0], point, true);
-	  if((int) result >= (int) (min_distance_from_edge*scale_factor))
+	  for(std::size_t mm=0; mm < num_heights; ++mm)
 	  {
-	    tf::Point point((double) (point_x)/scale_factor + table_array.tables[i].x_min, 
-			    (double) (point_y)/scale_factor + table_array.tables[i].y_min, 
-			    0.0);
-	    tf::Pose pose;
-	    tf::poseMsgToTF(table_array.tables[i].pose.pose, pose);
-	    point = pose * point;
-
-	    geometry_msgs::PoseStamped place_pose;
-	    place_pose.pose.orientation.w = 1.0;
-	    place_pose.pose.position.x = point.x();
-	    place_pose.pose.position.y = point.y();
-	    place_pose.pose.position.z = point.z() + height_above_table;
-	    place_pose.header = table_array.tables[i].pose.header;
-	    place_poses.push_back(place_pose);
+	    int point_y = k * resolution * scale_factor;
+	    cv::Point2f point(point_x, point_y);
+	    double result = cv::pointPolygonTest(contours[0], point, true);
+	    if((int) result >= (int) (min_distance_from_edge*scale_factor))
+	    {
+	      tf::Point point((double) (point_x)/scale_factor + table_array.tables[i].x_min, 
+			      (double) (point_y)/scale_factor + table_array.tables[i].y_min, 
+			      0.0);
+	      tf::Pose pose;
+	      tf::poseMsgToTF(table_array.tables[i].pose.pose, pose);
+	      point = pose * point;
+	      if(place_left_ && point.y() <= 0.0)
+		continue;
+	      if(!place_left_ && point.y() > 0.0)
+		continue;
+	      geometry_msgs::PoseStamped place_pose;
+	      place_pose.pose.orientation.w = 1.0;
+	      place_pose.pose.position.x = point.x();
+	      place_pose.pose.position.y = point.y();
+	      place_pose.pose.position.z = point.z() + height_above_table + mm * delta_height;
+	      place_pose.header = table_array.tables[i].pose.header;
+	      place_poses.push_back(place_pose);
+	    }
 	  }
 	}
       }
@@ -215,14 +258,17 @@ public:
     return place_poses;
   }
 
-  void findPossiblePlacePoses(std::vector<geometry_msgs::PoseStamped> &poses, double height_above_table)
+  void findPossiblePlacePoses(std::vector<geometry_msgs::PoseStamped> &poses, 
+			      double height_above_table, 
+			      double delta_height=0.01, 
+			      unsigned int num_heights = 2)
   {
     if(table_dirty_)
     {  
       {
 	boost::mutex::scoped_lock tlock(table_lock_);
 	ROS_DEBUG("Generating place poses");
-	place_poses_ = generatePlacePoses(table_array_, place_resolution_, height_above_table);
+	place_poses_ = generatePlacePoses(table_array_, place_resolution_, height_above_table, delta_height, num_heights);
       } 
       table_dirty_ = false;
     }
@@ -261,21 +307,24 @@ public:
       }
 
       tf_.transformPose(root_frame, table_array.tables[i].pose, table_array.tables[i].pose);
+      table_array.tables[i].pose.pose.position.z += 0.025;
       ROS_DEBUG_STREAM("Successfully transformed table array from " << original_frame << " to " << root_frame);
     }
   }
 
+  bool place_left_;
   bool listen_tables_;
   tf::TransformListener tf_;
   ros::NodeHandle node_handle_;
   bool table_dirty_;
   moveit::planning_interface::MoveGroup& group_;
+  moveit::planning_interface::PlanningSceneInterface& planning_scene_interface_;
   ros::Subscriber table_subscriber_;
   double place_resolution_;
   object_recognition_msgs::TableArray table_array_;
   std::vector<geometry_msgs::PoseStamped> place_poses_;
   boost::mutex table_lock_;
-  ros::Publisher visualization_publisher_, collision_object_publisher_;
+  ros::Publisher visualization_publisher_, collision_object_publisher_, recognition_trigger_publisher_, octomap_trigger_publisher_;
 };
 
 int main(int argc, char **argv)
@@ -288,11 +337,15 @@ int main(int argc, char **argv)
 
   ros::WallDuration(2.0).sleep();
   
-  moveit::planning_interface::PlanningSceneInterface scene_interface;
   moveit::planning_interface::MoveGroup group("right_arm");
   group.setPlanningTime(45.0);
+  ROS_INFO("Started move group interface");
 
-  PickPlaceGroup pg(group);
+  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+  ROS_INFO("Started planning scene interface");
+
+  PickPlaceGroup pg(group, planning_scene_interface);
+  ROS_INFO("Started pick place group");
   
   // wait a bit for ros things to initialize
   ros::WallDuration(2.0).sleep();
@@ -307,10 +360,9 @@ int main(int argc, char **argv)
   joint_values[6] = -1.16;
 
   group.setJointValueTarget(joint_values);
+  ROS_INFO("Sending group joint target");
   group.move();
-  pg.listen_tables_ = true;
-  ros::WallDuration(3.0).sleep();  
-  pg.listen_tables_ = false;
+  ROS_INFO("Done group move");
   
   const static unsigned int START = 0;
   const static unsigned int PICK = 1;
@@ -319,18 +371,48 @@ int main(int argc, char **argv)
   unsigned int try_place = 0;
   unsigned int state = START;
 
-  std::vector<std::string> objects;
+  std::vector<std::string> objects, object_ids;
+  std::string bowl_id;
+  bool tried_both = false;
+
+  pg.listen_tables_ = true;
+  pg.triggerDetection();
+  pg.triggerDetection();
+  pg.triggerDetection();
+
+  ROS_INFO("Starting pick and place");
   while(ros::ok())
   {    
+    sleep(2.0);
     if(state == START)
     {  
-      objects = scene_interface.getKnownObjectNamesInROI(0.3,-0.5,0.6,0.7,0.5,0.9, true);
-      if(objects.empty())
+      objects.clear();
+      object_ids.clear();
+      pg.listen_tables_ = true;
+      pg.triggerDetection();
+      pg.triggerDetection();
+      pg.triggerDetection();
+      sleep(3.0);
+      pg.listen_tables_ = false;
+      //      objects = planning_scene_interface.getKnownObjectNamesInROI(0.3,-0.5,0.6,0.7,0.5,0.9,true);
+      object_ids = planning_scene_interface.getKnownObjectNamesInROI(-2.0,-0.75,0.0,2.0,0.75,1.2,true,objects);
+
+      bool found_bowl = false;
+      for(std::size_t i = 0; i < objects.size(); ++i)
       {
-	  ROS_INFO("Could not find recognized object in workspace");
-	  group.setJointValueTarget(joint_values);
-	  group.move();
-	  continue;
+	ROS_INFO("Found object: %s", objects[i].c_str());
+	if(objects[i] == "18691")
+	{  
+	  found_bowl = true;
+	  bowl_id = object_ids[i];
+	}
+      } 
+      if(objects.empty() || !found_bowl)
+      {
+	ROS_INFO("Could not find recognized object in workspace");
+	group.setJointValueTarget(joint_values);
+	group.move();
+	continue;
       }
       else 
       {
@@ -340,12 +422,13 @@ int main(int argc, char **argv)
     }
     else if (state == PICK)
     {    
-      ROS_INFO("Trying to pickup object: %s", objects[0].c_str());
-      if(pg.pick(objects[0]))
+      ROS_INFO("Trying to pickup object: 18691");
+      if(pg.pick(bowl_id))
       {  
 	ROS_INFO("Done pick");
 	ros::WallDuration(1.0).sleep();  
 	state = PLACE;
+	continue;
       }
       else
       {
@@ -355,57 +438,33 @@ int main(int argc, char **argv)
     }
     else if (state == PLACE)
     {      
-      if(pg.place(objects[0], 0.04 + 0.01 * try_place))
+      if(pg.place(bowl_id, 0.01) && !tried_both)
       {
-	try_place = 0;
+	tried_both = false;
 	ROS_INFO("Done place");
 	state = CLEAR;
+	pg.place_left_ = !pg.place_left_;
+	sleep(3.0);
+	continue;
       }
-      else
+      if(!tried_both)
       {
-	try_place++;
-	ROS_INFO("Trying place: %d of %d times", try_place, 6);
+	pg.place_left_ = !pg.place_left_;
+	try_place = 0;
+	tried_both = true;
+	continue;
       }
-      if(try_place > 6)
-      {
-	ROS_ERROR("Could not place object: HELP");
-	break;
-      }
+      ROS_ERROR("Could not place object: HELP");
+      break;
     }
     else if (state == CLEAR)
     {
-	group.setJointValueTarget(joint_values);
-	group.move();
-	pg.clear();
-	pg.listen_tables_ = true;
-	ros::WallDuration(3.0).sleep();  
-	pg.listen_tables_ = false;
-	state = START;
+      group.setJointValueTarget(joint_values);
+      group.move();
+      state = START;
+      continue;
     }
   }
-
-  /*  int counter = 1;
-  while(counter < 6 && ros::ok())
-  {
-    std::stringstream ss;
-    ss << counter;
-    std::string object_name = "18691_" + ss.str();
-    ROS_INFO("Trying to pickup object: %s", object_name.c_str());
-    if(pg.pick(object_name, grasp))
-    {  
-      ROS_INFO("Done pick");
-      ros::WallDuration(1.0).sleep();  
-      if(pg.place(object_name, grasp))
-      {
-	ROS_INFO("Done place");
-	break;
-      }
-      else
-	break;
-    }
-    counter = counter + 1;
-    }*/
-
   ROS_INFO("Waiting for Ctrl-C");
   ros::waitForShutdown();
   return 0;
