@@ -546,6 +546,7 @@ namespace moveit_rviz_plugin
       obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
       obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
       obj->addFloatProperty("SphereRepTolerance", 0.01, "Tolerance for filling spheres");
+      obj->addIntProperty("SphereRepMaxDepth", 3, "calculate spheres to this depth");
       obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
       obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
 
@@ -616,14 +617,16 @@ namespace moveit_rviz_plugin
             double tolerance = base_->getFloatProperty("SphereRepTolerance")->getFloat();
             EigenSTL::vector_Vector3d sphere_centers;
             std::vector<double> sphere_radii;
-            logInform("Generate sphere tree");
-            mp->getSphereRep(tolerance, sphere_centers, sphere_radii, &sphere_tree);
+            int sphere_rep_max_depth = base_->getIntProperty("SphereRepMaxDepth")->getInt();
+            logInform("Generate sphere tree to depth %d", sphere_rep_max_depth);
+            mp->getSphereRep(tolerance, sphere_centers, sphere_radii, &sphere_tree, sphere_rep_max_depth);
 
             if (sphere_rep_level >= -1)
             {
               sphere_centers.clear();
               sphere_radii.clear();
               mp->collectSphereRepSpheres(sphere_tree, sphere_centers, sphere_radii, sphere_rep_level);
+ACORN_ASSERT(sphere_centers.size() == sphere_radii.size());
               shapes_->addSpheres(sphere_centers, sphere_radii, Eigen::Vector4f(1,1,0,0.5));
             }
 
