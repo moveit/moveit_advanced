@@ -268,11 +268,13 @@ public:
   //   sphere_centers - result
   //   sphere_radii   - result
   //   mesh_tree - optional - returns sub meshes for debugging.
+  //   max_depth - recurse at most this deep when splitting (-1 = no limit)
   void getSphereRep(
           double tolerance,
           EigenSTL::vector_Vector3d& sphere_centers,
           std::vector <double> sphere_radii,
-          SphereRepNode **mesh_tree = NULL) const;
+          SphereRepNode **mesh_tree = NULL,
+          int max_depth = -1) const;
 
   // delete a mesh_tree returned by getSphereRep()
   static void deleteSphereRepTree(SphereRepNode *mesh_tree);
@@ -285,7 +287,7 @@ public:
   static void collectSphereRepSpheres(
                       SphereRepNode *mesh_tree,
                       EigenSTL::vector_Vector3d& sphere_centers,
-                      std::vector <double> sphere_radii,
+                      std::vector<double>& sphere_radii,
                       int max_depth = -1);
 
 
@@ -443,9 +445,11 @@ private:
                       GapPoint& point,
                       const std::vector<GapPoint>& points);
 
+  struct GetSphereRepParams;
+
   // recursive helper for getSphereRep()
   void calculateSphereRep(
-          double tolerance,
+          const GetSphereRepParams& params,
           SphereRepNode *mesh_tree) const;
 
   // create 2 children for mesh_node (used by getSphereRep())

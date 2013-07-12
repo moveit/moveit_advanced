@@ -1863,7 +1863,15 @@ const EigenSTL::vector_Vector3d& mesh_core::Mesh::getFaceNormals() const
 {
   if (face_normals_.size() != tris_.size())
   {
+    face_normals_.resize(tris_.size());
 
+    std::vector<Triangle>::const_iterator tri = tris_.begin();
+    std::vector<Triangle>::const_iterator end = tris_.begin();
+    for (int tidx = 0 ; tri != end ; ++tri, ++tidx)
+    {
+      face_normals_[tidx] = (verts_[tri->verts_[1]] - verts_[tri->verts_[0]]).cross(
+                             verts_[tri->verts_[2]] - verts_[tri->verts_[0]]).normalized();
+    }
   }
   return face_normals_;
 }
@@ -1889,7 +1897,7 @@ void mesh_core::Mesh::deleteSphereRepTree(SphereRepNode *mesh_tree)
 void mesh_core::Mesh::collectSphereRepSpheres(
       SphereRepNode *mesh_tree,
       EigenSTL::vector_Vector3d& sphere_centers,
-      std::vector <double> sphere_radii,
+      std::vector<double>& sphere_radii,
       int max_depth)
 {
   if (!mesh_tree)
@@ -1916,11 +1924,18 @@ void mesh_core::Mesh::collectSphereRepSpheres(
   while (sibling != mesh_tree);
 }
 
+struct mesh_core::Mesh::GetSphereRepParams
+{
+  double tolerance_;
+  int max_depth_;
+};
+
 void mesh_core::Mesh::getSphereRep(
           double tolerance,
           EigenSTL::vector_Vector3d& sphere_centers,
           std::vector <double> sphere_radii,
-          SphereRepNode **mesh_tree) const
+          SphereRepNode **mesh_tree,
+          int max_depth) const
 {
   logInform("################### CALL getSphereRep()");
   SphereRepNode *tree = NULL;
@@ -1939,8 +1954,12 @@ void mesh_core::Mesh::getSphereRep(
     tree->tmp_mesh_ = NULL;
     tree->depth_ = 0;
     tree->id_ = 1;
+
+    GetSphereRepParams params;
+    params.tolerance_ = tolerance;
+    params.max_depth_ = max_depth;
     
-    calculateSphereRep(tolerance, tree);
+    calculateSphereRep(params, tree);
 
     collectSphereRepSpheres(tree, sphere_centers, sphere_radii);
   }
@@ -1953,26 +1972,19 @@ void mesh_core::Mesh::getSphereRep(
 
 // recursively divide into 2 pieces until the piece is fit well by a sphere
 void mesh_core::Mesh::calculateSphereRep(
-          double tolerance,
+          const GetSphereRepParams& params,
           SphereRepNode *mesh_node) const
 {
+  if (params.max_depth_ >= 0 && mesh_node->depth_ >= params.max_depth_)
+    return;
 
-// TODO: remove this hack
-if (mesh_node->depth_ > 8)
-{
-  logInform("HACK: Skipping split below depth 8");
-  return;
-}
-
-
-  if (!calculateSphereRepTreeSplit(tolerance, mesh_node))
+  if (!calculateSphereRepTreeSplit(params.tolerance_, mesh_node))
     return;
 
   ACORN_ASSERT(mesh_node->first_child_);
   ACORN_ASSERT(mesh_node->first_child_->next_sibling_);
-  calculateSphereRep(tolerance, mesh_node->first_child_);
-  calculateSphereRep(tolerance, mesh_node->first_child_->next_sibling_);
-
+  calculateSphereRep(params, mesh_node->first_child_);
+  calculateSphereRep(params, mesh_node->first_child_->next_sibling_);
 }
 
 bool mesh_core::Mesh::calculateSphereRepTreeSplit(
