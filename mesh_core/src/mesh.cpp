@@ -2083,7 +2083,9 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
   if ((*mesh_a)->getTriCount() > 0 && (*mesh_b)->getTriCount() > 0)
     return true;
 
-  logWarn("Split resulted in 0-triangle mesh.  Sphere bound is not within tolerance.");
+  logWarn("Splitting mesh id=%d depth=%d resulted in 0-triangle mesh.",
+    mesh_node->id_,
+    mesh_node->depth_);
 
   delete *mesh_a;
   delete *mesh_b;
@@ -2159,7 +2161,7 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_ortho(
     EigenSTL::vector_Vector3d::const_iterator end = mesh_node->mesh_->verts_.end();
     for ( ; it != end ; ++it)
     {
-      double d = norm.dot(*it);
+      double d = -norm.dot(*it);
       max_d = std::max(max_d, d);
       min_d = std::min(min_d, d);
     }
