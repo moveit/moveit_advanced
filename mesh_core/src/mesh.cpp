@@ -2103,7 +2103,85 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
 {
   //return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
   //return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
-  return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
+  //return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
+  return calculateSphereRepSplitPlane_bigAxis(tolerance, mesh_node, plane);
+}
+
+// If mesh_node should be split, calculate a splitting plane and return true.
+// If no split needed, return false.
+//
+// This version works by splitting along greatest of x,y,z axis
+bool mesh_core::Mesh::calculateSphereRepSplitPlane_bigAxis(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const
+{
+  Eigen::Vector3d center;
+  double radius;
+  mesh_node->mesh_->getBoundingSphere(center, radius);
+
+  // decide whether we need to split
+  Eigen::Vector3d closest_point;
+  int closest_tri;
+  double closest_dist = findClosestPoint(
+                            center, 
+                            closest_point,
+                            closest_tri);
+
+  if (1) // DEBUG
+  {
+    mesh_node->closest_point = closest_point;
+    const Triangle& tri = tris_[closest_tri];
+    mesh_node->closes_triangle_.resize(3);
+    mesh_node->closes_triangle_[0] = verts_[tri.verts_[0]];
+    mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
+    mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
+
+    mesh_node->farthest_point_ = Eigen::Vector3d::Zero();
+    mesh_node->plane_points_.clear();
+  }
+
+  // No need to split.  Sphere bounding is within tolerance.
+  if (closest_dist + tolerance >= radius)
+    return false;
+
+  Eigen::Vector3d norm;
+  Eigen::Vector3d min;
+  Eigen::Vector3d max;
+  mesh_node->mesh_->getAABB(min, max);
+  Eigen::Vector3d size = max - min;
+  if (size.x() > size.y())
+  {
+    if (size.x() > size.z())
+    {
+      norm = Eigen::Vector3d(1,0,0);
+    }
+    else
+    {
+      norm = Eigen::Vector3d(0,0,1);
+    }
+  }
+  else if (size.y() > size.z())
+  {
+    norm = Eigen::Vector3d(0,1,0);
+  }
+  else
+  {
+    norm = Eigen::Vector3d(0,0,1);
+  }
+
+  if (mesh_node->parent_)
+  {
+    const Eigen::Vector3d& parent_norm = mesh_node->parent_->plane_.getNormal();
+    Eigen::Vector3d tmp = norm.cross(parent_norm).cross(parent_norm);
+    if (tmp.squaredNorm() <= std::numeric_limits<double>::epsilon())
+      tmp = parent_norm.cross(Eigen::Vector3d(parent_norm.y(), parent_norm.z(), parent_norm.x()));
+    norm = tmp;
+  }
+
+  plane = Plane(norm, (max + min) * 0.5);
+
+  return true;
 }
 
 // If mesh_node should be split, calculate a splitting plane and return true.

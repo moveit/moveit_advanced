@@ -497,6 +497,13 @@ private:
           SphereRepNode *mesh_node,
           Plane& plane) const;
 
+  // implement calculateSphereRepSplitPlane() by splitting along largest of
+  // x,y,z axes
+  bool calculateSphereRepSplitPlane_bigAxis(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const;
+
 
   // Debug asserts
   void assertValidTri(const Triangle& tri, const char *msg) const;
