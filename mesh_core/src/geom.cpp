@@ -300,6 +300,7 @@ void mesh_core::PlaneProjection::initMatrix(
   if (y_axis_.squaredNorm() < std::numeric_limits<double>::epsilon() * 100.0)
   {
     Eigen::Vector3d x_axis2(normal_.y(), normal_.z(), normal_.x());
+    y_axis_ = normal_.cross(x_axis2);
   }
   y_axis_.normalize();
   x_axis_ = y_axis_.cross(normal_);
