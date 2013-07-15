@@ -821,10 +821,20 @@ void mesh_core::Mesh::assertValidEdge(
   }
 }
 
+#define ACORN_DEBUG_FILL_GAP 0
+
 
 void mesh_core::Mesh::fillGaps()
 {
   findSubmeshes();
+
+  if (ACORN_DEBUG_FILL_GAP)
+  {
+    logInform("=========== Filling Gaps in mesh %08lx",long(this));
+    print();
+  }
+
+  int ntris = tris_.size();
 
   for (;;)
   {
@@ -832,6 +842,26 @@ void mesh_core::Mesh::fillGaps()
     if (!edge)
       break;
     fillGap(*edge);
+
+    if (ntris == tris_.size())
+    {
+      if (!acorn_debug_ear_state)
+      {
+        // re-run the gap fill with debugging enabled
+        acorn_debug_ear_state = true;
+        continue;
+      }
+      logInform("Attempt to fill gap failed.  Aborting");
+
+      print();
+      ACORN_ASSERT(0); // should not happen -- abort for easier debugging
+
+      break;
+    }
+    else
+    {
+      ntris = tris_.size();
+    }
   }
 
   fixWindings();
@@ -851,7 +881,8 @@ mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
     // edge has only 1 tri?
     if (edge->tris_.size() == 1)
     {
-      //logInform("Found gap: edge %d has 1 tri",int(&*edge - &edges_[0]));
+      if (ACORN_DEBUG_FILL_GAP)
+        logInform("Found gap: edge %d has 1 tri",int(&*edge - &edges_[0]));
       return &*edge;
     }
   }
@@ -865,7 +896,8 @@ mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
     // edge has odd number of triangles
     if (edge->tris_.size() & 1)
     {
-      //logInform("Found gap: edge %d has %d tri",int(&*edge - &edges_[0]), edge->tris_.size());
+      if (ACORN_DEBUG_FILL_GAP)
+        logInform("Found gap: edge %d has %d tri",int(&*edge - &edges_[0]), edge->tris_.size());
       return &*edge;
     }
   }
@@ -882,21 +914,19 @@ struct GapEdge
   bool connected_to_same_tri_;
 };
 
-#define ACORN_DEBUG_FILL_GAP 0
-
 void mesh_core::Mesh::fillGap(Edge& first_edge)
 {
   ACORN_ASSERT(first_edge.tris_.size() == 1);
 
-#if 0 && ACORN_DEBUG_FILL_GAP
-  print();
-#endif
-#if ACORN_DEBUG_FILL_GAP
-  logInform("================ Fill gap in edge[%d]  v(%d,%d)",
-    edgeIndex(first_edge),
-    first_edge.verts_[0],
-    first_edge.verts_[1]);
-#endif
+  if (0 && ACORN_DEBUG_FILL_GAP)
+    print();
+  if (ACORN_DEBUG_FILL_GAP)
+  {
+    logInform("================ Fill gap in edge[%d]  v(%d,%d)",
+      edgeIndex(first_edge),
+      first_edge.verts_[0],
+      first_edge.verts_[1]);
+  }
 
   EdgeTri& first_et = first_edge.tris_[0];
   Triangle &first_tri = tris_[first_et.tri_idx_];
@@ -935,20 +965,18 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
     new_edges.clear();
     bool found_correct_winding = false;
 
-#if ACORN_DEBUG_FILL_GAP
-    logInform("  check edges for vert[%d]",current_vtx);
-#endif
+    if (ACORN_DEBUG_FILL_GAP)
+      logInform("  check edges for vert[%d]",current_vtx);
 
     // check all edges touching current vertex
     for (int i = 0 ; i < vtx.edges_.size() ; ++i)
     {
-#if ACORN_DEBUG_FILL_GAP
-      logInform("   check edge[%d] v(%d,%d)  ntris=%d",
-        vtx.edges_[i],
-        edges_[vtx.edges_[i]].verts_[0],
-        edges_[vtx.edges_[i]].verts_[1],
-        edges_[vtx.edges_[i]].tris_.size());
-#endif
+      if (ACORN_DEBUG_FILL_GAP)
+        logInform("   check edge[%d] v(%d,%d)  ntris=%d",
+          vtx.edges_[i],
+          edges_[vtx.edges_[i]].verts_[0],
+          edges_[vtx.edges_[i]].verts_[1],
+          edges_[vtx.edges_[i]].tris_.size());
 
       if (vtx.edges_[i] == current_edge)
         continue;
@@ -1297,6 +1325,15 @@ void mesh_core::Mesh::generatePolygon(
   // find a plane through (or near) the points
   PlaneProjection proj(points3d);
 
+  if (acorn_debug_ear_state)
+  {
+for (int i = 0 ; i < nverts ; ++i)
+{
+  logInform("  vert[%4d] = %s",i,mesh_core::str(points3d[i]).c_str());
+}
+    logInform("proj=\n%s", proj.str().c_str());
+  }
+
   // project points onto the plane
   std::vector<GapPoint> points;
   points.resize(nverts);
@@ -1435,7 +1472,7 @@ void mesh_core::Mesh::generatePolygon(
 
     cnt = 0;
 
-int old_tri_size = tris_.size();
+    int old_tri_size = tris_.size();
     if (acorn_debug_ear_state)
     {
       logInform("  Fill Ear    %d  as tri %d",int(p - &points[0]), tris_.size());
@@ -2063,30 +2100,112 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
           Plane& plane) const
 {
   //return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
-  return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
-  //return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
+  //return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
+  return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
 }
 
-#if 0
 // If mesh_node should be split, calculate a splitting plane and return true.
 // If no split needed, return false.
 //
 // This version works by:
-//   1) choose 3 axes based on min and 2nd min dimentions
-//   2) split on largest axis
+//   1) if parents, splitting plane kis perpendicular to parent(s)
+//   2) otherwise try to use longest axis
 bool mesh_core::Mesh::calculateSphereRepSplitPlane_ortho(
           double tolerance,
           SphereRepNode *mesh_node,
-          Plane& plane,
-          const Eigen::Matrix3d* axes = NULL) const
+          Plane& plane) const
 {
-  if (!axes)
-  {
+  Eigen::Vector3d center;
+  double radius;
+  mesh_node->mesh_->getBoundingSphere(center, radius);
 
+  // decide whether we need to split
+  Eigen::Vector3d closest_point;
+  int closest_tri;
+  double closest_dist = findClosestPoint(
+                            center, 
+                            closest_point,
+                            closest_tri);
+
+  if (1) // DEBUG
+  {
+    mesh_node->closest_point = closest_point;
+    const Triangle& tri = tris_[closest_tri];
+    mesh_node->closes_triangle_.resize(3);
+    mesh_node->closes_triangle_[0] = verts_[tri.verts_[0]];
+    mesh_node->closes_triangle_[1] = verts_[tri.verts_[1]];
+    mesh_node->closes_triangle_[2] = verts_[tri.verts_[2]];
+
+    mesh_node->farthest_point_ = Eigen::Vector3d::Zero();
+    mesh_node->plane_points_.clear();
   }
 
+  // No need to split.  Sphere bounding is within tolerance.
+  if (closest_dist + tolerance >= radius)
+    return false;
+
+
+  if (mesh_node->parent_ && mesh_node->parent_->parent_)
+  {
+    Eigen::Vector3d norm;
+    norm = mesh_node->parent_->plane_.getNormal().cross(
+           mesh_node->parent_->parent_->plane_.getNormal());
+
+    norm.normalize();
+
+    double max_d = -std::numeric_limits<double>::max();
+    double min_d =  std::numeric_limits<double>::max();
+    EigenSTL::vector_Vector3d::const_iterator it = mesh_node->mesh_->verts_.begin();
+    EigenSTL::vector_Vector3d::const_iterator end = mesh_node->mesh_->verts_.end();
+    for ( ; it != end ; ++it)
+    {
+      double d = norm.dot(*it);
+      max_d = std::max(max_d, d);
+      min_d = std::min(min_d, d);
+    }
+
+    plane = Plane(norm, (max_d + min_d) * 0.5);
+    return true;
+  }
+
+  Eigen::Vector3d norm;
+  Eigen::Vector3d min;
+  Eigen::Vector3d max;
+  mesh_node->mesh_->getAABB(min, max);
+  Eigen::Vector3d size = max - min;
+  if (size.x() > size.y())
+  {
+    if (size.x() > size.z())
+    {
+      norm = Eigen::Vector3d(1,0,0);
+    }
+    else
+    {
+      norm = Eigen::Vector3d(0,0,1);
+    }
+  }
+  else if (size.y() > size.z())
+  {
+    norm = Eigen::Vector3d(0,1,0);
+  }
+  else
+  {
+    norm = Eigen::Vector3d(0,0,1);
+  }
+
+  if (mesh_node->parent_)
+  {
+    const Eigen::Vector3d& parent_norm = mesh_node->parent_->plane_.getNormal();
+    Eigen::Vector3d tmp = norm.cross(parent_norm).cross(parent_norm);
+    if (tmp.squaredNorm() <= std::numeric_limits<double>::epsilon())
+      tmp = parent_norm.cross(Eigen::Vector3d(parent_norm.y(), parent_norm.z(), parent_norm.x()));
+    norm = tmp;
+  }
+
+  plane = Plane(norm, (max + min) * 0.5);
+
+  return true;
 }
-#endif
 
 // If mesh_node should be split, calculate a splitting plane and return true.
 // If no split needed, return false.

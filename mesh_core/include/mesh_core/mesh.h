@@ -489,6 +489,14 @@ private:
           SphereRepNode *mesh_node,
           Plane& plane) const;
 
+  // implement calculateSphereRepSplitPlane() by
+  //   1) if parents, splitting plane kis perpendicular to parent(s)
+  //   2) otherwise split largest axis-aligned dimension
+  bool calculateSphereRepSplitPlane_ortho(
+          double tolerance,
+          SphereRepNode *mesh_node,
+          Plane& plane) const;
+
 
   // Debug asserts
   void assertValidTri(const Triangle& tri, const char *msg) const;
