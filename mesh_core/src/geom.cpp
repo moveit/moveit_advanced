@@ -464,7 +464,7 @@ bool mesh_core::LineSegment2D::intersect(
 }
 
 
-#define acorn_closest_debug  false
+bool acorn_closest_debug = false;
 
 // return closest point on line segment to the given point, and the distance
 // betweeen them.
