@@ -38,6 +38,7 @@
 #include <console_bridge/console.h>
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
+#include <iomanip>
 
 //###########################################################################
 //############################### FREE FUNCTIONS ############################
@@ -462,9 +463,8 @@ bool mesh_core::LineSegment2D::intersect(
   }
 }
 
-#if 1
 
-bool acorn_closest_debug = false;
+#define acorn_closest_debug  false
 
 // return closest point on line segment to the given point, and the distance
 // betweeen them.
@@ -522,91 +522,173 @@ double mesh_core::closestPointOnTriangle(
 
   closest_point = point - dist * norm;
 
-if (acorn_closest_debug)
-{
-  logInform(" CDB: tri_a     (%8.4f %8.4f %8.4f)",
-    tri_a.x(),
-    tri_a.y(),
-    tri_a.z());
-  logInform(" CDB: tri_b     (%8.4f %8.4f %8.4f)",
-    tri_b.x(),
-    tri_b.y(),
-    tri_b.z());
-  logInform(" CDB: tri_c     (%8.4f %8.4f %8.4f)",
-    tri_c.x(),
-    tri_c.y(),
-    tri_c.z());
-  logInform(" CDB: point     (%8.4f %8.4f %8.4f)",
-    point.x(),
-    point.y(),
-    point.z());
-  logInform(" CDB: intersect (%8.4f %8.4f %8.4f)",
-    closest_point.x(),
-    closest_point.y(),
-    closest_point.z());
-}
+  if (acorn_closest_debug)
+  {
+    logInform(" CDB: tri_a     (%8.4f %8.4f %8.4f)",
+      tri_a.x(),
+      tri_a.y(),
+      tri_a.z());
+    logInform(" CDB: tri_b     (%8.4f %8.4f %8.4f)",
+      tri_b.x(),
+      tri_b.y(),
+      tri_b.z());
+    logInform(" CDB: tri_c     (%8.4f %8.4f %8.4f)",
+      tri_c.x(),
+      tri_c.y(),
+      tri_c.z());
+    logInform(" CDB: point     (%8.4f %8.4f %8.4f)",
+      point.x(),
+      point.y(),
+      point.z());
+    logInform(" CDB: intersect (%8.4f %8.4f %8.4f)",
+      closest_point.x(),
+      closest_point.y(),
+      closest_point.z());
+  }
 
   Eigen::Vector3d ab_norm = ab.cross(norm);
-if (acorn_closest_debug)
-{
-  logInform(" CDB: ab_norm   (%8.4f %8.4f %8.4f) dp=%8.4f >? da=%8.4f",
-    ab_norm.x(),
-    ab_norm.y(),
-    ab_norm.z(),
-      ab_norm.dot(point),
-      ab_norm.dot(tri_a));
-}
+  if (acorn_closest_debug)
+  {
+    logInform(" CDB: ab_norm   (%8.4f %8.4f %8.4f) dp=%8.4f >? da=%8.4f",
+      ab_norm.x(),
+      ab_norm.y(),
+      ab_norm.z(),
+        ab_norm.dot(point),
+        ab_norm.dot(tri_a));
+  }
   if (ab_norm.dot(point) > ab_norm.dot(tri_a))
   {
-if (acorn_closest_debug)
-{
-  logInform(" CDB: beyond ab");
-}
+    if (acorn_closest_debug)
+    {
+      logInform(" CDB: beyond ab");
+    }
     return closestPointOnLine(tri_a, tri_b, point, closest_point);
   }
   
   Eigen::Vector3d ac_norm = ac.cross(norm);
-if (acorn_closest_debug)
-{
-  logInform(" CDB: ac_norm   (%8.4f %8.4f %8.4f) dp=%8.4f <? da=%8.4f",
-    ac_norm.x(),
-    ac_norm.y(),
-    ac_norm.z(),
-      ac_norm.dot(point),
-      ac_norm.dot(tri_a));
-}
+  if (acorn_closest_debug)
+  {
+    logInform(" CDB: ac_norm   (%8.4f %8.4f %8.4f) dp=%8.4f <? da=%8.4f",
+      ac_norm.x(),
+      ac_norm.y(),
+      ac_norm.z(),
+        ac_norm.dot(point),
+        ac_norm.dot(tri_a));
+  }
   if (ac_norm.dot(point) < ac_norm.dot(tri_a))
   {
-if (acorn_closest_debug)
-{
-  logInform(" CDB: beyond ac");
-}
+    if (acorn_closest_debug)
+    {
+      logInform(" CDB: beyond ac");
+    }
     return closestPointOnLine(tri_a, tri_c, point, closest_point);
   }
   
   Eigen::Vector3d bc = tri_c - tri_b;
   Eigen::Vector3d bc_norm = bc.cross(norm);
-if (acorn_closest_debug)
-{
-  logInform(" CDB: ab_norm   (%8.4f %8.4f %8.4f) dp=%8.4f >? db=%8.4f",
-    bc_norm.x(),
-    bc_norm.y(),
-    bc_norm.z(),
-      bc_norm.dot(point),
-      bc_norm.dot(tri_b));
-}
+  if (acorn_closest_debug)
+  {
+    logInform(" CDB: ab_norm   (%8.4f %8.4f %8.4f) dp=%8.4f >? db=%8.4f",
+      bc_norm.x(),
+      bc_norm.y(),
+      bc_norm.z(),
+        bc_norm.dot(point),
+        bc_norm.dot(tri_b));
+  }
   if (bc_norm.dot(point) > bc_norm.dot(tri_b))
   {
-if (acorn_closest_debug)
-{
-  logInform(" CDB: beyond bc");
-}
+    if (acorn_closest_debug)
+    {
+      logInform(" CDB: beyond bc");
+    }
     return closestPointOnLine(tri_b, tri_c, point, closest_point);
   }
   
   return abs_dist;
 }
 
-#endif
+std::string mesh_core::str(const Eigen::Affine3d& mtx,
+                const char *pfx,
+                const char *sfx,
+                int field_width,
+                int field_prec)
+{
+  std::stringstream ss;
+  ss.precision(field_prec);
+  for (int y=0;y<4;y++)
+  {
+    ss << pfx;
+    for (int x=0;x<4;x++)
+    {
+      ss << std::setw(field_width) << mtx(y,x) << " ";
+    }
+    ss << sfx;
+  }
+  return ss.str();
+}
+
+std::string mesh_core::str(const Eigen::Vector3d& vec,
+                const char *pfx,
+                const char *sfx,
+                int field_width,
+                int field_prec)
+{
+  std::stringstream ss;
+  ss.precision(field_prec);
+  ss << pfx;
+  for (int x=0;x<3;x++)
+  {
+    if (x)
+      ss << ", ";
+    ss << std::setw(field_width) << vec(x);
+  }
+  ss << sfx;
+  return ss.str();
+}
+
+std::string mesh_core::str(const Eigen::Vector4d& vec,
+                const char *pfx,
+                const char *sfx,
+                int field_width,
+                int field_prec)
+{
+  std::stringstream ss;
+  ss.precision(field_prec);
+  ss << pfx;
+  for (int x=0;x<4;x++)
+  {
+    if (x)
+      ss << ", ";
+    ss << std::setw(field_width) << vec(x);
+  }
+  ss << sfx;
+  return ss.str();
+}
+
+std::string mesh_core::Plane::str(
+                const char *pfx,
+                const char *sfx,
+                int field_width,
+                int field_prec) const
+{
+  Eigen::Vector4d vec(
+                    normal_(0),
+                    normal_(1),
+                    normal_(2),
+                    d_);
+  return mesh_core::str(vec, pfx, sfx, field_width, field_prec);
+}
+
+std::string mesh_core::PlaneProjection::str(
+                const char *pfx,
+                const char *sfx,
+                int field_width,
+                int field_prec) const
+{
+  Eigen::Affine3d frame;
+  getFrame(frame);
+  return mesh_core::str(frame, pfx, sfx, field_width, field_prec);
+}
+
 
 

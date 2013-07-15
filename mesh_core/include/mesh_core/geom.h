@@ -38,9 +38,41 @@
 #define MESH_CORE__GEOM
 
 #include <eigen_stl_containers/eigen_stl_containers.h>
+#include <sstream>
+#include <iomanip>
+
 
 namespace mesh_core
 {
+
+// convert Affine3d to string
+std::string str(const Eigen::Affine3d& mtx,
+                const char *pfx = "",
+                const char *sfx = "\n",
+                int field_width = 8,
+                int field_prec = 4);
+
+template <class EigenMatrix>
+std::string str(const EigenMatrix& mtx,
+                const char *pfx = "",
+                const char *sfx = "\n",
+                int field_width = 8,
+                int field_prec = 4);
+
+// convert Vector3d to string
+std::string str(const Eigen::Vector3d& vec,
+                const char *pfx = "(",
+                const char *sfx = ")",
+                int field_width = 8,
+                int field_prec = 4);
+
+// convert Vector3d to string
+std::string str(const Eigen::Vector4d& vec,
+                const char *pfx = "(",
+                const char *sfx = ")",
+                int field_width = 8,
+                int field_prec = 4);
+
 
 /// append points to a vector.
 // data is 3 doubles per point: x,y,z
@@ -110,6 +142,12 @@ public:
   // If 0 points, result is through origin.
   void from3Points(const EigenSTL::vector_Vector3d& points);
 
+  // convert to string
+  std::string str(const char *pfx = "(",
+                  const char *sfx = ")",
+                  int field_width = 8,
+                  int field_prec = 4) const;
+
 protected:
   // set plane from least squares fit of points.
   // Optionally return average of points.
@@ -150,6 +188,12 @@ public:
   void getFrame(Eigen::Affine3d& frame) const;
   Eigen::Quaterniond getOrientation() const;
   const Eigen::Vector3d& getOrigin() const { return origin_; }
+
+  // convert to string
+  std::string str(const char *pfx = "",
+                  const char *sfx = "\n",
+                  int field_width = 8,
+                  int field_prec = 4) const;
 
 private:
   void initMatrix(const Eigen::Vector3d& x_axis);
@@ -203,6 +247,27 @@ private:
 inline double mesh_core::Plane::dist(const Eigen::Vector3d& point) const
 {
   return point.dot(normal_) + d_;
+}
+
+template <class EigenMatrix>
+std::string mesh_core::str(const EigenMatrix& mtx,
+                const char *pfx,
+                const char *sfx,
+                int field_width,
+                int field_prec)
+{
+  std::stringstream ss;
+  ss.precision(field_prec);
+  for (int y=0;y<mtx.rows();y++)
+  {
+    ss << pfx;
+    for (int x=0;x<mtx.cols();x++)
+    {
+      ss << std::setw(field_width) << mtx(y,x) << " ";
+    }
+    ss << sfx;
+  }
+  return ss.str();
 }
 
 
