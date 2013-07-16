@@ -745,7 +745,7 @@ acorn_closest_debug = false;
             mesh_core::Mesh sphere_mesh;
             sphere_mesh.addSphere(
                           Eigen::Vector3d(2,0,0),
-                          1.0,
+                          0.5,
                           0.05);
             mesh_sphere_.reset(new mesh_ros::RvizMeshShape(
                                             link_->getDisplay()->getDisplayContext(), 
