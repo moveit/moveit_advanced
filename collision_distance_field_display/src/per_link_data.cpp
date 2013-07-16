@@ -559,6 +559,7 @@ namespace moveit_rviz_plugin
       centers_.clear();
       radii_.clear();
       mesh_shape_.reset();
+      mesh_sphere_.reset();
       neigbor_mesh_shape_.reset();
 
       if (!getBool())
@@ -738,6 +739,20 @@ acorn_closest_debug = false;
             }
           }
 
+          // draw a mesh sphere
+          if (1)
+          {
+            mesh_core::Mesh sphere_mesh;
+            sphere_mesh.addSphere(
+                          Eigen::Vector3d(2,0,0),
+                          1.0,
+                          0.05);
+            mesh_sphere_.reset(new mesh_ros::RvizMeshShape(
+                                            link_->getDisplay()->getDisplayContext(), 
+                                            getSceneNode(), 
+                                            &sphere_mesh,
+                                            base_->getColor()));
+          }
 
           // draw the mesh
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
@@ -857,6 +872,7 @@ int(gdi.gap_tris_.size()));
   private:
     boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_shape_;
     boost::shared_ptr<mesh_ros::RvizMeshShape> neigbor_mesh_shape_;
+    boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_sphere_;
   };
 }
 
