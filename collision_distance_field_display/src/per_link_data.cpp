@@ -549,6 +549,8 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("SphereRepMaxDepth", 3, "calculate spheres to this depth");
       obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
       obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
+      obj->addBoolProperty("ShowPoints", false, "Show all internal points in mesh");
+      obj->addFloatProperty("PointResolution", 0.01, "resolution for ShowPoints");
 
       per_link_objects.addVisObject(obj);
     }
@@ -753,6 +755,16 @@ acorn_closest_debug = false;
                                             &sphere_mesh,
                                             base_->getColor()));
           }
+
+          // draw mesh points
+          if (base_->getBoolProperty("ShowPoints")->getBool())
+          {
+            double res = base_->getFloatProperty("PointResolution")->getFloat();
+            EigenSTL::vector_Vector3d points;
+            mp->getInsidePoints(points, res);
+            shapes_->addPoints(points, Eigen::Vector4f(0,1,1,1));
+          }
+          
 
           // draw the mesh
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
