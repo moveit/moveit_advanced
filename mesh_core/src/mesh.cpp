@@ -2699,6 +2699,23 @@ void mesh_core::Mesh::addSphere(
   }
 
   // sides of icosahedron
+  for (int i = 0 ; i < 5 ; i++)
+  {
+    addSphereTri(
+              center,
+              radius,
+              max_error,
+              icosa_vecs[i * 2],
+              icosa_vecs[(i * 2 + 2) % 10],
+              icosa_vecs[i * 2 + 1]);
+    addSphereTri(
+              center,
+              radius,
+              max_error,
+              icosa_vecs[i * 2 + 1],
+              icosa_vecs[(i * 2 + 2) % 10],
+              icosa_vecs[(i * 2 + 3) % 10]);
+  }
 }
 
 void mesh_core::Mesh::addSphereTri(
