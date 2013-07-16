@@ -2673,6 +2673,8 @@ void mesh_core::Mesh::addSphere(
     initialized = true;
   }
   
+  if (max_error < std::numeric_limits<double>::epsilon() * 10.0)
+    max_error = std::numeric_limits<double>::epsilon() * 10.0;
 
   // top of icosahedron
   for (int i = 0 ; i < 5 ; i++)
@@ -2683,7 +2685,8 @@ void mesh_core::Mesh::addSphere(
               max_error,
               icosa_top,
               icosa_vecs[(i * 2 + 2) % 10],
-              icosa_vecs[i * 2]);
+              icosa_vecs[i * 2],
+              0);
   }
 
   // bottom of icosahedron
@@ -2695,7 +2698,8 @@ void mesh_core::Mesh::addSphere(
               max_error,
               icosa_bot,
               icosa_vecs[i * 2 + 1],
-              icosa_vecs[(i * 2 + 3) % 10]);
+              icosa_vecs[(i * 2 + 3) % 10],
+              0);
   }
 
   // sides of icosahedron
@@ -2707,14 +2711,16 @@ void mesh_core::Mesh::addSphere(
               max_error,
               icosa_vecs[i * 2],
               icosa_vecs[(i * 2 + 2) % 10],
-              icosa_vecs[i * 2 + 1]);
+              icosa_vecs[i * 2 + 1],
+              0);
     addSphereTri(
               center,
               radius,
               max_error,
               icosa_vecs[i * 2 + 1],
               icosa_vecs[(i * 2 + 2) % 10],
-              icosa_vecs[(i * 2 + 3) % 10]);
+              icosa_vecs[(i * 2 + 3) % 10],
+              0);
   }
 }
 
@@ -2724,12 +2730,31 @@ void mesh_core::Mesh::addSphereTri(
       double max_error,
       const Eigen::Vector3d& a,
       const Eigen::Vector3d& b,
-      const Eigen::Vector3d& c)
+      const Eigen::Vector3d& c,
+      int depth)
 {
-  add(
-    center + a * radius,
-    center + b * radius,
-    center + c * radius);
+  Eigen::Vector3d mid = (a + b + c) / 3.0;
+  Eigen::Vector3d mid_norm = mid.normalized();
+  double dsq = (mid - mid_norm).squaredNorm();
+  if (dsq * radius * radius <= max_error * max_error)
+  {
+    logInform("add tri depth=%d",depth);
+    add(
+      center + a * radius,
+      center + b * radius,
+      center + c * radius);
+    return;
+  }
+
+  Eigen::Vector3d ab = (a + b).normalized();
+  Eigen::Vector3d ac = (a + c).normalized();
+  Eigen::Vector3d bc = (b + c).normalized();
+
+  addSphereTri(center, radius, max_error, a, ab, ac, depth + 1);
+  addSphereTri(center, radius, max_error, ab, b, bc, depth + 1);
+  addSphereTri(center, radius, max_error, ab, bc, ac, depth + 1);
+  addSphereTri(center, radius, max_error, ac, bc, c, depth + 1);
+      
 }
 
 

@@ -403,7 +403,8 @@ private:
                     double max_error,
                     const Eigen::Vector3d& a,
                     const Eigen::Vector3d& b,
-                    const Eigen::Vector3d& c);
+                    const Eigen::Vector3d& c,
+                    int depth);
 
 
   // set the adjacent_tris_ and adjacent_tris_back_dir_ fields in all triangles.
