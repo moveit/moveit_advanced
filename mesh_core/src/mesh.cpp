@@ -40,6 +40,7 @@
 #include <mesh_core/bounding_sphere.h>
 #include <console_bridge/console.h>
 #include <set>
+#include <boost/math/constants/constants.hpp>
 
 bool mesh_core::Mesh::debug_ = false;
 
@@ -1295,7 +1296,6 @@ void mesh_core::Mesh::generatePolygon(
 {
   int nverts = verts.size();
 
-//acorn_debug_ear_state = true;
   if (acorn_debug_ear_state)
   {
     logInform("#####################");
@@ -1327,10 +1327,10 @@ void mesh_core::Mesh::generatePolygon(
 
   if (acorn_debug_ear_state)
   {
-for (int i = 0 ; i < nverts ; ++i)
-{
-  logInform("  vert[%4d] = %s",i,mesh_core::str(points3d[i]).c_str());
-}
+    for (int i = 0 ; i < nverts ; ++i)
+    {
+      logInform("  vert[%4d] = %s",i,mesh_core::str(points3d[i]).c_str());
+    }
     logInform("proj=\n%s", proj.str().c_str());
   }
 
@@ -2647,3 +2647,72 @@ double mesh_core::Mesh::findClosestPoint(
 
   return closest_dist;
 }
+
+void mesh_core::Mesh::addSphere(
+      const Eigen::Vector3d& center,
+      double radius,
+      double max_error)
+{
+  static Eigen::Vector3d icosa_vecs[10];
+  static const Eigen::Vector3d icosa_top(0,1,0);
+  static const Eigen::Vector3d icosa_bot(0,-1,0);
+  static bool initialized = false;
+
+  if (!initialized)
+  {
+    const double mid_lat = std::atan(0.5);
+    const double y = sin(mid_lat);
+    const double xz = cos(mid_lat);
+    for (int i = 0 ; i < 10 ; ++i)
+    {
+      double a = 2.0 * boost::math::constants::pi<double>() * i / 10.0;
+      double x = xz * cos(a);
+      double z = xz * sin(a);
+      icosa_vecs[i] = Eigen::Vector3d(x, (i&1)?-y:y, z);
+    }
+    initialized = true;
+  }
+  
+
+  // top of icosahedron
+  for (int i = 0 ; i < 5 ; i++)
+  {
+    addSphereTri(
+              center,
+              radius,
+              max_error,
+              icosa_top,
+              icosa_vecs[(i * 2 + 2) % 10],
+              icosa_vecs[i * 2]);
+  }
+
+  // bottom of icosahedron
+  for (int i = 0 ; i < 5 ; i++)
+  {
+    addSphereTri(
+              center,
+              radius,
+              max_error,
+              icosa_bot,
+              icosa_vecs[i * 2 + 1],
+              icosa_vecs[(i * 2 + 3) % 10]);
+  }
+
+  // sides of icosahedron
+}
+
+void mesh_core::Mesh::addSphereTri(
+      const Eigen::Vector3d& center,
+      double radius,
+      double max_error,
+      const Eigen::Vector3d& a,
+      const Eigen::Vector3d& b,
+      const Eigen::Vector3d& c)
+{
+  add(
+    center + a * radius,
+    center + b * radius,
+    center + c * radius);
+}
+
+

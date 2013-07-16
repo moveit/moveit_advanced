@@ -168,7 +168,7 @@ public:
   // construct an empty mesh
   // vertices closer than epsilon will be combined.
   // degenerate triangles are removed as they are added.
-  Mesh(double epsilon=0.00001);
+  explicit Mesh(double epsilon=0.00001);
 
   /// remove everything and be left with empty mesh
   void clear();
@@ -203,6 +203,15 @@ public:
   void add(int ntris,
            int *tris,
            double *verts);
+
+  // add a sphere to the mesh.
+  // Usually used with a previously empty mesh.
+  // max_error is the amount of error allowed.
+  // Vertices will be on the sphere and faces will be slightly inside the
+  // sphere (but no more than max_error from sphere surface).
+  void addSphere(const Eigen::Vector3d& center,
+                 double radius,
+                 double max_error);
   
   // set a different epsilon.  Does not affect existing vertices.
   void setEpsilon(double epsilon);
@@ -299,6 +308,7 @@ public:
              Mesh& a,
              Mesh& b) const;
 
+
   // make windings agree on adjacent triangles, so adjacent tris have
   // consistent normals.  Attempts to make all windings CCW when looking from
   // outside the mesh to inside.
@@ -386,6 +396,15 @@ private:
 
   // find/add an edge given index of 2 vertices
   int addEdge(int vertidx_a, int vertidx_b);
+
+  // used by addSphere()
+  void addSphereTri(const Eigen::Vector3d& center,
+                    double radius,
+                    double max_error,
+                    const Eigen::Vector3d& a,
+                    const Eigen::Vector3d& b,
+                    const Eigen::Vector3d& c);
+
 
   // set the adjacent_tris_ and adjacent_tris_back_dir_ fields in all triangles.
   void setAdjacentTriangles();
