@@ -234,6 +234,12 @@ public:
   void getAABB(Eigen::Vector3d& min,
                Eigen::Vector3d& max) const;
 
+  // return a list of all points interior to the mesh.
+  // Points are sampled on a regular grid with step=resolution centered on the
+  // origin.
+  void getInsidePoints(EigenSTL::vector_Vector3d& points,
+                       double resolution) const;
+
   // get face normals (one for each tri, indexed by tri index)
   const EigenSTL::vector_Vector3d& getFaceNormals() const;
 
@@ -440,10 +446,10 @@ private:
 
   // find a gap and return an edge touching the gap.  NULL if no gaps.
   // Used by fillGaps()
-  Edge* findGap();
+  const Edge* findGap() const;
 
   // fill a gap touching this edge. Used by fillGaps()
-  void fillGap(Edge& first_edge);
+  void fillGap(const Edge& first_edge);
 
   // triangulate a polygon described by verts.
   // Triiangles are added to mesh.
@@ -567,6 +573,9 @@ private:
   mutable bool aabb_valid_;
   mutable Eigen::Vector3d aabb_min_;
   mutable Eigen::Vector3d aabb_max_;
+
+  // are windings fixed (called fixWindings)
+  bool windings_fixed_;
 
   // face normals
   mutable EigenSTL::vector_Vector3d face_normals_;

@@ -53,6 +53,7 @@ mesh_core::Mesh::Mesh(double epsilon)
   , number_of_submeshes_(-1)
   , adjacent_tris_valid_(false)
   , aabb_valid_(false)
+  , windings_fixed_(false)
   , bounding_sphere_valid_(false)
 {
   setEpsilon(epsilon);
@@ -69,6 +70,7 @@ void mesh_core::Mesh::clear()
   number_of_submeshes_ = -1;
   submesh_tris_.clear();
   adjacent_tris_valid_ = false;
+  windings_fixed_ = false;
 }
 
 void mesh_core::Mesh::reserve(int ntris, int nverts)
@@ -113,6 +115,7 @@ void mesh_core::Mesh::add(
 
   number_of_submeshes_ = -1; // need to recalculate
   adjacent_tris_valid_ = false;
+  windings_fixed_ = false;
 
   if (acorn_debug_show_vertex_consolidate)
   {
@@ -484,6 +487,9 @@ void mesh_core::Mesh::setAdjacentTriangles()
 // make all windings CCW
 void mesh_core::Mesh::fixWindings()
 {
+  if (windings_fixed_)
+    return;
+
   int mark = 0;
 
   findSubmeshes();
@@ -512,6 +518,7 @@ void mesh_core::Mesh::fixWindings()
     }
   }
 
+  windings_fixed_ = true;
 
   if (1) // DEBUG
   {
@@ -839,7 +846,7 @@ void mesh_core::Mesh::fillGaps()
 
   for (;;)
   {
-    Edge* edge = findGap();
+    const Edge* edge = findGap();
     if (!edge)
       break;
     fillGap(*edge);
@@ -870,10 +877,10 @@ void mesh_core::Mesh::fillGaps()
   //print();
 }
 
-mesh_core::Mesh::Edge* mesh_core::Mesh::findGap()
+const mesh_core::Mesh::Edge* mesh_core::Mesh::findGap() const
 {
-  std::vector<Edge>::iterator edge = edges_.begin();
-  std::vector<Edge>::iterator edge_end = edges_.end();
+  std::vector<Edge>::const_iterator edge = edges_.begin();
+  std::vector<Edge>::const_iterator edge_end = edges_.end();
   for (; edge != edge_end ; ++edge)
   {
     if (edge->hack_ignore_gap_)
@@ -915,7 +922,7 @@ struct GapEdge
   bool connected_to_same_tri_;
 };
 
-void mesh_core::Mesh::fillGap(Edge& first_edge)
+void mesh_core::Mesh::fillGap(const Edge& first_edge)
 {
   ACORN_ASSERT(first_edge.tris_.size() == 1);
 
@@ -929,7 +936,7 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
       first_edge.verts_[1]);
   }
 
-  EdgeTri& first_et = first_edge.tris_[0];
+  const EdgeTri& first_et = first_edge.tris_[0];
   Triangle &first_tri = tris_[first_et.tri_idx_];
 
   std::vector<GapEdge> loop;
@@ -1023,7 +1030,7 @@ void mesh_core::Mesh::fillGap(Edge& first_edge)
     {
       logWarn("Unable to close gap in edge %d -- ignoring.",
           int(&first_edge - &edges_[0]));
-      first_edge.hack_ignore_gap_ = true;
+      edges_[edgeIndex(first_edge)].hack_ignore_gap_ = true;
       return;
     }
 
@@ -2738,7 +2745,6 @@ void mesh_core::Mesh::addSphereTri(
   double dsq = (mid - mid_norm).squaredNorm();
   if (dsq * radius * radius <= max_error * max_error)
   {
-    logInform("add tri depth=%d",depth);
     add(
       center + a * radius,
       center + b * radius,
@@ -2754,7 +2760,231 @@ void mesh_core::Mesh::addSphereTri(
   addSphereTri(center, radius, max_error, ab, b, bc, depth + 1);
   addSphereTri(center, radius, max_error, ab, bc, ac, depth + 1);
   addSphereTri(center, radius, max_error, ac, bc, c, depth + 1);
-      
 }
 
+struct ScanTri
+{
+  Eigen::Vector3d norm_;       // face normal
+  Eigen::Vector3d edges_[3];   // edges_[n].dot(x,y,1) is positive if x,y is outside triangle
+  Eigen::Vector3d zfunc_;      // z = zfunc_.dot(x,y,1)
+
+  Eigen::Vector2d min_;
+  Eigen::Vector2d max_;
+
+  int tri_idx_;
+};
+
+
+void mesh_core::Mesh::getInsidePoints(
+      EigenSTL::vector_Vector3d& points,
+      double resolution) const
+{
+  points.clear();
+  if (resolution <= std::numeric_limits<double>::epsilon())
+    return;
+
+  double oo_resolution = 1.0 / resolution;
+
+  const Edge* gap_edge = findGap();
+  ACORN_ASSERT(!gap_edge);
+  if (gap_edge)
+  {
+    logError("ERROR: mesh_core::Mesh::getInsidePoints() called on mesh with gaps.  Call fillGaps() first.");
+    return;
+  }
+
+  Eigen::Vector3d min;
+  Eigen::Vector3d max;
+  getAABB(min, max);
+
+  Eigen::Vector3d origin;
+  Eigen::Vector3i isize;
+
+  for (int i = 0 ; i < 3 ; ++i)
+  {
+    int minval = int(std::floor(min(i) * oo_resolution));
+    origin(i) = minval * resolution;
+    int maxval = int(std::ceil((max(i) - origin(i)) * oo_resolution));
+    isize(i) = maxval + 1;
+  }
+
+  points.reserve(isize.x() * isize.y() * isize.z());
+
+  // list of ScnTri, one for each triangle in mesh
+  std::vector<ScanTri> tris;
+  std::map<double, ScanTri*> x_coming; // triangles we have not seen yet, sorted by min x
+  std::map<double, ScanTri*> x_current; // current triangles, sorted by max x
+
+  // create a ScanTri for each triangle in the mesh.
+  // Skip triangles perpendicular to z axis
+  tris.resize(tris_.size());
+  std::vector<Triangle>::const_iterator tri = tris_.begin();
+  std::vector<Triangle>::const_iterator tri_end = tris_.end();
+  int t = 0;
+  for (int tri_idx = 0 ; tri != tri_end ; ++tri, ++tri_idx)
+  {
+    ScanTri& stri = tris[t];
+    const Eigen::Vector3d& a = verts_[tri->verts_[0]];
+    const Eigen::Vector3d& b = verts_[tri->verts_[1]];
+    const Eigen::Vector3d& c = verts_[tri->verts_[2]];
+
+    Eigen::Vector3d ab = b - a;
+    Eigen::Vector3d ac = c - a;
+    stri.norm_ = ab.cross(ac).normalized();
+    if (stri.norm_.z() < std::numeric_limits<double>::epsilon())
+      continue;
+
+    stri.tri_idx_ = tri_idx;
+
+    double ooz = 1.0 / stri.norm_.z();
+    double d = -stri.norm_.dot(a);
+    stri.zfunc_.x() = -stri.norm_.x() * ooz;
+    stri.zfunc_.y() = -stri.norm_.y() * ooz;
+    stri.zfunc_.z() = -d * ooz;
+
+    stri.min_.x() = std::min(std::min(a.x(), b.x()), c.x());
+    stri.min_.y() = std::min(std::min(a.y(), b.y()), c.y());
+    stri.max_.x() = std::max(std::max(a.x(), b.x()), c.x());
+    stri.max_.y() = std::max(std::max(a.y(), b.y()), c.y());
+
+    for (int i = 0 ; i < 3 ; ++i)
+    {
+      const Eigen::Vector3d& v0 = verts_[tri->verts_[i]];
+      const Eigen::Vector3d& v1 = verts_[tri->verts_[(i+1)%3]];
+      Eigen::Vector3d vec = v1 - v0;
+      stri.edges_[i].x() = -vec.y();
+      stri.edges_[i].y() =  vec.x();
+      double d = stri.edges_[i].x() * v0.x() + stri.edges_[i].x() * v0.y();
+      stri.edges_[i].z() = -d;
+    }
+
+    x_coming.insert(std::pair<double, ScanTri*>(stri.min_.x(), &stri));
+    t++;
+  }
+
+  // iterate over all x,y positions.  For each one trace a ray (aka scanline)
+  // parallel to the z axis to see what triangles we hit.  Points inside are
+  // added to the points vector.
+  Eigen::Vector3d coord(origin.x(), origin.y(), 1.0);
+  for (int ix = 0 ; ix < isize.x() ; ++ix)
+  {
+    coord.x() += resolution;
+    coord.y() = origin.y();
+
+    // remove old triangles
+    while (!x_current.empty())
+    {
+      std::map<double, ScanTri*>::iterator it = x_current.begin();
+      if (it->first >= coord.x())
+        break;
+      x_current.erase(it);
+    }
+
+    // add new triangles
+    while (!x_coming.empty())
+    {
+      std::map<double, ScanTri*>::iterator it = x_coming.begin();
+      if (it->first > coord.x())
+        break;
+      x_current.insert(std::pair<double, ScanTri*>(it->second->max_.x(), it->second));
+      x_coming.erase(it);
+    }
+
+    if (x_current.empty())
+      continue;
+
+    std::map<double, ScanTri*> y_coming; // triangles we have not seen yet, sorted by min y
+    std::map<double, ScanTri*> y_current; // current triangles, sorted by max y
+    std::map<double, ScanTri*>::iterator xit = x_current.begin();
+    std::map<double, ScanTri*>::iterator xit_end = x_current.end();
+    for ( ; xit != xit_end ; ++xit)
+    {
+      y_coming.insert(std::pair<double, ScanTri*>(xit->second->min_.y(), xit->second));
+    }
+
+    for (int iy = 0 ; iy < isize.y() ; ++iy)
+    {
+      coord.y() += resolution;
+
+      // remove old triangles
+      while (!y_current.empty())
+      {
+        std::map<double, ScanTri*>::iterator it = y_current.begin();
+        if (it->first >= coord.y())
+          break;
+        y_current.erase(it);
+      }
+
+      // add new triangles
+      while (!y_coming.empty())
+      {
+        std::map<double, ScanTri*>::iterator it = y_coming.begin();
+        if (it->first > coord.y())
+          break;
+        y_current.insert(std::pair<double, ScanTri*>(it->second->max_.y(), it->second));
+        y_coming.erase(it);
+      }
+
+      std::map<double, ScanTri*> scanline; // triangles on this scanline
+
+      // find triangles on this xy scanline
+      std::map<double, ScanTri*>::iterator yit = y_current.begin();
+      std::map<double, ScanTri*>::iterator yit_end = y_current.end();
+      for ( ; yit != yit_end ; ++yit)
+      {
+        for (int i = 0 ;; ++i)
+        {
+          // not outside any edge :: scanline hits triangle
+          if (i == 3)
+          {
+            double z = coord.dot(yit->second->zfunc_);
+            scanline.insert(std::pair<double, ScanTri*>(z, yit->second));
+            break;
+          }
+
+          // scanline does not hit this triangle?
+          if (coord.dot(yit->second->edges_[i]) > 0.0)
+            break;
+        }
+      }
+      if (scanline.empty())
+        continue;
+
+      // walk the scanline and insert points
+      Eigen::Vector3d pos(coord.x(), coord.y(), origin.z());
+      int in = 0;
+      int out = 0;
+      for (int iz = 0 ; iz < isize.z() ; ++iz)
+      {
+        pos.z() += resolution;
+
+        // remove triangles before this z value
+        while (!scanline.empty())
+        {
+          std::map<double, ScanTri*>::iterator it = scanline.begin();
+          if (it->first >= pos.z())
+            break;
+          if (it->second->norm_.z() < 0.0)
+            ++in;
+          else
+            ++out;
+          scanline.erase(it);
+        }
+        if (scanline.empty())
+        {
+          if (in != out)
+            logWarn("getInsidePoints() scanline ends with in=%d != out=%d",in,out);
+          break;
+        }
+
+        if (out > in || in > out+1)
+        {
+          logWarn("getInsidePoints() scanline has in=%d != out=%d",in,out);
+        }
+
+        points.push_back(pos);
+      }
+    }
+  }
+}
 
