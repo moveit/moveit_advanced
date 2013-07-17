@@ -1142,6 +1142,11 @@ struct mesh_core::Mesh::GapPoint
     CONVEX,
     REFLEX,
     EAR,
+
+
+    SELF_INTERSECT,
+    TURN_180,
+    OK,
   };
 
   State state_;
@@ -1311,6 +1316,7 @@ void mesh_core::Mesh::generatePolygon(
     logInform("#####################");
     logInform("##################### generatePolygon nverts=%d",nverts);
   }
+logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
 
   if (nverts < 3)
     return;
@@ -1353,8 +1359,209 @@ void mesh_core::Mesh::generatePolygon(
       xmin = i;
   }
 
+#if 1
+  // calculate next_, delta_ and seg_
+  for (int i = 0 ; i < nverts ; i++)
+  {
+    GapPoint& p = points[i];
+    GapPoint& pn = points[(i+1)%nverts];
+    p.next_ = &pn;
+    pn.prev_ = &p;
+    p.delta_ = pn.v2d_ - p.v2d_;
+    p.seg_.initialize(p.v2d_, pn.v2d_);
+    p.state_ = GapPoint::OK;
+  }
+
+  // check for 180 degree turns and linear loops
+  for (;;)
+  {
+    int linear_cnt = 0;
+    int last_180 = -1;
+    for (int i = 0 ; i < nverts ; i++)
+    {
+      GapPoint* p = &points[i];
+      GapPoint* pn = p->next_;
+      double cr = cross2d(p->delta_, pn->delta_);
+      if (std::abs(cr) <= std::numeric_limits<double>::epsilon())
+      {
+        if (p->delta_.dot(pn->delta_) < 0.0)
+        {
+          pn->state_ = GapPoint::TURN_180;
+          last_180 = i;
+        }
+        linear_cnt++;
+      }
+    }
+
+    if (last_180 == -1)
+      break;
+
+    logInform("Found %d linear verts from nverts=%d",linear_cnt, nverts);
+
+    // entire loop is linear.  Close off one triangle and abort (try again).
+    if (linear_cnt == nverts)
+    {
+      ACORN_ASSERT(last_180 != -1);
+      if (last_180 == -1)
+        last_180 = 0;
+
+      add(verts[(last_180 + nverts - 1) % nverts],
+          verts[last_180],
+          verts[(last_180 + 1) % nverts]);
+
+      ACORN_ASSERT(partial_ok);
+      return;
+    }
+
+    logInform("Eliminate 180 degree turn in vert %d",last_180);
+
+    // found a 180 degree turn.  Eliminate it and recheck.
+    for (int i = last_180 ; i < nverts - 1 ; ++i)
+    {
+      points[i] = points[i+1];
+    }
+    --nverts;
+    points.resize(nverts);
+    GapPoint *p = &points[last_180 % nverts];
+    GapPoint *pp = &points[(last_180 + nverts - 1) % nverts];
+    pp->next_ = p;
+    p->prev_ = pp;
+    pp->delta_ = p->v2d_ - pp->v2d_;
+    pp->seg_.initialize(pp->v2d_, p->v2d_);
+    pp->state_ = GapPoint::OK;
+
+    if (nverts == 4)
+    {
+      add(points[0].orig_vert_idx_,
+          points[2].orig_vert_idx_,
+          points[1].orig_vert_idx_);
+      add(points[0].orig_vert_idx_,
+          points[3].orig_vert_idx_,
+          points[2].orig_vert_idx_);
+      return;
+    }
+  }
+  
+  // check for self intersections
+  {
+    GapPoint* intersect_a = NULL;
+    GapPoint* intersect_b = NULL;
+    int self_intersect_cnt = 0;
+    logInform("Checking for self intersection nverts=%d",nverts);
+    for (int i = 0 ; i < nverts ; i++)
+    {
+      GapPoint* p = &points[i];
+      logInform("   ===== check points[%d] = %08lx  n=%08lx p=%08lx",
+        i,long(p), long(p->next_), long(p->prev_));
+      for (GapPoint* p2 = p->next_->next_; p2->next_ != p ; p2 = p2->next_)
+      {
+        Eigen::Vector2d intersection;
+        bool parallel;
+        logInform("              p2=%08lx",long(p2));
+        if (p->seg_.intersect(p2->seg_, intersection, parallel))
+        {
+          logInform("                intersects");
+          p->state_ = GapPoint::SELF_INTERSECT;
+          p2->state_ = GapPoint::SELF_INTERSECT;
+          self_intersect_cnt++;
+          if (!intersect_a ||
+              p->next_->next_ == p2 ||
+              p2->next_->next_ == p)
+          {
+            // save off the first or best intersection
+            intersect_a = p;
+            intersect_b = p2;
+          }
+        }
+        else
+        {
+          logInform("                NO intersection");
+        }
+      }
+    }
+
+    logInform("Found %d self intersections", self_intersect_cnt);
+
+    // if self intersecting, find a loop that does not intersect
+    if (intersect_a)
+    {
+      logInform("Found %d self intersections", self_intersect_cnt);
+
+      int best_start = 0;
+      int best_cnt = -1;
+      int start = 0;
+      for (int i = 0 ; i < nverts * 2 ; i++)
+      {
+        GapPoint* p = &points[i % nverts];
+        if (p->state_ == GapPoint::SELF_INTERSECT)
+        {
+          int cnt = i - start;
+          if (cnt >= 3 && cnt < best_cnt)
+          {
+            best_cnt = cnt;
+            best_start = start;
+          }
+          start = i + 1;
+        }
+      }
+
+      logInform("found nonintersecting loop of best_cnt=%d verts",best_cnt);
+
+      // if everything self intersects then just connect one of the intersecting pairs
+      if (best_cnt < 3)
+      {
+        int v0 = intersect_a->orig_vert_idx_;
+        int v1 = intersect_a->next_->orig_vert_idx_;
+        int v2 = intersect_b->orig_vert_idx_;
+        int v3 = intersect_b->next_->orig_vert_idx_;
+        add(v0, v2, v1);
+        add(v0, v3, v2);
+        ACORN_ASSERT(partial_ok);
+        return;
+      }
+
+      // if we have a loop with 3-4 verts, close it.
+      if (best_cnt <= 4)
+      {
+        int v0 = points[(best_start + 0) % nverts].orig_vert_idx_;
+        int v1 = points[(best_start + 1) % nverts].orig_vert_idx_;
+        int v2 = points[(best_start + 2) % nverts].orig_vert_idx_;
+        int v3 = points[(best_start + 3) % nverts].orig_vert_idx_;
+        add(v0, v2, v1);
+        if (best_cnt == 4)
+          add(v0, v3, v2);
+        ACORN_ASSERT(partial_ok);
+        return;
+      }
+
+      // otherwise we have a new, smaller loop.  Recurse to close it.
+      std::vector<int> verts2;
+      verts2.resize(best_cnt);
+      for (int i = 0 ; i < best_cnt ; ++i)
+      {
+        verts2[i] = points[(best_start + i) % nverts].orig_vert_idx_;
+      }
+      
+logInform("##################### RECURSE generatePolygon nverts=%d",nverts);
+      ACORN_ASSERT(partial_ok);
+      generatePolygon(verts2, partial_ok);
+      return;
+    }
+  }
+  
+  // find point with min x coord
+  xmin = 0;
+  for (int i = 1 ; i < nverts ; i++)
+  {
+    if (points[i].v2d_.x() < points[xmin].v2d_.x())
+      xmin = i;
+  }
+#endif
+
+
+
   // find winding direction
-  // use cross product sign at extreme (xmin) point, guaranteed to be convex.
+  // use cross product sign at extreme (xmin) point, guaranteed to be convex unless colinear.
   // point.cross_ and direction have same sign if corner is convex.
   // direction is positive if loop is ccw
   double direction = 1.0;
