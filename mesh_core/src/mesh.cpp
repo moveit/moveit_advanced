@@ -2774,6 +2774,7 @@ struct ScanTri
   int tri_idx_;
 };
 
+bool ACORN_DEBUG_MESH_getInsidePoints = false;
 
 void mesh_core::Mesh::getInsidePoints(
       EigenSTL::vector_Vector3d& points,
@@ -2810,10 +2811,32 @@ void mesh_core::Mesh::getInsidePoints(
 
   points.reserve(isize.x() * isize.y() * isize.z());
 
+  if (ACORN_DEBUG_MESH_getInsidePoints)
+  {
+    print();
+    logInform("############ CALLING getInsidePoints() ntris=%d isize=(%d, %d, %d)",
+      int(tris_.size()),
+      isize.x(),
+      isize.y(),
+      isize.z());
+    logInform("       org=(%8.4f, %8.4f, %8.4f)",
+      origin.x(),
+      origin.y(),
+      origin.z());
+    logInform("       min=(%8.4f, %8.4f, %8.4f)",
+      min.x(),
+      min.y(),
+      min.z());
+    logInform("       max=(%8.4f, %8.4f, %8.4f)",
+      max.x(),
+      max.y(),
+      max.z());
+  }
+
   // list of ScnTri, one for each triangle in mesh
   std::vector<ScanTri> tris;
-  std::map<double, ScanTri*> x_coming; // triangles we have not seen yet, sorted by min x
-  std::map<double, ScanTri*> x_current; // current triangles, sorted by max x
+  std::multimap<double, ScanTri*> x_coming; // triangles we have not seen yet, sorted by min x
+  std::multimap<double, ScanTri*> x_current; // current triangles, sorted by max x
 
   // create a ScanTri for each triangle in the mesh.
   // Skip triangles perpendicular to z axis
@@ -2831,8 +2854,15 @@ void mesh_core::Mesh::getInsidePoints(
     Eigen::Vector3d ab = b - a;
     Eigen::Vector3d ac = c - a;
     stri.norm_ = ab.cross(ac).normalized();
-    if (stri.norm_.z() < std::numeric_limits<double>::epsilon())
+    if (std::abs(stri.norm_.z()) < std::numeric_limits<double>::epsilon())
+    {
+      if (ACORN_DEBUG_MESH_getInsidePoints)
+      {
+        logInform("  eliminate tri[%d] (norm.z = %f)", tri_idx, stri.norm_.z());
+      }
+      
       continue;
+    }
 
     stri.tri_idx_ = tri_idx;
 
@@ -2852,9 +2882,17 @@ void mesh_core::Mesh::getInsidePoints(
       const Eigen::Vector3d& v0 = verts_[tri->verts_[i]];
       const Eigen::Vector3d& v1 = verts_[tri->verts_[(i+1)%3]];
       Eigen::Vector3d vec = v1 - v0;
-      stri.edges_[i].x() = -vec.y();
-      stri.edges_[i].y() =  vec.x();
-      double d = stri.edges_[i].x() * v0.x() + stri.edges_[i].x() * v0.y();
+      if (stri.norm_.z() < 0.0)
+      {
+        stri.edges_[i].x() = -vec.y();
+        stri.edges_[i].y() =  vec.x();
+      }
+      else
+      {
+        stri.edges_[i].x() =  vec.y();
+        stri.edges_[i].y() = -vec.x();
+      }
+      double d = stri.edges_[i].x() * v0.x() + stri.edges_[i].y() * v0.y();
       stri.edges_[i].z() = -d;
     }
 
@@ -2862,74 +2900,119 @@ void mesh_core::Mesh::getInsidePoints(
     t++;
   }
 
+  if (ACORN_DEBUG_MESH_getInsidePoints)
+  {
+    logInform("  %d tris after elimination", x_coming.size());
+  }
+
   // iterate over all x,y positions.  For each one trace a ray (aka scanline)
   // parallel to the z axis to see what triangles we hit.  Points inside are
   // added to the points vector.
   Eigen::Vector3d coord(origin.x(), origin.y(), 1.0);
-  for (int ix = 0 ; ix < isize.x() ; ++ix)
+  for (int ix = 0 ; ix < isize.x() ; ++ix, coord.x() += resolution)
   {
-    coord.x() += resolution;
     coord.y() = origin.y();
 
-    // remove old triangles
-    while (!x_current.empty())
+    if (ACORN_DEBUG_MESH_getInsidePoints)
     {
-      std::map<double, ScanTri*>::iterator it = x_current.begin();
-      if (it->first >= coord.x())
-        break;
-      x_current.erase(it);
+      logInform("x=%4d (%8.4f) ntris=%d",ix,coord.x(), x_current.size());
     }
 
     // add new triangles
     while (!x_coming.empty())
     {
-      std::map<double, ScanTri*>::iterator it = x_coming.begin();
+      std::multimap<double, ScanTri*>::iterator it = x_coming.begin();
       if (it->first > coord.x())
         break;
+      if (ACORN_DEBUG_MESH_getInsidePoints)
+      {
+        logInform("  (x) add    tri[%4d]\n%s\n%s\n%s",
+          it->second->tri_idx_,
+          str(verts_[tris_[it->second->tri_idx_].verts_[0]]).c_str(),
+          str(verts_[tris_[it->second->tri_idx_].verts_[1]]).c_str(),
+          str(verts_[tris_[it->second->tri_idx_].verts_[2]]).c_str());
+      }
       x_current.insert(std::pair<double, ScanTri*>(it->second->max_.x(), it->second));
       x_coming.erase(it);
+    }
+
+    // remove old triangles
+    while (!x_current.empty())
+    {
+      std::multimap<double, ScanTri*>::iterator it = x_current.begin();
+      if (it->first >= coord.x())
+        break;
+
+      if (ACORN_DEBUG_MESH_getInsidePoints)
+      {
+        logInform("  (x) remove tri[%4d]\n%s\n%s\n%s",
+          it->second->tri_idx_,
+          str(verts_[tris_[it->second->tri_idx_].verts_[0]]).c_str(),
+          str(verts_[tris_[it->second->tri_idx_].verts_[1]]).c_str(),
+          str(verts_[tris_[it->second->tri_idx_].verts_[2]]).c_str());
+      }
+      x_current.erase(it);
     }
 
     if (x_current.empty())
       continue;
 
-    std::map<double, ScanTri*> y_coming; // triangles we have not seen yet, sorted by min y
-    std::map<double, ScanTri*> y_current; // current triangles, sorted by max y
-    std::map<double, ScanTri*>::iterator xit = x_current.begin();
-    std::map<double, ScanTri*>::iterator xit_end = x_current.end();
+    std::multimap<double, ScanTri*> y_coming; // triangles we have not seen yet, sorted by min y
+    std::multimap<double, ScanTri*> y_current; // current triangles, sorted by max y
+    std::multimap<double, ScanTri*>::iterator xit = x_current.begin();
+    std::multimap<double, ScanTri*>::iterator xit_end = x_current.end();
     for ( ; xit != xit_end ; ++xit)
     {
       y_coming.insert(std::pair<double, ScanTri*>(xit->second->min_.y(), xit->second));
     }
 
-    for (int iy = 0 ; iy < isize.y() ; ++iy)
+    for (int iy = 0 ; iy < isize.y() ; ++iy, coord.y() += resolution)
     {
-      coord.y() += resolution;
-
-      // remove old triangles
-      while (!y_current.empty())
+      if (ACORN_DEBUG_MESH_getInsidePoints)
       {
-        std::map<double, ScanTri*>::iterator it = y_current.begin();
-        if (it->first >= coord.y())
-          break;
-        y_current.erase(it);
+        logInform("  xy=(%4d %4d) = (%8.4f %8.4f) ntris=%d",ix,iy,coord.x(),coord.y(), y_current.size());
       }
 
       // add new triangles
       while (!y_coming.empty())
       {
-        std::map<double, ScanTri*>::iterator it = y_coming.begin();
+        std::multimap<double, ScanTri*>::iterator it = y_coming.begin();
         if (it->first > coord.y())
           break;
+        if (ACORN_DEBUG_MESH_getInsidePoints)
+        {
+          logInform("    (y) add    tri[%4d]\n%s\n%s\n%s",
+            it->second->tri_idx_,
+            str(verts_[tris_[it->second->tri_idx_].verts_[0]]).c_str(),
+            str(verts_[tris_[it->second->tri_idx_].verts_[1]]).c_str(),
+            str(verts_[tris_[it->second->tri_idx_].verts_[2]]).c_str());
+        }
         y_current.insert(std::pair<double, ScanTri*>(it->second->max_.y(), it->second));
         y_coming.erase(it);
       }
 
-      std::map<double, ScanTri*> scanline; // triangles on this scanline
+      // remove old triangles
+      while (!y_current.empty())
+      {
+        std::multimap<double, ScanTri*>::iterator it = y_current.begin();
+        if (it->first >= coord.y())
+          break;
+        if (ACORN_DEBUG_MESH_getInsidePoints)
+        {
+          logInform("    (y) remove tri[%4d]\n%s\n%s\n%s",
+            it->second->tri_idx_,
+            str(verts_[tris_[it->second->tri_idx_].verts_[0]]).c_str(),
+            str(verts_[tris_[it->second->tri_idx_].verts_[1]]).c_str(),
+            str(verts_[tris_[it->second->tri_idx_].verts_[2]]).c_str());
+        }
+        y_current.erase(it);
+      }
+
+      std::multimap<double, ScanTri*> scanline; // triangles on this scanline
 
       // find triangles on this xy scanline
-      std::map<double, ScanTri*>::iterator yit = y_current.begin();
-      std::map<double, ScanTri*>::iterator yit_end = y_current.end();
+      std::multimap<double, ScanTri*>::iterator yit = y_current.begin();
+      std::multimap<double, ScanTri*>::iterator yit_end = y_current.end();
       for ( ; yit != yit_end ; ++yit)
       {
         for (int i = 0 ;; ++i)
@@ -2939,7 +3022,22 @@ void mesh_core::Mesh::getInsidePoints(
           {
             double z = coord.dot(yit->second->zfunc_);
             scanline.insert(std::pair<double, ScanTri*>(z, yit->second));
+            if (ACORN_DEBUG_MESH_getInsidePoints)
+            {
+              logInform("       (z) scanline hit tri[%4d] at (%8.4f, %8.4f, %8.4f) norm.z=%8.4f",
+                yit->second->tri_idx_,coord.x(), coord.y(), z, yit->second->norm_.z());
+            }
             break;
+          }
+
+          if (ACORN_DEBUG_MESH_getInsidePoints)
+          {
+            logInform("                          check tri[%4d] edge[%d] dot=%f  c=%s e=%s",
+              yit->second->tri_idx_,
+              i,
+              coord.dot(yit->second->edges_[i]),
+              mesh_core::str(coord).c_str(),
+              mesh_core::str(yit->second->edges_[i]).c_str());
           }
 
           // scanline does not hit this triangle?
@@ -2947,6 +3045,7 @@ void mesh_core::Mesh::getInsidePoints(
             break;
         }
       }
+
       if (scanline.empty())
         continue;
 
@@ -2954,20 +3053,42 @@ void mesh_core::Mesh::getInsidePoints(
       Eigen::Vector3d pos(coord.x(), coord.y(), origin.z());
       int in = 0;
       int out = 0;
-      for (int iz = 0 ; iz < isize.z() ; ++iz)
+      double last_in_z = -std::numeric_limits<double>::max();
+      double last_out_z = -std::numeric_limits<double>::max();
+      for (int iz = 0 ; iz < isize.z() ; ++iz, pos.z() += resolution)
       {
-        pos.z() += resolution;
-
         // remove triangles before this z value
         while (!scanline.empty())
         {
-          std::map<double, ScanTri*>::iterator it = scanline.begin();
+          std::multimap<double, ScanTri*>::iterator it = scanline.begin();
           if (it->first >= pos.z())
             break;
+
           if (it->second->norm_.z() < 0.0)
-            ++in;
+          {
+            // avoid incrementing twice if on edge/vert shared by multiple triangles.
+            if (std::abs(it->first - last_in_z) < std::numeric_limits<double>::epsilon())
+            {
+              ++in;
+              last_in_z = it->first;
+            }
+
+            if (ACORN_DEBUG_MESH_getInsidePoints)
+              logInform("         at z=%8.4f  in=%d out=%d",pos.z(), in, out);
+
+          }
           else
-            ++out;
+          {
+            // avoid incrementing twice if on edge/vert shared by multiple triangles.
+            if (std::abs(it->first - last_out_z) < std::numeric_limits<double>::epsilon())
+            {
+              ++out;
+              last_out_z = it->first;
+            }
+
+            if (ACORN_DEBUG_MESH_getInsidePoints)
+              logInform("         at z=%8.4f  in=%d out=%d",pos.z(), in, out);
+          }
           scanline.erase(it);
         }
         if (scanline.empty())
