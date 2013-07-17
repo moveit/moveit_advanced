@@ -3067,7 +3067,7 @@ void mesh_core::Mesh::getInsidePoints(
           if (it->second->norm_.z() < 0.0)
           {
             // avoid incrementing twice if on edge/vert shared by multiple triangles.
-            if (std::abs(it->first - last_in_z) < std::numeric_limits<double>::epsilon())
+            if (std::abs(it->first - last_in_z) > std::numeric_limits<double>::epsilon())
             {
               ++in;
               last_in_z = it->first;
@@ -3080,7 +3080,7 @@ void mesh_core::Mesh::getInsidePoints(
           else
           {
             // avoid incrementing twice if on edge/vert shared by multiple triangles.
-            if (std::abs(it->first - last_out_z) < std::numeric_limits<double>::epsilon())
+            if (std::abs(it->first - last_out_z) > std::numeric_limits<double>::epsilon())
             {
               ++out;
               last_out_z = it->first;
@@ -3103,7 +3103,8 @@ void mesh_core::Mesh::getInsidePoints(
           logWarn("getInsidePoints() scanline has in=%d != out=%d",in,out);
         }
 
-        points.push_back(pos);
+        if (in > out)
+          points.push_back(pos);
       }
     }
   }
