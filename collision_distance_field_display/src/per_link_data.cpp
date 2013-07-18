@@ -571,6 +571,7 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap (-2 to disable)");
       obj->addIntProperty("NTris", -1, "Number of tris to show (-1 for all)");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
+      obj->addFloatProperty("ClosestAngle", 0, "if >0 show closest distance for features with this max_angle");
 
       per_link_objects.addVisObject(obj);
     }
@@ -758,6 +759,16 @@ acorn_closest_debug = false;
             }
           }
 #endif
+
+          double closest_max_angle = base_->getFloatProperty("ClosestAngle")->getFloat();
+          if (closest_max_angle > 0.0 && closest_max_angle < 90.0)
+          {
+            int tria, trib;
+            double dist;
+            
+            mp->findThinnestFeature(dist, tria, trib, closest_max_angle);
+            logInform("Closest dist=%f  tria=%d  trib=%d for max_angle=%4.1f",dist, tria, trib, closest_max_angle);
+          }
 
           // draw a mesh sphere
           if (1)
