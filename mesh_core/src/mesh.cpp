@@ -43,6 +43,10 @@
 #include <boost/math/constants/constants.hpp>
 
 bool mesh_core::Mesh::debug_ = false;
+bool mesh_core::Mesh::debug_this_node_ = false;
+bool mesh_core::Mesh::debug_this_gap_ = false;
+int mesh_core::Mesh::debug_node_id_ = -1;
+int mesh_core::Mesh::debug_gap_id_ = -1;
 
 bool acorn_debug_show_vertex_consolidate = false;
 bool acorn_debug_ear_state = false;
@@ -924,6 +928,11 @@ struct GapEdge
 
 void mesh_core::Mesh::fillGap(const Edge& first_edge)
 {
+  bool save_acorn_debug_ear_state = acorn_debug_ear_state;
+  debug_this_gap_ = (debug_ && debug_this_node_ && debug_gap_id_ != -1 && debug_gap_id_ == gap_debug_.size());
+  acorn_debug_ear_state = debug_this_gap_;
+  
+
   ACORN_ASSERT(first_edge.tris_.size() == 1);
 
   if (0 && ACORN_DEBUG_FILL_GAP)
@@ -1128,6 +1137,7 @@ void mesh_core::Mesh::fillGap(const Edge& first_edge)
       db.gap_tris_.push_back(i);
   }
 #endif
+  acorn_debug_ear_state = save_acorn_debug_ear_state;
 }
 
 static inline double cross2d(const Eigen::Vector2d& a, const Eigen::Vector2d& b)
@@ -1317,6 +1327,12 @@ void mesh_core::Mesh::generatePolygon(
     const std::vector<int> verts,
     bool partial_ok)
 {
+  GapDebugInfo* db = NULL;
+  if (debug_ && !gap_debug_.empty())
+  {
+    db = &gap_debug_.back();
+  }
+
   int nverts = verts.size();
 
   if (acorn_debug_ear_state)
@@ -2074,8 +2090,12 @@ acorn_debug_show_vertex_consolidate = false;
     }
   }
 
+  bool debug_this_node = debug_this_node_;
+  debug_this_node_ = (debug_this_node && (debug_node_id_ & 1) == 0);
+
   a.fillGaps();
 acorn_db_slice_pts_loop.clear();
+  debug_this_node_ = (debug_this_node && (debug_node_id_ & 1) == 1);
   b.fillGaps();
 }
 
@@ -2278,6 +2298,8 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
           Mesh **mesh_a,
           Mesh **mesh_b) const
 {
+  debug_this_node_ = (debug_node_id_ != -1 && ((debug_node_id_ & ~1) == (mesh_node->id_ << 1)));
+
   Plane plane;
   if (!calculateSphereRepSplitPlane(tolerance, mesh_node, plane))
     return false;
@@ -2286,6 +2308,8 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
   *mesh_b = new Mesh;
 
   mesh_node->mesh_->slice(plane, **mesh_a, **mesh_b);
+
+  debug_this_node_ = false;
 
   mesh_node->plane_ = plane;
 

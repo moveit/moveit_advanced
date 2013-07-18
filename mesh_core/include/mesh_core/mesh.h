@@ -343,6 +343,8 @@ public:
   // Info about a gap for debugging
   struct GapDebugInfo
   {
+    int gap_idx_;
+
     // vertices of gap loop
     EigenSTL::vector_Vector3d points_;
 
@@ -364,6 +366,8 @@ public:
 
   // enable debugging (debugGapInfo())
   static void enableDebugging(bool enable);
+  static void setDebugValues(int node_id,
+                             int gap_id);
 
 private:
   int triIndex(const Triangle& tri) const
@@ -579,7 +583,12 @@ private:
   mutable EigenSTL::vector_Vector3d face_normals_;
 
   // enable debugging features
-  static bool debug_;
+  static bool debug_;             // save gap_debug_ info if true
+  static int debug_node_id_;      // debug this node in getSphereRep
+  static int debug_gap_id_;       // debug this gap (only for debugged node)
+  static bool debug_this_node_;   // internal use
+  static bool debug_this_gap_;    // internal use
+
 
   // info about filled gaps
   std::vector<GapDebugInfo> gap_debug_;
@@ -590,6 +599,14 @@ private:
 inline void mesh_core::Mesh::enableDebugging(bool enable)
 {
   debug_ = enable;
+}
+
+inline void mesh_core::Mesh::setDebugValues(
+      int node_id,
+      int gap_id)
+{
+  debug_node_id_ = node_id;
+  debug_gap_id_ = gap_id;
 }
 
 
