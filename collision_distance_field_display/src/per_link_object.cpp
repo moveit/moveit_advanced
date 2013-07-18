@@ -38,6 +38,8 @@
 #include <rviz/properties/float_property.h>
 #include <rviz/properties/int_property.h>
 
+#include <console_bridge/console.h>
+
 
 void moveit_rviz_plugin::PerLinkObjList::addVisObject(PerLinkObjBase* obj)
 {
@@ -195,28 +197,37 @@ void moveit_rviz_plugin::PerLinkObjBase::addBoolProperty(
 rviz::IntProperty* moveit_rviz_plugin::PerLinkObjBase::getIntProperty(
       const std::string& name)
 {
+  rviz::IntProperty *p = NULL;
   std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
   if (it != extra_property_map_.end())
-    return dynamic_cast<rviz::IntProperty*>(it->second);
-  return NULL;
+    p = dynamic_cast<rviz::IntProperty*>(it->second);
+  if (!p)
+    logWarn("No int property '%s' found",name.c_str());
+  return p;
 }
 
 rviz::FloatProperty* moveit_rviz_plugin::PerLinkObjBase::getFloatProperty(
       const std::string& name)
 {
+  rviz::FloatProperty *p = NULL;
   std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
   if (it != extra_property_map_.end())
-    return dynamic_cast<rviz::FloatProperty*>(it->second);
-  return NULL;
+    p = dynamic_cast<rviz::FloatProperty*>(it->second);
+  if (!p)
+    logWarn("No float property '%s' found",name.c_str());
+  return p;
 }
 
 rviz::BoolProperty* moveit_rviz_plugin::PerLinkObjBase::getBoolProperty(
       const std::string& name)
 {
+  rviz::BoolProperty *p = NULL;
   std::map<std::string, rviz::Property*>::iterator it = extra_property_map_.find(name);
   if (it != extra_property_map_.end())
-    return dynamic_cast<rviz::BoolProperty*>(it->second);
-  return NULL;
+    p = dynamic_cast<rviz::BoolProperty*>(it->second);
+  if (!p)
+    logWarn("No bool property '%s' found",name.c_str());
+  return p;
 }
 
 void moveit_rviz_plugin::PerLinkObjBase::changedEnableSlot()

@@ -551,13 +551,14 @@ namespace moveit_rviz_plugin
                                   PerLinkObjBase::POINTS,
                                   0.005);
 
+#if 0
       obj->addIntProperty("NTris", -1, "Number of tris to show");
       obj->addIntProperty("FirstTri", 0, "first tri to show");
       obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
       obj->addIntProperty("WhichGap", -1, "show one filled gap");
       obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap");
       obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
-      obj->addBoolProperty("ShowPlane", false, "Show the slice plane?");
+#endif
       obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
       obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
       obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
@@ -568,9 +569,6 @@ namespace moveit_rviz_plugin
       obj->addBoolProperty("ShowPoints", false, "Show all internal points in mesh");
       obj->addFloatProperty("PointResolution", 0.1, "resolution for ShowPoints");
       obj->addBoolProperty("DebugShowPoints", false, "printfs in ShowPoints");
-      obj->addFloatProperty("PointX", 0.0, "Show point at this X position");
-      obj->addFloatProperty("PointY", 0.0, "Show point at this Y position");
-      obj->addFloatProperty("PointZ", 0.0, "Show point at this Z position");
 
       per_link_objects.addVisObject(obj);
     }
@@ -603,25 +601,17 @@ namespace moveit_rviz_plugin
           mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
           mesh.fillGaps();
 
-          mesh_core::Plane plane(mesh.getVerts());
 
-          if (!shapes_)
-            shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+          shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
 
-          if (base_->getBoolProperty("ShowPlane")->getBool())
-          {
-            ROS_INFO("Plane: %f %f %f %f", plane.getA(), plane.getB(), plane.getC(), plane.getD());
-            mesh_core::PlaneProjection proj(mesh.getVerts());
-            shapes_->setDefaultColor(Eigen::Vector4f(1,1,1,0.3));
-            shapes_->addAxis(proj.getOrientation(), proj.getOrigin(), 0.2);
-          }
 
-#if 1
+#if 0
           acorn_db_slice_showclip = base_->getIntProperty("WhichClip")->getInt();
 #endif
 
           mesh.fillGaps();
 
+#if 0
           if (base_->getIntProperty("NTris")->getInt() == -2)
           {
             acorn_debug_ear_state = true;
@@ -630,6 +620,7 @@ namespace moveit_rviz_plugin
           {
             acorn_debug_ear_state = false;
           }
+#endif
 
           const mesh_core::Mesh *mp = &mesh;
 
@@ -740,6 +731,7 @@ acorn_closest_debug = false;
           }
           
           
+#if 0
           mesh_core::Mesh a(0.00001);
           mesh_core::Mesh b(0.00001);
           int which_half = base_->getIntProperty("WhichHalf")->getInt();
@@ -762,6 +754,7 @@ acorn_closest_debug = false;
               shapes_->addPoints(acorn_db_slice_pts_out, Eigen::Vector4f(1,0,0,1));
             }
           }
+#endif
 
           // draw a mesh sphere
           if (1)
@@ -791,14 +784,6 @@ acorn_closest_debug = false;
           }
 
           {
-            Eigen::Vector3d point(
-                                base_->getFloatProperty("PointX")->getFloat(),
-                                base_->getFloatProperty("PointY")->getFloat(),
-                                base_->getFloatProperty("PointZ")->getFloat());
-            shapes_->addPoint(point, Eigen::Vector4f(1,0,0,1));
-          }
-
-          {
             boost::shared_ptr<DebugMesh> dbmesh( new DebugMesh(*mp, "CurrentMesh"));
             link_->getDebugMeshes().push_back(dbmesh);
           }
@@ -810,6 +795,7 @@ acorn_closest_debug = false;
                                             NULL,
                                             base_->getColor()));
 
+#if 0
           int which_gap = base_->getIntProperty("WhichGap")->getInt();
           if (which_gap >= 0)
           {
@@ -884,12 +870,17 @@ int(gdi.gap_tris_.size()));
             }
           }
           else
+#endif
           {
             ROS_INFO("draw mesh with %d tris %d verts",mp->getTriCount(), mp->getVertCount());
+#if 1
+            mesh_shape_->reset(mp);
+#else
             mesh_shape_->reset(
                           mp,
                           base_->getIntProperty("FirstTri")->getInt(),
                           base_->getIntProperty("NTris")->getInt());
+#endif
           }
 
           if (base_->getBoolProperty("ShowBoundingSphere")->getBool())
@@ -963,7 +954,6 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
       obj->addIntProperty("WhichGap", -1, "show one filled gap");
       obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
-      obj->addBoolProperty("ShowPlane", false, "Show the slice plane?");
       obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
       obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
       obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
@@ -1019,12 +1009,7 @@ namespace moveit_rviz_plugin
                             base_->getFloatProperty("PointX")->getFloat(),
                             base_->getFloatProperty("PointY")->getFloat(),
                             base_->getFloatProperty("PointZ")->getFloat());
-logInform("  BBB %d",__LINE__);
-logInform("  %f",point.x());
-logInform("  %f",point.y());
-logInform("  %f",point.z());
         shapes_->addPoint(point, Eigen::Vector4f(1,0,0,1));
-logInform("  BBB %d",__LINE__);
       }
 
 
@@ -1087,15 +1072,11 @@ logInform("  BBB %d",__LINE__);
           int showpt = base_->getIntProperty("ShowGapLoopPoint")->getInt();
           if (showpt >=0 && showpt < gdi.points_.size())
           {
-logInform("  BBB %d",__LINE__);
             shapes_->addPoint(gdi.points_[showpt], Eigen::Vector4f(1,0,1,1));
-logInform("  BBB %d",__LINE__);
           }
           else if (showpt == -1)
           {
-logInform("  BBB %d",__LINE__);
             shapes_->addPoints(gdi.points_, Eigen::Vector4f(1,0,1,1));
-logInform("  BBB %d",__LINE__);
           }
 
         }
