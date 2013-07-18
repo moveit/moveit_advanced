@@ -116,7 +116,7 @@ namespace moveit_rviz_plugin
 
 namespace moveit_rviz_plugin
 {
-  // Draw Link Spheres from RobotSphereRep
+  // Draw Link Spheres from RobotSphereRepresentation
   class LinkObj_RepLinkSpheres : public PerLinkSubObj
   {
   public:
@@ -128,7 +128,7 @@ namespace moveit_rviz_plugin
     {
       per_link_objects.addVisObject(new PerLinkObj<LinkObj_RepLinkSpheres>(
                                   parent,
-                                  "Show Rep Spheres",
+                                  "Show Calc Spheres",
                                   "Show spheres generated with RobotSphereRepresentation.",
                                   QColor(100, 100, 255),
                                   0.5,
@@ -181,7 +181,7 @@ namespace moveit_rviz_plugin
 
 namespace moveit_rviz_plugin
 {
-  // Draw Link Spheres from RobotSphereRep
+  // Draw Link Spheres from RobotSphereRepresentation
   class LinkObj_RepDF : public PerLinkSubObj
   {
   public:
@@ -193,7 +193,7 @@ namespace moveit_rviz_plugin
     {
       per_link_objects.addVisObject(new PerLinkObj<LinkObj_RepDF>(
                                   parent,
-                                  "Show Rep DF",
+                                  "Show Calc DF",
                                   "Show RobotSphereRepresentation distance field.",
                                   QColor(0, 0, 255),
                                   1.0,
@@ -203,7 +203,7 @@ namespace moveit_rviz_plugin
 
     virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
     {
-      robot_relative = false;
+      robot_relative = true;
       
       robot_sphere_representation::LinkSphereRepresentation* link_sphere_rep = link_->getLinkSphereRepresentation();
       if (!link_sphere_rep)
