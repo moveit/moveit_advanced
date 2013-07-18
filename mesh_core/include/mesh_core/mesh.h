@@ -353,6 +353,9 @@ public:
 
     // tris used to fill gap
     std::vector<int> gap_tris_;
+
+    // number of tris just before filling gap
+    int pre_gap_tri_cnt_;
     
     // tris neighboring gap
     std::vector<int> neigbor_tris_;
@@ -469,6 +472,9 @@ private:
 
   // add a gap-filling triangle (used by fillGaps())
   void addGapTri(const GapPoint *p, double direction);
+
+  // this just calls add() and does some debug bookkeeping
+  void addGapTri(int a, int b, int c);
 
   // check whether point is an ear.  Used by fillGap().
   static void calcEarState(GapPoint* point);

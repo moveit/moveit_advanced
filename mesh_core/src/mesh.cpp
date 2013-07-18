@@ -1092,23 +1092,24 @@ void mesh_core::Mesh::fillGap(const Edge& first_edge)
   while (loop_start_index == -1);
 
 #if 1||ENABLE_DEBUGGING
-  int tri_cnt_before = tris_.size();
+  GapDebugInfo* db = NULL;
   if (debug_)
   {
     gap_debug_.resize(gap_debug_.size() + 1);
-    GapDebugInfo& db = gap_debug_.back();
+    db = &gap_debug_.back();
     int nloop = loop.size() - loop_start_index;
-    db.points_.resize(nloop);
-    db.verts_.resize(nloop);
-    db.neigbor_tris_.resize(nloop);
-    db.gap_tris_.reserve(nloop);
+    db->points_.resize(nloop);
+    db->verts_.resize(nloop);
+    db->neigbor_tris_.resize(nloop);
+    db->gap_tris_.reserve(nloop);
+    db->pre_gap_tri_cnt_ = tris_.size();
 
     for (int i = 0 ; i < nloop ; ++i)
     {
       GapEdge& ge = loop[loop_start_index + i];
-      db.verts_[i] = ge.vert_idx_;
-      db.points_[i] = verts_[ge.vert_idx_];
-      db.neigbor_tris_[i] = ge.tri_idx_;
+      db->verts_[i] = ge.vert_idx_;
+      db->points_[i] = verts_[ge.vert_idx_];
+      db->neigbor_tris_[i] = ge.tri_idx_;
     }
   }
 #endif
@@ -1130,11 +1131,10 @@ void mesh_core::Mesh::fillGap(const Edge& first_edge)
   findSubmeshes();
 
 #if 1||ENABLE_DEBUGGING
-  if (debug_)
+  if (db)
   {
-    GapDebugInfo& db = gap_debug_.back();
-    for (int i = tri_cnt_before ; i < tris_.size() ; i++)
-      db.gap_tris_.push_back(i);
+    for (int i = db->pre_gap_tri_cnt_ ; i < tris_.size() ; i++)
+      db->gap_tris_.push_back(i);
   }
 #endif
   acorn_debug_ear_state = save_acorn_debug_ear_state;
@@ -1302,21 +1302,51 @@ void mesh_core::Mesh::calcEarState(GapPoint* point)
 }
 
 void mesh_core::Mesh::addGapTri(
+      int a,
+      int b,
+      int c)
+{
+  if (!acorn_debug_ear_state)
+  {
+    add(a,b,c);
+  }
+  else
+  {
+    int tri_idx = tris_.size();
+    add(a,b,c);
+    if (acorn_debug_ear_state && debug_ && !gap_debug_.empty() && tri_idx != tris_.size())
+    {
+      int base = 0;
+      if (debug_ && !gap_debug_.empty())
+        base = gap_debug_.back().pre_gap_tri_cnt_;
+
+      logInform("  Add_Gap_Triangle tri_idx=%d gap_tri_idx=%d  v=%d %d %d",
+        tri_idx,
+        tri_idx - base,
+        a,b,c);
+    }
+  }
+}
+
+void mesh_core::Mesh::addGapTri(
       const GapPoint *p,
       double direction)
 {
   if (direction < 0.0)
   {
-    add(p->prev_->orig_vert_idx_,
+    addGapTri(
+        p->prev_->orig_vert_idx_,
         p->orig_vert_idx_,
         p->next_->orig_vert_idx_);
   }
   else
   {
-    add(p->prev_->orig_vert_idx_,
+    addGapTri(
+        p->prev_->orig_vert_idx_,
         p->next_->orig_vert_idx_,
         p->orig_vert_idx_);
   }
+
 }
 
 // generate a polygon given a loop of vertex indices
@@ -1350,9 +1380,9 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
 
   if (nverts <= 4)
   {
-    add(verts[0], verts[2], verts[1]);
+    addGapTri(verts[0], verts[2], verts[1]);
     if (nverts == 4)
-      add(verts[0], verts[3], verts[2]);
+      addGapTri(verts[0], verts[3], verts[2]);
     return;
   }
 
@@ -1435,9 +1465,9 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
     // entire loop is linear.  Close off one triangle and abort (try again).
     if (linear_cnt == nverts)
     {
-      add(last_180->prev_->orig_vert_idx_,
-          last_180->orig_vert_idx_,
-          last_180->next_->orig_vert_idx_);
+      addGapTri(last_180->prev_->orig_vert_idx_,
+                last_180->orig_vert_idx_,
+                last_180->next_->orig_vert_idx_);
 
       ACORN_ASSERT(partial_ok);
       return;
@@ -1458,12 +1488,12 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
       GapPoint* b = a->next_;
       GapPoint* c = b->next_;
       GapPoint* d = c->next_;
-      add(a->orig_vert_idx_,
-          c->orig_vert_idx_,
-          b->orig_vert_idx_);
-      add(a->orig_vert_idx_,
-          d->orig_vert_idx_,
-          c->orig_vert_idx_);
+      addGapTri(a->orig_vert_idx_,
+                c->orig_vert_idx_,
+                b->orig_vert_idx_);
+      addGapTri(a->orig_vert_idx_,
+                d->orig_vert_idx_,
+                c->orig_vert_idx_);
       fixWindings();
       return;
     }
@@ -1549,8 +1579,8 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
         int v1 = intersect_a->next_->orig_vert_idx_;
         int v2 = intersect_b->orig_vert_idx_;
         int v3 = intersect_b->next_->orig_vert_idx_;
-        add(v0, v2, v1);
-        add(v0, v3, v2);
+        addGapTri(v0, v2, v1);
+        addGapTri(v0, v3, v2);
         fixWindings();
         ACORN_ASSERT(partial_ok);
         return;
@@ -1570,13 +1600,13 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
         GapPoint* b = a->next_;
         GapPoint* c = b->next_;
         GapPoint* d = c->next_;
-        add(a->orig_vert_idx_,
-            c->orig_vert_idx_,
-            b->orig_vert_idx_);
+        addGapTri(a->orig_vert_idx_,
+                  c->orig_vert_idx_,
+                  b->orig_vert_idx_);
         if (d != a)
-          add(a->orig_vert_idx_,
-              d->orig_vert_idx_,
-              c->orig_vert_idx_);
+          addGapTri(a->orig_vert_idx_,
+                    d->orig_vert_idx_,
+                    c->orig_vert_idx_);
         fixWindings();
         ACORN_ASSERT(partial_ok);
         return;
