@@ -176,7 +176,7 @@ private:
   void saveSpheresToSrdf();
 
   // Add per link data displays.
-  void addPerLinkData(rviz::Property* df_collision_property, rviz::Property* parent_property);
+  void addPerLinkData();
   void addSphereGenProperties(rviz::Property* parent_property);
 
   // for drawing the robot
@@ -220,6 +220,7 @@ private:
   rviz::FloatProperty* robot_alpha_property_;
   rviz::Property* collision_detection_category_;
   rviz::Property* sphere_gen_category_;
+  rviz::Property* mesh_vis_category_;
   rviz::BoolProperty* save_to_srdf_property_;
   rviz::EnumProperty* sphere_gen_method_property_;
   rviz::EnumProperty* sphere_qual_method_property_;

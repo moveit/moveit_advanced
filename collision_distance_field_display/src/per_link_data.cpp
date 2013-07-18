@@ -770,6 +770,7 @@ acorn_closest_debug = false;
             logInform("Closest dist=%f  tria=%d  trib=%d for max_angle=%4.1f",dist, tria, trib, closest_max_angle);
           }
 
+#if 0
           // draw a mesh sphere
           if (1)
           {
@@ -784,6 +785,7 @@ acorn_closest_debug = false;
                                             &sphere_mesh,
                                             base_->getColor()));
           }
+#endif
 
           // draw mesh points
           if (base_->getBoolProperty("ShowPoints")->getBool())
@@ -1227,26 +1229,26 @@ namespace moveit_rviz_plugin
 }
 
 
-void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Property* df_collision_property,
-                                                                       rviz::Property* sphere_gen_propety)
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData()
 {
   per_link_objects_.reset(new PerLinkObjList());
 
-  LinkObj_StaticDF::addSelf(df_collision_property, *per_link_objects_);
-  LinkObj_StaticDFPoints::addSelf(df_collision_property, *per_link_objects_);
-  LinkObj_ModelLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_ModelLinkBSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_StaticDF::addSelf(collision_detection_category_, *per_link_objects_);
+  LinkObj_StaticDFPoints::addSelf(collision_detection_category_, *per_link_objects_);
+  LinkObj_ModelLinkSpheres::addSelf(collision_detection_category_, *per_link_objects_);
+  LinkObj_ModelLinkBSpheres::addSelf(collision_detection_category_, *per_link_objects_);
 
-  addSphereGenProperties(sphere_gen_propety);
+  addSphereGenProperties(sphere_gen_category_);
 
-  LinkObj_RepLinkSpheres::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_BCyl::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_SDFBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_VertBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_LinkVerts::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_LinkMesh::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_MeshDebug::addSelf(sphere_gen_propety, *per_link_objects_);
-  LinkObj_VertPlane::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_RepLinkSpheres::addSelf(sphere_gen_category_, *per_link_objects_);
+  LinkObj_BCyl::addSelf(sphere_gen_category_, *per_link_objects_);
+  LinkObj_SDFBSphere::addSelf(sphere_gen_category_, *per_link_objects_);
+  LinkObj_VertBSphere::addSelf(sphere_gen_category_, *per_link_objects_);
+
+  LinkObj_LinkVerts::addSelf(mesh_vis_category_, *per_link_objects_);
+  LinkObj_LinkMesh::addSelf(mesh_vis_category_, *per_link_objects_);
+  LinkObj_MeshDebug::addSelf(mesh_vis_category_, *per_link_objects_);
+  LinkObj_VertPlane::addSelf(mesh_vis_category_, *per_link_objects_);
 }
 
 

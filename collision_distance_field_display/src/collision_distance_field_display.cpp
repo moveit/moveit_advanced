@@ -312,6 +312,13 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       SLOT( dfPointExamineChanged() ),
                                       this);
   debug_iteration_->setMin(-1);
+
+  mesh_vis_category_ = new rviz::Property(
+                                      "Mesh Visualization",
+                                      QVariant(),
+                                      "Visualize different meshes and examine/debug mesh algorithms.",
+                                      robot_state_category_);
+
   
 
   robot_state_category_->expand();
@@ -337,7 +344,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onInitialize()
   robotVisualChanged();
 
   // add per-link data displays to show aspects of distance field
-  addPerLinkData(collision_detection_category_, sphere_gen_category_);
+  addPerLinkData();
 
   // create an interactive marker display used to display markers for interacting with the robot.
   delete int_marker_display_;
