@@ -467,9 +467,7 @@ private:
   void addGapTri(const GapPoint *p, double direction);
 
   // check whether point is an ear.  Used by fillGap().
-  static void calcEarState(
-                      GapPoint& point,
-                      const std::vector<GapPoint>& points);
+  static void calcEarState(GapPoint* point);
 
   struct GetSphereRepParams;
 

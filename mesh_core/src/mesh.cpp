@@ -1151,31 +1151,71 @@ struct mesh_core::Mesh::GapPoint
 
   State state_;
   int orig_vert_idx_;       // index of vertex in mesh
+  int idx_;                 // index in the points array.  For debugging.
+
   Eigen::Vector2d v2d_;     // vertex
+
+  // these 4 elements describe the edge between this and the next point
+  LineSegment2D seg_;       // for finding self intersecting edges
   Eigen::Vector2d delta_;   // next.v2d_ - v2d_
   Eigen::Vector2d norm_;    // norm - perpendicular normal pointing inside
   double d_;                // -(norm_ dot v2d_)
 
-  LineSegment2D seg_;       // for finding self intersecting edges
-
   GapPoint *next_;
   GapPoint *prev_;
+
+  void calculateEdgeAttributes()
+  {
+    delta_ = next_->v2d_ - v2d_;
+    norm_.x() = -delta_.y();
+    norm_.y() =  delta_.x();
+    d_ = -norm_.dot(v2d_);
+    seg_.initialize(v2d_, next_->v2d_);
+  }
+
+  void erase()
+  {
+    next_->prev_ = prev_;
+    prev_->next_ = next_;
+    prev_->calculateEdgeAttributes();
+  }
+
+  void print(const char *pfx = "")
+  {
+    logInform("%spt[%4d] v2d=(%8.4f %8.4f) delta=(%8.4f %8.4f) norm=(%8.4f %8.4f) d=%8.4f  cross=%10.6f",
+      pfx,
+      idx_,
+      v2d_.x(),
+      v2d_.y(),
+      delta_.x(),
+      delta_.y(),
+      norm_.x(),
+      norm_.y(),
+      d_,
+      cross2d(prev_->delta_, delta_));
+    ACORN_ASSERT(std::abs(norm_.dot(v2d_) + d_) <= std::numeric_limits<double>::epsilon());
+    ACORN_ASSERT(std::abs(norm_.dot(next_->v2d_) + d_) <= std::numeric_limits<double>::epsilon());
+  }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // Decide if point is an ear or not.
-void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>& points)
+void mesh_core::Mesh::calcEarState(GapPoint* point)
 {
   if (acorn_debug_ear_state)
   {
-    logInform("Calc EarState for gap points[%d]",int(&point - &points[0]));
+    logInform("Calc EarState for gap points[%d]",point->idx_);
   }
 
-  double cr = cross2d(point.prev_->delta_, point.delta_);
+  double cr = cross2d(point->prev_->delta_, point->delta_);
+  if (acorn_debug_ear_state)
+  {
+    logInform("  cr for points[%d] = %f", point->idx_, cr);
+  }
   if (cr < 0.0)
   {
-    point.state_ = GapPoint::REFLEX;
+    point->state_ = GapPoint::REFLEX;
     if (acorn_debug_ear_state)
     {
       logInform("                state=REFLEX");
@@ -1183,69 +1223,40 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
     return;
   }
 
-  const GapPoint* p[3];
-  p[0] = point.prev_;
-  p[1] = &point;
-  p[2] = point.next_;
+  GapPoint* p[3];
+  p[0] = point->prev_;
+  p[1] = point;
+  p[2] = point->next_;
 
   ACORN_ASSERT(p[0] != p[1]);
   ACORN_ASSERT(p[0] != p[2]);
 
   // generate new p[2] with an edge from p[2] to p[0]
   GapPoint p2;
+  p2.idx_ = p[2]->idx_;
   p2.v2d_ = p[2]->v2d_;
-  p2.delta_ = p[0]->v2d_ - p2.v2d_;
-  p2.norm_.x() = -p2.delta_.y();
-  p2.norm_.y() = p2.delta_.x();
-  p2.d_ = -p2.norm_.dot(p2.v2d_);
+  p2.next_ = p[0];
+  p2.prev_ = p[1];
+  p2.calculateEdgeAttributes();
   p[2] = &p2;
 
   if (acorn_debug_ear_state)
   {
-    logInform("      pt[%3d] (%8.4f %8.4f)  norm=(%8.4f %8.4f) d=%8.4f  dot0= %f %f (should be 0 0)",
-      int(point.prev_  - &points[0]),
-      p[0]->v2d_.x(),
-      p[0]->v2d_.y(),
-      p[0]->norm_.x(),
-      p[0]->norm_.y(),
-      p[0]->d_,
-      p[0]->norm_.dot(p[0]->v2d_) + p[0]->d_,
-      p[0]->norm_.dot(p[1]->v2d_) + p[0]->d_);
-    logInform("      pt[%3d] (%8.4f %8.4f)  norm=(%8.4f %8.4f) d=%8.4f  dot0= %f %f (should be 0 0)",
-      int(&point  - &points[0]),
-      p[1]->v2d_.x(),
-      p[1]->v2d_.y(),
-      p[1]->norm_.x(),
-      p[1]->norm_.y(),
-      p[1]->d_,
-      p[1]->norm_.dot(p[1]->v2d_) + p[1]->d_,
-      p[1]->norm_.dot(p[2]->v2d_) + p[1]->d_);
-    logInform("      pt[%3d] (%8.4f %8.4f)  norm=(%8.4f %8.4f) d=%8.4f  dot0= %f %f (should be 0 0)",
-      int(point.next_  - &points[0]),
-      p[2]->v2d_.x(),
-      p[2]->v2d_.y(),
-      p[2]->norm_.x(),
-      p[2]->norm_.y(),
-      p[2]->d_,
-      p[2]->norm_.dot(p[2]->v2d_) + p[2]->d_,
-      p[2]->norm_.dot(p[0]->v2d_) + p[2]->d_);
+    p[0]->print("      ");
+    p[1]->print("      ");
+    p[2]->print("      ");
   }
 
-  std::vector<GapPoint>::const_iterator pt_it = points.begin();
-  std::vector<GapPoint>::const_iterator pt_end = points.end();
-  for ( ; pt_it != pt_end ; ++pt_it)
+  GapPoint* pt = point->next_->next_;
+  GapPoint* pt_end = point->prev_;
+  for ( ; pt != pt_end ; pt = pt->next_)
   {
-    if (&*pt_it == point.prev_ ||
-        &*pt_it == &point ||
-        &*pt_it == point.next_)
-      continue;
-
     if (acorn_debug_ear_state)
     {
       logInform("                   check point[%d] (%8.4f %8.4f)",
-        (&*pt_it - &points[0]),
-        pt_it->v2d_.x(),
-        pt_it->v2d_.y());
+        pt->idx_,
+        pt->v2d_.x(),
+        pt->v2d_.y());
     }
 
     for (int j = 0;; ++j)
@@ -1253,7 +1264,7 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
       // point is inside triangle.  Not an ear.
       if (j == 3)
       {
-        point.state_ = GapPoint::CONVEX;
+        point->state_ = GapPoint::CONVEX;
         if (acorn_debug_ear_state)
         {
           logInform("                state=CONVEX");
@@ -1262,8 +1273,8 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
       }
 
 
-      // outside the tri?  check next pt_it
-      double dist = p[j]->norm_.dot(pt_it->v2d_) + p[j]->d_;
+      // outside the tri?  check next pt
+      double dist = p[j]->norm_.dot(pt->v2d_) + p[j]->d_;
 
       if (acorn_debug_ear_state)
         logInform("                      dist[%d]=%f",j,dist);
@@ -1277,7 +1288,7 @@ void mesh_core::Mesh::calcEarState(GapPoint& point, const std::vector<GapPoint>&
   {
     logInform("                state=EAR");
   }
-  point.state_ = GapPoint::EAR;
+  point->state_ = GapPoint::EAR;
 }
 
 void mesh_core::Mesh::addGapTri(
@@ -1342,7 +1353,7 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
   {
     for (int i = 0 ; i < nverts ; ++i)
     {
-      logInform("  vert[%4d] = %s",i,mesh_core::str(points3d[i]).c_str());
+      logInform("  vert[%4d] = %s",i,mesh_core::str(verts_[verts[i]]).c_str());
     }
     logInform("proj=\n%s", proj.str().c_str());
   }
@@ -1350,36 +1361,41 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
   // project points onto the plane
   std::vector<GapPoint> points;
   points.resize(nverts);
-  int xmin = 0;
   for (int i = 0 ; i < nverts ; i++)
   {
-    points[i].orig_vert_idx_ = verts[i];
-    points[i].v2d_ = proj.project(points3d[i]);
-    if (points[i].v2d_.x() < points[xmin].v2d_.x())
-      xmin = i;
+    GapPoint* p = &points[i];
+    GapPoint* pn = &points[(i+1)%nverts];
+    p->next_ = pn;
+    pn->prev_ = p;
+
+    p->state_ = GapPoint::OK;
+    p->orig_vert_idx_ = verts[i];
+    p->idx_ = i;
+    p->v2d_ = proj.project(verts_[verts[i]]);
   }
 
-#if 1
-  // calculate next_, delta_ and seg_
-  for (int i = 0 ; i < nverts ; i++)
+  GapPoint* point0 = &points[0];
+
+  // calculate edge attributes and seg_
+  GapPoint* p = point0;
+  do
   {
-    GapPoint& p = points[i];
-    GapPoint& pn = points[(i+1)%nverts];
-    p.next_ = &pn;
-    pn.prev_ = &p;
-    p.delta_ = pn.v2d_ - p.v2d_;
-    p.seg_.initialize(p.v2d_, pn.v2d_);
-    p.state_ = GapPoint::OK;
+    p->calculateEdgeAttributes();
+    p = p->next_;
   }
+  while (p != point0);
+
 
   // check for 180 degree turns and linear loops
   for (;;)
   {
     int linear_cnt = 0;
-    int last_180 = -1;
-    for (int i = 0 ; i < nverts ; i++)
+    GapPoint* last_180 = NULL;
+
+    // check for 180 degree turns
+    p = point0;
+    do
     {
-      GapPoint* p = &points[i];
       GapPoint* pn = p->next_;
       double cr = cross2d(p->delta_, pn->delta_);
       if (std::abs(cr) <= std::numeric_limits<double>::epsilon())
@@ -1387,13 +1403,15 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
         if (p->delta_.dot(pn->delta_) < 0.0)
         {
           pn->state_ = GapPoint::TURN_180;
-          last_180 = i;
+          last_180 = pn;
         }
         linear_cnt++;
       }
+      p = pn;
     }
+    while (p != point0);
 
-    if (last_180 == -1)
+    if (!last_180)
       break;
 
     logInform("Found %d linear verts from nverts=%d",linear_cnt, nverts);
@@ -1401,43 +1419,36 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
     // entire loop is linear.  Close off one triangle and abort (try again).
     if (linear_cnt == nverts)
     {
-      ACORN_ASSERT(last_180 != -1);
-      if (last_180 == -1)
-        last_180 = 0;
-
-      add(verts[(last_180 + nverts - 1) % nverts],
-          verts[last_180],
-          verts[(last_180 + 1) % nverts]);
+      add(last_180->prev_->orig_vert_idx_,
+          last_180->orig_vert_idx_,
+          last_180->next_->orig_vert_idx_);
 
       ACORN_ASSERT(partial_ok);
       return;
     }
 
-    logInform("Eliminate 180 degree turn in vert %d",last_180);
+    logInform("Eliminate 180 degree turn in vert %d",last_180->idx_);
 
     // found a 180 degree turn.  Eliminate it and recheck.
-    for (int i = last_180 ; i < nverts - 1 ; ++i)
-    {
-      points[i] = points[i+1];
-    }
-    --nverts;
-    points.resize(nverts);
-    GapPoint *p = &points[last_180 % nverts];
-    GapPoint *pp = &points[(last_180 + nverts - 1) % nverts];
-    pp->next_ = p;
-    p->prev_ = pp;
-    pp->delta_ = p->v2d_ - pp->v2d_;
-    pp->seg_.initialize(pp->v2d_, p->v2d_);
-    pp->state_ = GapPoint::OK;
+    last_180->erase();
+    if (point0 == last_180)
+      point0 = last_180->next_;
+    nverts--;
+    last_180->prev_->state_ = GapPoint::OK;   // will be rechecked
 
     if (nverts == 4)
     {
-      add(points[0].orig_vert_idx_,
-          points[2].orig_vert_idx_,
-          points[1].orig_vert_idx_);
-      add(points[0].orig_vert_idx_,
-          points[3].orig_vert_idx_,
-          points[2].orig_vert_idx_);
+      GapPoint* a = point0;
+      GapPoint* b = a->next_;
+      GapPoint* c = b->next_;
+      GapPoint* d = c->next_;
+      add(a->orig_vert_idx_,
+          c->orig_vert_idx_,
+          b->orig_vert_idx_);
+      add(a->orig_vert_idx_,
+          d->orig_vert_idx_,
+          c->orig_vert_idx_);
+      fixWindings();
       return;
     }
   }
@@ -1447,20 +1458,15 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
     GapPoint* intersect_a = NULL;
     GapPoint* intersect_b = NULL;
     int self_intersect_cnt = 0;
-    logInform("Checking for self intersection nverts=%d",nverts);
-    for (int i = 0 ; i < nverts ; i++)
+    p = point0;
+    do
     {
-      GapPoint* p = &points[i];
-      logInform("   ===== check points[%d] = %08lx  n=%08lx p=%08lx",
-        i,long(p), long(p->next_), long(p->prev_));
-      for (GapPoint* p2 = p->next_->next_; p2->next_ != p ; p2 = p2->next_)
+      for (GapPoint* p2 = p->next_->next_; p2 != point0; p2 = p2->next_)
       {
         Eigen::Vector2d intersection;
         bool parallel;
-        logInform("              p2=%08lx",long(p2));
-        if (p->seg_.intersect(p2->seg_, intersection, parallel))
+        if (p->seg_.intersect(p2->seg_, intersection, parallel) && p2->next_ != p)
         {
-          logInform("                intersects");
           p->state_ = GapPoint::SELF_INTERSECT;
           p2->state_ = GapPoint::SELF_INTERSECT;
           self_intersect_cnt++;
@@ -1468,40 +1474,53 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
               p->next_->next_ == p2 ||
               p2->next_->next_ == p)
           {
-            // save off the first or best intersection
+            // save off one intersection.  Prefer intersections between nearby verts.
             intersect_a = p;
             intersect_b = p2;
           }
-        }
-        else
-        {
-          logInform("                NO intersection");
+          if (acorn_debug_ear_state)
+          {
+            logInform("   INTERSECTION: V[%4d]-V[%4d] intersects with V[%4d]-V[%4d]",
+              p->idx_,
+              p->next_->idx_,
+              p2->idx_,
+              p2->next_->idx_);
+          }
         }
       }
+      p = p->next_;
     }
+    while (p != point0);
 
-    logInform("Found %d self intersections", self_intersect_cnt);
-
-    // if self intersecting, find a loop that does not intersect
+    // if self intersecting, find a loop that does not self intersect
     if (intersect_a)
     {
       logInform("Found %d self intersections", self_intersect_cnt);
 
-      int best_start = 0;
+      GapPoint* best_start = NULL;
+      GapPoint* best_end = NULL;
+      GapPoint* start = NULL;
       int best_cnt = -1;
-      int start = 0;
-      for (int i = 0 ; i < nverts * 2 ; i++)
+      int cnt = 0;
+      
+      bool done = false;
+      for (p = intersect_a ; !done ; p = p->next_)
       {
-        GapPoint* p = &points[i % nverts];
         if (p->state_ == GapPoint::SELF_INTERSECT)
         {
-          int cnt = i - start;
-          if (cnt >= 3 && cnt < best_cnt)
+          done = (p == intersect_a && best_cnt != -1);
+          if (cnt > best_cnt)
           {
             best_cnt = cnt;
             best_start = start;
+            best_end = p->prev_;
           }
-          start = i + 1;
+          start = p->next_;
+          cnt = 0;
+        }
+        else
+        {
+          cnt++;
         }
       }
 
@@ -1516,159 +1535,135 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
         int v3 = intersect_b->next_->orig_vert_idx_;
         add(v0, v2, v1);
         add(v0, v3, v2);
+        fixWindings();
         ACORN_ASSERT(partial_ok);
         return;
       }
+
+      // otherwise we have a new, smaller loop with no intersections.  Continue.
+      point0 = best_start;
+      best_start->prev_ = best_end;
+      best_end->next_ = best_start;
+      best_end->calculateEdgeAttributes();
+      nverts = best_cnt;
 
       // if we have a loop with 3-4 verts, close it.
-      if (best_cnt <= 4)
+      if (nverts <= 4)
       {
-        int v0 = points[(best_start + 0) % nverts].orig_vert_idx_;
-        int v1 = points[(best_start + 1) % nverts].orig_vert_idx_;
-        int v2 = points[(best_start + 2) % nverts].orig_vert_idx_;
-        int v3 = points[(best_start + 3) % nverts].orig_vert_idx_;
-        add(v0, v2, v1);
-        if (best_cnt == 4)
-          add(v0, v3, v2);
+        GapPoint* a = point0;
+        GapPoint* b = a->next_;
+        GapPoint* c = b->next_;
+        GapPoint* d = c->next_;
+        add(a->orig_vert_idx_,
+            c->orig_vert_idx_,
+            b->orig_vert_idx_);
+        if (d != a)
+          add(a->orig_vert_idx_,
+              d->orig_vert_idx_,
+              c->orig_vert_idx_);
+        fixWindings();
         ACORN_ASSERT(partial_ok);
         return;
       }
 
-      // otherwise we have a new, smaller loop.  Recurse to close it.
-      std::vector<int> verts2;
-      verts2.resize(best_cnt);
-      for (int i = 0 ; i < best_cnt ; ++i)
-      {
-        verts2[i] = points[(best_start + i) % nverts].orig_vert_idx_;
-      }
-      
-logInform("##################### RECURSE generatePolygon nverts=%d",nverts);
-      ACORN_ASSERT(partial_ok);
-      generatePolygon(verts2, partial_ok);
-      return;
     }
   }
-  
-  // find point with min x coord
-  xmin = 0;
-  for (int i = 1 ; i < nverts ; i++)
+
+  if (acorn_debug_ear_state)
   {
-    if (points[i].v2d_.x() < points[xmin].v2d_.x())
-      xmin = i;
+    logInform("Create polygon for %d verts:",nverts);
+    p = point0;
+    do
+    {
+      p->print("  ");
+      p = p->next_;
+    }
+    while (p != point0);
   }
-#endif
-
-
-
+  
   // find winding direction
   // use cross product sign at extreme (xmin) point, guaranteed to be convex unless colinear.
   // point.cross_ and direction have same sign if corner is convex.
   // direction is positive if loop is ccw
   double direction = 1.0;
-  for (int i = 0 ; i < nverts ; i++)
   {
-    int idx  = (xmin + i) % nverts;
-    int idxn = (xmin + i + 1) % nverts;
-    int idxp = (xmin + i + nverts - 1) % nverts;
-    GapPoint& p = points[idx];
-    GapPoint& pn = points[idxn];
-    GapPoint& pp = points[idxp];
+    // find point with min x coord
+    GapPoint* xmin = point0;
+    for (p = point0->next_ ; p != point0 ; p = p->next_)
+    {
+      if (p->v2d_.x() < xmin->v2d_.x())
+        xmin = p;
+    }
 
-    Eigen::Vector2d deltap = p.v2d_ - pp.v2d_;
-    Eigen::Vector2d deltan = pn.v2d_ - p.v2d_;
-    direction = cross2d(deltap, deltan);
+    if (acorn_debug_ear_state)
+    {
+      logInform("  xmin = points[%d]",xmin->idx_);
+    }
 
-    if (std::abs(direction) > std::numeric_limits<double>::epsilon())
-      break;
+    // look for a corner which bends more than 0 degrees to see the direction of outside corners
+    p = xmin;
+    do
+    {
+      direction = cross2d(p->prev_->delta_, p->delta_);
+      if (acorn_debug_ear_state)
+        logInform("  direction (cross) at points[%d] = %f", p->idx_, direction);
+      if (std::abs(direction) > std::numeric_limits<double>::epsilon())
+        break;
+
+      p = p->next_;
+    }
+    while (p != xmin);
+
+    if (acorn_debug_ear_state)
+    {
+      logInform("Create polygon for %d verts REVERSED:",nverts);
+      p = point0;
+      do
+      {
+        p->print("  ");
+        p = p->next_;
+      }
+      while (p != point0);
+    }
   }
 
-  // if direction is backwards, use reverse direction
-  // After this all processing is done in ccw order
+
+  // if direction is backwards, reverse direction of points so they are CCW around polygon
   if (direction < 0.0)
   {
-    GapPoint *p = &points[0];
-    GapPoint *pp = &points[nverts - 1];
-    GapPoint *pn = &points[1];
-    for (int i = 0 ; i < nverts ; i++)
+    p = point0;
+    do
     {
+      GapPoint *pn = p->next_;
+      GapPoint *pp = p->prev_;
+
       p->next_ = pp;
       p->prev_ = pn;
-      pp = p;
+      p->calculateEdgeAttributes();
+
       p = pn;
-      pn = &points[(i+2)%nverts];
     }
-  }
-  else
-  {
-    GapPoint *p = &points[0];
-    GapPoint *pp = &points[nverts - 1];
-    GapPoint *pn = &points[1];
-    for (int i = 0 ; i < nverts ; i++)
-    {
-      p->next_ = pn;
-      p->prev_ = pp;
-      pp = p;
-      p = pn;
-      pn = &points[(i+2)%nverts];
-    }
-  }
-
-#if 0
-  // find longest continuous loop with no self intersections
-  {
-    for (int i = 0 ; i < nverts ; i++)
-    {
-      GapPoint& p = points[i];
-      p.seg_.initialize(p.v2d_, p.next_->v2d_);
-    }
-
-    GapPoint *start = points[0];
-    GapPoint *p = start->next_->next_;
-
-    for (;; p = p->next_)
-    {
-      // did we check the whole loop?
-      if (p->next_->next_ == start)
-      {
-        DONE! STOP!
-      }
-
-      // intersected?
-      if (start->seg_.intersect(p->seg_, intersection, parallel))
-      {
-
-      }
-    }
-  }
-
-
-#endif
-
-  // find delta_ - vector from point to next point
-  // find norm_  - perpendicular to delta_ pointing to inside of polygon
-  // find d_     - norm_ dot v2d_
-  for (int i = 0 ; i < nverts ; i++)
-  {
-    GapPoint *p = &points[i];
-    p->delta_ = p->next_->v2d_ - p->v2d_;
-    p->norm_.x() = -p->delta_.y();
-    p->norm_.y() = p->delta_.x();
-    p->d_ = -p->norm_.dot(p->v2d_);
+    while (p != point0);
   }
 
   // categorize each point
-  for (int i = 0 ; i < nverts ; i++)
+  p = point0;
+  do
   {
-    calcEarState(points[i], points);
+    calcEarState(p);
+    p = p->next_;
   }
+  while (p != point0);
+
+  ACORN_ASSERT(nverts > 4);
 
   int cnt = 0;
-  GapPoint *p = &points[0];
+  p = point0;
   for (;;)
   {
     if (acorn_debug_ear_state)
     {
-      logInform("  Check point %d  EarState=%d",int(p - &points[0]),int(p->state_));
+      logInform("  Check point %d  EarState=%d",p->idx_,int(p->state_));
     }
 
     if (p->state_ != GapPoint::EAR)
@@ -1684,15 +1679,16 @@ logInform("##################### RECURSE generatePolygon nverts=%d",nverts);
       continue;
     }
 
+    // Found an ear.
+
     cnt = 0;
 
     int old_tri_size = tris_.size();
     if (acorn_debug_ear_state)
     {
-      logInform("  Fill Ear    %d  as tri %d",int(p - &points[0]), tris_.size());
+      logInform("  Fill Ear    %d  as tri %d", p->idx_, tris_.size());
     }
 
-    // found an ear
     addGapTri(p, direction);
 
     if (acorn_debug_ear_state && old_tri_size+1 != tris_.size())
@@ -1701,25 +1697,24 @@ logInform("##################### RECURSE generatePolygon nverts=%d",nverts);
     }
 
 
-    p->next_->prev_ = p->prev_;
-    p->prev_->next_ = p->next_;
+    p->erase();
+    if (p == point0)
+      point0 = p->prev_;
+    --nverts;
     p = p->prev_;
 
-    if (--nverts == 4)
+    if (nverts == 4)
       break;
 
-    p->delta_ = p->next_->v2d_ - p->v2d_;
-    p->norm_.x() = -p->delta_.y();
-    p->norm_.y() = p->delta_.x();
-    p->d_ = -p->norm_.dot(p->v2d_);
-
-    calcEarState(*p, points);
+    calcEarState(p);
     if (p->state_ != GapPoint::EAR)
     {
       p = p->next_;
-      calcEarState(*p, points);
+      calcEarState(p);
     }
   }
+
+  ACORN_ASSERT(nverts == 4);
 
   // last 4 verts - add last 2 tris
   addGapTri(p, direction);
