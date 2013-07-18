@@ -1373,7 +1373,6 @@ void mesh_core::Mesh::generatePolygon(
     logInform("#####################");
     logInform("##################### generatePolygon nverts=%d",nverts);
   }
-logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
 
   if (nverts < 3)
     return;
