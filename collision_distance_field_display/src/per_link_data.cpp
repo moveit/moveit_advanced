@@ -442,6 +442,21 @@ extern bool acorn_closest_debug;
 extern bool ACORN_DEBUG_MESH_getInsidePoints;
 
 
+namespace moveit_rviz_plugin
+{
+  struct DebugMesh
+  {
+    DebugMesh(const mesh_core::Mesh& mesh, 
+              const std::string& name)
+      : mesh_(mesh)
+      , name_(name)
+    {}
+
+    std::string name_;
+    mesh_core::Mesh mesh_;
+  };
+}
+
 
 namespace moveit_rviz_plugin
 {
@@ -568,6 +583,8 @@ namespace moveit_rviz_plugin
       mesh_shape_.reset();
       mesh_sphere_.reset();
       neigbor_mesh_shape_.reset();
+
+      link_->getDebugMeshes().clear();
 
       if (!getBool())
         return;
@@ -781,6 +798,10 @@ acorn_closest_debug = false;
             shapes_->addPoint(point, Eigen::Vector4f(1,0,0,1));
           }
 
+          {
+            boost::shared_ptr<DebugMesh> dbmesh( new DebugMesh(*mp, "CurrentMesh"));
+            link_->getDebugMeshes().push_back(dbmesh);
+          }
 
           // draw the mesh
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
@@ -895,6 +916,197 @@ int(gdi.gap_tris_.size()));
         {
           ROS_WARN("link %s is not a mesh!",lm->getName().c_str());
         }
+      }
+    }
+  private:
+    boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_shape_;
+    boost::shared_ptr<mesh_ros::RvizMeshShape> neigbor_mesh_shape_;
+    boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_sphere_;
+  };
+}
+
+
+namespace moveit_rviz_plugin
+{
+  // Fit plane to link vertices and draw plane as an axis
+  class LinkObj_MeshDebug : public PerLinkSubObj
+  {
+  public:
+    LinkObj_MeshDebug(PerLinkObjBase *base, DFLink *link)
+      : PerLinkSubObj(base, link)
+    { }
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      PerLinkObj<LinkObj_MeshDebug>* obj = new PerLinkObj<LinkObj_MeshDebug>(
+                                  parent,
+                                  "DebugMesh",
+                                  "debug existing meshes",
+                                  QColor(0, 0, 255),
+                                  1.0,
+                                  PerLinkObjBase::POINTS,
+                                  0.005);
+
+      obj->addIntProperty("NMeshes", -1, "Number of meshes available");
+      obj->getIntProperty("NMeshes")->setReadOnly(true);
+      obj->addIntProperty("Mesh", -1, "Which mesh to debug");
+      obj->addIntProperty("NGaps", -1, "Number of gaps in this mesh");
+      obj->getIntProperty("NGaps")->setReadOnly(true);
+      obj->addIntProperty("Gap", -1, "Which gap to show");
+
+      obj->addIntProperty("ShowGapLoopPoint", -2, "show one (or -1 for all) loop points for the current gap");
+
+
+      obj->addIntProperty("NTris", -1, "Number of tris to show");
+      obj->addIntProperty("FirstTri", 0, "first tri to show");
+#if 0
+      obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
+      obj->addIntProperty("WhichGap", -1, "show one filled gap");
+      obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
+      obj->addBoolProperty("ShowPlane", false, "Show the slice plane?");
+      obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
+      obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
+      obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
+      obj->addFloatProperty("SphereRepTolerance", 0.01, "Tolerance for filling spheres");
+      obj->addIntProperty("SphereRepMaxDepth", 3, "calculate spheres to this depth");
+      obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
+      obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
+      obj->addFloatProperty("PointResolution", 0.1, "resolution for ShowPoints");
+      obj->addBoolProperty("DebugShowPoints", false, "printfs in ShowPoints");
+      obj->addBoolProperty("ShowPoints", false, "Show all internal points in mesh");
+#endif
+      obj->addFloatProperty("PointX", 0.0, "Show point at this X position");
+      obj->addFloatProperty("PointY", 0.0, "Show point at this Y position");
+      obj->addFloatProperty("PointZ", 0.0, "Show point at this Z position");
+
+      per_link_objects.addVisObject(obj);
+    }
+
+    virtual void changed()
+    {
+      shapes_.reset();
+      centers_.clear();
+      radii_.clear();
+      mesh_shape_.reset();
+      mesh_sphere_.reset();
+      neigbor_mesh_shape_.reset();
+
+      if (!getBool())
+        return;
+
+      robot_relative_ = false;
+
+      int nmeshes = link_->getDebugMeshes().size();
+      base_->getIntProperty("NMeshes")->setValue(nmeshes);
+
+      int meshid = base_->getIntProperty("Mesh")->getInt();
+      if (meshid < 0 || meshid >= nmeshes)
+      {
+        base_->getIntProperty("NGaps")->setValue(0);
+        return;
+      }
+
+      shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
+
+      DebugMesh& dbmesh = *link_->getDebugMeshes()[meshid];
+      logInform("Showing dbmesh[%d] = %s",
+        meshid, dbmesh.name_.c_str());
+      
+      mesh_core::Mesh *mesh = &dbmesh.mesh_;
+
+      {
+        Eigen::Vector3d point(
+                            base_->getFloatProperty("PointX")->getFloat(),
+                            base_->getFloatProperty("PointY")->getFloat(),
+                            base_->getFloatProperty("PointZ")->getFloat());
+logInform("  BBB %d",__LINE__);
+logInform("  %f",point.x());
+logInform("  %f",point.y());
+logInform("  %f",point.z());
+        shapes_->addPoint(point, Eigen::Vector4f(1,0,0,1));
+logInform("  BBB %d",__LINE__);
+      }
+
+
+      // draw the mesh
+      mesh_shape_.reset(new mesh_ros::RvizMeshShape(
+                                        link_->getDisplay()->getDisplayContext(), 
+                                        getSceneNode(), 
+                                        NULL,
+                                        base_->getColor()));
+
+      int which_gap = base_->getIntProperty("Gap")->getInt();
+      if (which_gap >= 0)
+      {
+        const std::vector<mesh_core::Mesh::GapDebugInfo>& gdi_list = mesh->getGapDebugInfo();
+        if (which_gap < gdi_list.size())
+        {
+          const mesh_core::Mesh::GapDebugInfo& gdi = gdi_list[which_gap];
+
+          ROS_INFO("draw gap %d/%d with %d verts",which_gap, int(gdi_list.size()), int(gdi.verts_.size()));
+
+          neigbor_mesh_shape_.reset(new mesh_ros::RvizMeshShape(
+                                        link_->getDisplay()->getDisplayContext(), 
+                                        getSceneNode(), 
+                                        NULL,
+                                        Eigen::Vector4f(1,1,0,1)));
+          neigbor_mesh_shape_->reset(
+                        mesh,
+                        gdi.neigbor_tris_,
+                        base_->getIntProperty("FirstTri")->getInt(),
+                        base_->getIntProperty("NTris")->getInt());
+
+          if (base_->getIntProperty("NTris")->getInt() == 1)
+          {
+            int t = base_->getIntProperty("FirstTri")->getInt();
+            int num = gdi.neigbor_tris_.size();
+            logInform("XXXXXXXX Show neigbor tri %d of %d which is tri index %d",
+              t,
+              num,
+              (t>=0 && t<num) ? gdi.neigbor_tris_[t] : -1);
+              
+          }
+
+          mesh_shape_->reset(
+                      mesh,
+                      gdi.gap_tris_,
+                      base_->getIntProperty("FirstTri")->getInt(),
+                      base_->getIntProperty("NTris")->getInt());
+
+          if (base_->getIntProperty("NTris")->getInt() == 1)
+          {
+            int t = base_->getIntProperty("FirstTri")->getInt();
+            int num = gdi.gap_tris_.size();
+            logInform("XXXXXXXX Show gap tri %d of %d which is tri index %d",
+              t,
+              num,
+              (t>=0 && t<num) ? gdi.gap_tris_[t] : -1);
+              
+          }
+
+          int showpt = base_->getIntProperty("ShowGapLoopPoint")->getInt();
+          if (showpt >=0 && showpt < gdi.points_.size())
+          {
+logInform("  BBB %d",__LINE__);
+            shapes_->addPoint(gdi.points_[showpt], Eigen::Vector4f(1,0,1,1));
+logInform("  BBB %d",__LINE__);
+          }
+          else if (showpt == -1)
+          {
+logInform("  BBB %d",__LINE__);
+            shapes_->addPoints(gdi.points_, Eigen::Vector4f(1,0,1,1));
+logInform("  BBB %d",__LINE__);
+          }
+
+        }
+      }
+      else
+      {
+        ROS_INFO("draw mesh with %d tris %d verts",mesh->getTriCount(), mesh->getVertCount());
+        mesh_shape_->reset(
+                      mesh,
+                      base_->getIntProperty("FirstTri")->getInt(),
+                      base_->getIntProperty("NTris")->getInt());
       }
     }
   private:
@@ -1052,6 +1264,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData(rviz::Pro
   LinkObj_VertBSphere::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_LinkVerts::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_LinkMesh::addSelf(sphere_gen_propety, *per_link_objects_);
+  LinkObj_MeshDebug::addSelf(sphere_gen_propety, *per_link_objects_);
   LinkObj_VertPlane::addSelf(sphere_gen_propety, *per_link_objects_);
 }
 

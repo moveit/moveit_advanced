@@ -66,6 +66,7 @@ namespace moveit_rviz_plugin
 {
 class CollisionDistanceFieldDisplay;
 class PerLinkSubObjBase;
+class DebugMesh;
 
 // extra per-link properties to display
 class DFLink : public rviz::RobotLink
@@ -96,6 +97,8 @@ public:
 
   // update displayed property values based on current getSphereRep() values.
   void updatePropertyValues();
+
+  std::vector<boost::shared_ptr<DebugMesh> >& getDebugMeshes() { return debug_meshes_; }
 
 private Q_SLOTS:
   void updateSampleProp();
@@ -130,6 +133,8 @@ protected:
   // sample property
   rviz::BoolProperty* sample_prop_;
 
+  // mesh debugging
+  std::vector<boost::shared_ptr<DebugMesh> > debug_meshes_;
 };
 
 
