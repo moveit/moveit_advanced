@@ -51,6 +51,8 @@ int mesh_core::Mesh::debug_gap_id_ = -1;
 bool acorn_debug_show_vertex_consolidate = false;
 bool acorn_debug_ear_state = false;
 
+int acorn_debug_current_node = -1;
+int acorn_debug_current_gap = -1;
 
 mesh_core::Mesh::Mesh(double epsilon)
   : have_degenerate_edges_(false)
@@ -1540,7 +1542,10 @@ void mesh_core::Mesh::generatePolygon(
     // if self intersecting, find a loop that does not self intersect
     if (intersect_a)
     {
-      logInform("Found %d self intersections", self_intersect_cnt);
+      logInform("Found %d self intersections  (node=%d gap=%d)",
+        self_intersect_cnt,
+        acorn_debug_current_node,
+        gap_debug_.size() - 1);
 
       GapPoint* best_start = NULL;
       GapPoint* best_end = NULL;
@@ -2124,6 +2129,7 @@ acorn_debug_show_vertex_consolidate = false;
   a.fillGaps();
 acorn_db_slice_pts_loop.clear();
   debug_this_node_ = (debug_this_node && (debug_node_id_ & 1) == 1);
+  acorn_debug_current_node |= 1;
   b.fillGaps();
 }
 
@@ -2327,6 +2333,7 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
           Mesh **mesh_b) const
 {
   debug_this_node_ = (debug_node_id_ != -1 && ((debug_node_id_ & ~1) == (mesh_node->id_ << 1)));
+  acorn_debug_current_node = mesh_node->id_<<1;
 
   Plane plane;
   if (!calculateSphereRepSplitPlane(tolerance, mesh_node, plane))
