@@ -332,6 +332,17 @@ public:
   double findClosestPoint(const Eigen::Vector3d& point,
                           Eigen::Vector3d& closest_point,
                           int& closest_tri) const;
+
+  // find thinnest feature
+  // This is the 2 triangles that face away from each other and are closest
+  // together without actually touching.
+  // dist returns the closest points on the triangles.
+  // The angle between 2 faces must be <= max_angle for them to be condidered
+  // facing away from each other.
+  void findThinnestFeature(double& dist,
+                           int& tria,
+                           int& trib,
+                           double max_angle = 30.0) const;
 public:
   //#########################################################################
   //############################### DEBUG ###################################

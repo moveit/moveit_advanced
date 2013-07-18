@@ -525,6 +525,7 @@ void mesh_core::Mesh::fixWindings()
   }
 
   windings_fixed_ = true;
+  face_normals_.clear();
 
   if (1) // DEBUG
   {
@@ -2166,7 +2167,7 @@ const EigenSTL::vector_Vector3d& mesh_core::Mesh::getFaceNormals() const
     face_normals_.resize(tris_.size());
 
     std::vector<Triangle>::const_iterator tri = tris_.begin();
-    std::vector<Triangle>::const_iterator end = tris_.begin();
+    std::vector<Triangle>::const_iterator end = tris_.end();
     for (int tidx = 0 ; tri != end ; ++tri, ++tidx)
     {
       face_normals_[tidx] = (verts_[tri->verts_[1]] - verts_[tri->verts_[0]]).cross(
@@ -3371,3 +3372,76 @@ void mesh_core::Mesh::getInsidePoints(
   }
 }
 
+
+void mesh_core::Mesh::findThinnestFeature(
+      double& dist,
+      int& tria,
+      int& trib,
+      double max_angle) const
+{
+  dist = std::numeric_limits<double>::max();
+  tria = -1;
+  trib = -1;
+
+  getFaceNormals();
+
+  max_angle = std::abs(max_angle);
+  if (max_angle > 85.0)
+    max_angle = 85.0;
+  double max_cos = -std::cos(max_angle * boost::math::constants::pi<double>() / 180.0);
+
+  for (int a = tris_.size() - 1 ; a >= 0 ; --a)
+  {
+    const Eigen::Vector3d& anorm = face_normals_[a];
+    const Triangle& tri_a = tris_[a];
+    for (int b = a - 1 ; b >= 0 ; --b)
+    {
+      if (anorm.dot(face_normals_[b]) > max_cos)
+        continue;
+
+      const Triangle& tri_b = tris_[b];
+
+      double best_d = dist;
+      for (int i = 0 ; i < 3 ; ++i)
+      {
+        Eigen::Vector3d closest_point;
+        double d = closestPointOnTriangle(
+                                  verts_[tri_a.verts_[0]],
+                                  verts_[tri_a.verts_[1]],
+                                  verts_[tri_a.verts_[2]],
+                                  verts_[tri_b.verts_[i]],
+                                  closest_point,
+                                  best_d);
+        best_d = std::min(best_d, d);
+        d = closestPointOnTriangle(
+                                  verts_[tri_b.verts_[0]],
+                                  verts_[tri_b.verts_[1]],
+                                  verts_[tri_b.verts_[2]],
+                                  verts_[tri_a.verts_[i]],
+                                  closest_point,
+                                  best_d);
+        best_d = std::min(best_d, d);
+      }
+
+      if (best_d >= dist)
+        continue;
+
+      // skip if they share a vertex
+      for (int i = 0 ; i < 3 ; ++i)
+      {
+        for (int j = 0 ; j < 3 ; ++j)
+        {
+          if (tri_a.verts_[i] == tri_b.verts_[j])
+            goto do_continue;
+        }
+      }
+
+      dist = best_d;
+      tria = a;
+      trib = b;
+
+      do_continue:
+      (void)0;
+    }
+  }
+}
