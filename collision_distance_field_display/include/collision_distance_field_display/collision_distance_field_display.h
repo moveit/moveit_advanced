@@ -88,12 +88,12 @@ public:
   robot_state::RobotStateConstPtr getRobotState() const;
 
   const boost::shared_ptr<PerLinkObjList>& getLinkObjects() { return per_link_objects_; }
-  const boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation>& getRobotSphereRep() { return robot_sphere_rep_; }
+  const boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation>& getRobotSphereRepresentation() { return robot_sphere_rep_; }
 
   const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
   const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
 
-  // Update global and per-link property values to match actual values in SphereRep.
+  // Update global and per-link property values to match actual values in RobotSphereRepresentation.
   void updateLinkSphereGenPropertyValues();
   void updateAllSphereGenPropertyValues();
 

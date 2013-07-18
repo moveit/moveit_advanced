@@ -107,28 +107,28 @@ public:
   // update themselves which can make things faster later.
   void genSpheresForAllLinks() const;
 
-  const Robot* getSphereRepRobot() const;
-  Robot* getSphereRepRobot();
+  const Robot* getSphereCalcRobot() const;
+  Robot* getSphereCalcRobot();
 
   // access
   const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
   const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
   LinkSphereRepresentation* getLink(const std::string& link_name) const;
 
-  void ensureSphereRepRobot() const
+  void ensureSphereCalcRobot() const
   {
-    if (sphere_rep_robot_dirty_)
-      updateSphereRepRobot();
+    if (sphere_calc_robot_dirty_)
+      updateSphereCalcRobot();
   }
 
-  void invalidateSphereRep() { sphere_rep_robot_dirty_ = true; }
+  void invalidateSphereCalc() { sphere_calc_robot_dirty_ = true; }
 
 
 private:
   void invalidateSpheresForAllLinks();
 
-  // update sphere_rep_robot_.  Should only be called by ensureSphereRepRobot()
-  void updateSphereRepRobot() const;
+  // update sphere_calc_robot_.  Should only be called by ensureSphereCalcRobot()
+  void updateSphereCalcRobot() const;
 
 
 
@@ -136,25 +136,25 @@ private:
 
   std::map<std::string, LinkSphereRepresentation*> links_;
 
-  // resolution for SphereRep distance field 
+  // resolution for SphereCalc distance field 
   double resolution_;
 
-  mutable boost::shared_ptr<Robot> sphere_rep_robot_;
-  mutable bool sphere_rep_robot_dirty_;
+  mutable boost::shared_ptr<Robot> sphere_calc_robot_;
+  mutable bool sphere_calc_robot_dirty_;
 };
 
 }
 
-inline const robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereRepRobot() const
+inline const robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereCalcRobot() const
 {
-  ensureSphereRepRobot();
-  return &*sphere_rep_robot_;
+  ensureSphereCalcRobot();
+  return &*sphere_calc_robot_;
 }
 
-inline robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereRepRobot()
+inline robot_sphere_representation::Robot* robot_sphere_representation::RobotSphereRepresentation::getSphereCalcRobot()
 {
-  ensureSphereRepRobot();
-  return &*sphere_rep_robot_;
+  ensureSphereCalcRobot();
+  return &*sphere_calc_robot_;
 }
 
 

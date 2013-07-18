@@ -84,7 +84,7 @@ public:
   virtual void hideSubProperties(bool hide);
 
   CollisionDistanceFieldDisplay* getDisplay() const { return display_; }
-  robot_sphere_representation::LinkSphereRepresentation* getLinkSphereRep() const { return link_sphere_rep_; }
+  robot_sphere_representation::LinkSphereRepresentation* getLinkSphereRepresentation() const { return link_sphere_rep_; }
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
   void getLinkBoundingSphere(Eigen::Vector3d& center, double& radius) const;
@@ -95,7 +95,7 @@ public:
   const robot_model::LinkModel *getLinkModel() const;
   const robot_state::LinkState *getLinkState() const;
 
-  // update displayed property values based on current getSphereRep() values.
+  // update displayed property values based on current RobotSphereRepresentation values.
   void updatePropertyValues();
 
   std::vector<boost::shared_ptr<DebugMesh> >& getDebugMeshes() { return debug_meshes_; }

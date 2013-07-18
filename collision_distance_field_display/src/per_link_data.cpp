@@ -138,7 +138,7 @@ namespace moveit_rviz_plugin
     virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
     {
       robot_relative = false;
-      link_->getLinkSphereRep()->getSpheres(centers, radii);
+      link_->getLinkSphereRepresentation()->getSpheres(centers, radii);
     }
   };
 }
@@ -205,13 +205,13 @@ namespace moveit_rviz_plugin
     {
       robot_relative = false;
       
-      robot_sphere_representation::LinkSphereRepresentation* link_sphere_rep = link_->getLinkSphereRep();
+      robot_sphere_representation::LinkSphereRepresentation* link_sphere_rep = link_->getLinkSphereRepresentation();
       if (!link_sphere_rep)
         return;
-      const robot_sphere_representation::SphereRep* sphere_rep = link_sphere_rep->getSphereRep();
-      if (!sphere_rep)
+      const robot_sphere_representation::SphereCalc* sphere_calc = link_sphere_rep->getSphereCalc();
+      if (!sphere_calc)
         return;
-      const distance_field::PropagationDistanceField* df = sphere_rep->getDistanceField();
+      const distance_field::PropagationDistanceField* df = sphere_calc->getDistanceField();
       if (!df)
         return;
 
@@ -251,7 +251,7 @@ namespace moveit_rviz_plugin
       shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor()));
 
       bodies::BoundingCylinder cylinder;
-      link_->getLinkSphereRep()->getBoundingCylinder(cylinder);
+      link_->getLinkSphereRepresentation()->getBoundingCylinder(cylinder);
       if (cylinder.radius > 0.0)
         shapes_->addZCylinder(cylinder.pose, cylinder.radius, cylinder.length);
     }

@@ -60,7 +60,7 @@ moveit_rviz_plugin::DFLink::DFLink(
                             this );
   sample_prop_->hide();
 
-  link_sphere_rep_ = display_->getRobotSphereRep()->getLink(getName());
+  link_sphere_rep_ = display_->getRobotSphereRepresentation()->getLink(getName());
 
   addSphereGenProperties(link_property_);
 

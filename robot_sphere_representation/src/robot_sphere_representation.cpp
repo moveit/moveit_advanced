@@ -43,7 +43,7 @@
 robot_sphere_representation::RobotSphereRepresentation::RobotSphereRepresentation(
       boost::shared_ptr<const robot_model::RobotModel> robot_model)
   : robot_model_(robot_model)
-  , sphere_rep_robot_dirty_(true)
+  , sphere_calc_robot_dirty_(true)
   , resolution_(0.03)
 {
   std::vector<const robot_model::LinkModel*>::const_iterator lm = robot_model_->getLinkModels().begin();
@@ -139,23 +139,23 @@ void robot_sphere_representation::RobotSphereRepresentation::invalidateSpheresFo
     lsr->second->invalidateSpheres();
 }
 
-void robot_sphere_representation::RobotSphereRepresentation::updateSphereRepRobot() const
+void robot_sphere_representation::RobotSphereRepresentation::updateSphereCalcRobot() const
 {
-  sphere_rep_robot_.reset(new Robot(robot_model_, resolution_));
+  sphere_calc_robot_.reset(new Robot(robot_model_, resolution_));
 
-  sphere_rep_robot_dirty_ = false;
+  sphere_calc_robot_dirty_ = false;
 
   std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr = links_.begin();
   std::map<std::string, LinkSphereRepresentation*>::const_iterator lsr_end = links_.end();
   for ( ; lsr != lsr_end ; ++lsr )
-    lsr->second->updateSphereRepLink();
+    lsr->second->updateSphereCalcLink();
 }
 
 void robot_sphere_representation::RobotSphereRepresentation::setResolution(double resolution)
 {
   if (resolution_ != resolution)
   {
-    sphere_rep_robot_dirty_ = true;
+    sphere_calc_robot_dirty_ = true;
     resolution_ = resolution;
   }
 }

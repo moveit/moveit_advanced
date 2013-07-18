@@ -183,11 +183,11 @@ private:
 };
 
 
-// for finding a set of N spheres which tightly bound the shape in question.
-class SphereRep
+// for calculating a set of N spheres which tightly bound the shape in question.
+class SphereCalc
 {
 public:
-  SphereRep(std::size_t nspheres,
+  SphereCalc(std::size_t nspheres,
             double resolution,
             const EigenSTL::vector_Vector3d& required_points,
             const EigenSTL::vector_Vector3d& optional_points,
@@ -369,7 +369,7 @@ public:
   void clusterPoints(std::size_t nclusters);
   EigenSTL::vector_Vector3d getClusterPoints(std::size_t nclusters,
                                              std::size_t cluster_idx);
-  const SphereRep* getSphereRep(std::size_t nspheres,
+  const SphereCalc* getSphereCalc(std::size_t nspheres,
                                 GenMethod method = GenMethod::DEFAULT,
                                 double tolerance = 1.0,
                                 QualMethod qual_method = QualMethod::DEFAULT);
@@ -396,7 +396,7 @@ private:
   bool has_collision_;    // worth colliding after culling?
   bodies::Body* body_;
   PointCluster *cluster_;
-  SphereRep *sphere_rep_;
+  SphereCalc *sphere_calc_;
 
   friend class Robot;
 };
@@ -440,7 +440,7 @@ public:
                         const Eigen::Vector4d& color = Eigen::Vector4d(1,1,1,1),
                         const std::string ns = "",
                         int id=0);
-  const SphereRep* getLinkSphereRep(
+  const SphereCalc* getLinkSphereCalc(
                         const std::string& link_name,
                         std::size_t nspheres,
                         GenMethod method = GenMethod::DEFAULT,
