@@ -223,6 +223,10 @@ public:
                  Eigen::Vector2d& intersection,
                  bool& parallel) const;
 
+  // convert to string
+  std::string str(int field_width = 10,
+                  int field_prec = 6) const;
+
 private:
   Eigen::Vector2d pt_[2];
 

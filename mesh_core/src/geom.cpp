@@ -375,6 +375,27 @@ mesh_core::LineSegment2D::LineSegment2D(
   initialize(a,b);
 }
 
+extern bool acorn_debug_ear_state;
+
+std::string mesh_core::LineSegment2D::str(
+      int field_width,
+      int field_prec) const
+{
+  std::stringstream ss;
+  ss << "Seg (";
+  ss.precision(field_prec);
+  ss << std::setw(field_width) << pt_[0].x() << ", ";
+  ss << std::setw(field_width) << pt_[0].y() << ")-(";
+  ss << std::setw(field_width) << pt_[1].x() << ", ";
+  ss << std::setw(field_width) << pt_[1].y() << ")";
+  ss << (vertical_ ? " v=T" : " v=F");
+  ss << " m=" << std::setw(field_width) << (vertical_ ? 0.0 : slope_);
+  ss << " b=" << std::setw(field_width) << (vertical_ ? 0.0 : y_intercept_);
+  ss << " inv_dx=" << std::setw(field_width) << inv_dx_;
+
+  return ss.str();
+}
+
 bool mesh_core::LineSegment2D::intersect(
       const LineSegment2D& other,
       Eigen::Vector2d& intersection,
@@ -382,6 +403,13 @@ bool mesh_core::LineSegment2D::intersect(
 {
   const LineSegment2D& a = *this;
   const LineSegment2D& b = other;
+
+  if (acorn_debug_ear_state)
+  {
+    logInform("Intersect");
+    logInform("     a=%s",a.str().c_str());
+    logInform("     b=%s",b.str().c_str());
+  }
 
   if (a.vertical_)
   {
@@ -397,6 +425,12 @@ bool mesh_core::LineSegment2D::intersect(
       double bymin = std::min(b.pt_[0].y(), b.pt_[1].y());
       double bymax = std::max(b.pt_[0].y(), b.pt_[1].y());
 
+      if (acorn_debug_ear_state)
+      {
+        logInform("     both vertical aymin=%f aymax=%f bymin=%f bymax\%f",
+          aymin, aymax, bymin, bymax);
+      }
+
       if (bymax < aymin)
         return false;
       if (bymin > aymax)
@@ -409,6 +443,10 @@ bool mesh_core::LineSegment2D::intersect(
       else
         intersection.y() = aymin;
 
+      if (acorn_debug_ear_state)
+      {
+        logInform("     INTERSECTS");
+      }
       return true;
     }
     parallel = false;
@@ -416,6 +454,13 @@ bool mesh_core::LineSegment2D::intersect(
     intersection.y() = b.slope_ * intersection.x() + b.y_intercept_;
 
     double tb = (intersection.x() - b.pt_[0].x()) * b.inv_dx_;
+    if (acorn_debug_ear_state)
+    {
+      logInform("     a vertical pt=(%8.4f, %8.4f) tb=%f",
+        intersection.x(),
+        intersection.y(),
+        tb);
+    }
     if (tb > 1.0 || tb < 0.0)
       return false;
     
@@ -426,11 +471,19 @@ bool mesh_core::LineSegment2D::intersect(
     }
     else
     {
-      double ta = (intersection.y() - a.pt_[0].y()) * b.inv_dx_;
+      double ta = (intersection.y() - a.pt_[0].y()) * a.inv_dx_;
+      if (acorn_debug_ear_state)
+      {
+        logInform("       ta=%f", ta);
+      }
       if (ta > 1.0 || ta < 0.0)
         return false;
     }
     
+    if (acorn_debug_ear_state)
+    {
+      logInform("     INTERSECTS");
+    }
     return true;
   }
   else if (b.vertical_)
@@ -451,14 +504,29 @@ bool mesh_core::LineSegment2D::intersect(
     intersection.x() = (b.y_intercept_ - a.y_intercept_) / bottom;
     intersection.y() = a.slope_ * intersection.x() + a.y_intercept_;
 
-    double ta = (intersection.x() - a.pt_[0].x()) * b.inv_dx_;
+    double ta = (intersection.x() - a.pt_[0].x()) * a.inv_dx_;
+    if (acorn_debug_ear_state)
+    {
+      logInform("     not vertical pt=(%8.4f, %8.4f) ta=%f",
+        intersection.x(),
+        intersection.y(),
+        ta);
+    }
     if (ta > 1.0 || ta < 0.0)
       return false;
     
     double tb = (intersection.x() - b.pt_[0].x()) * b.inv_dx_;
+    if (acorn_debug_ear_state)
+    {
+      logInform("       tb=%f", tb);
+    }
     if (tb > 1.0 || tb < 0.0)
       return false;
     
+    if (acorn_debug_ear_state)
+    {
+      logInform("     INTERSECTS");
+    }
     return true;
   }
 }
