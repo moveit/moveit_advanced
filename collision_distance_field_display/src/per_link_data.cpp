@@ -968,7 +968,7 @@ namespace moveit_rviz_plugin
       mesh_sphere_.reset();
       neigbor_mesh_shape_.reset();
 
-      if (!getBool())
+      if (!getBool() || !link_)
         return;
 
       robot_relative_ = false;
