@@ -710,6 +710,7 @@ ACORN_ASSERT(sphere_centers.size() == sphere_radii.size());
                   {
                     shapes_->addSpheres(node->parent_->closes_triangle_, 0.001, Eigen::Vector4f(1,1,0,1));
 
+#if 0
 Eigen::Vector3d center;
 Eigen::Vector3d closest;
 double radius;
@@ -723,6 +724,7 @@ mesh_core::closestPointOnTriangle(
   closest,
   1000.0);
 acorn_closest_debug = false;
+#endif
                   }
                 }
 
