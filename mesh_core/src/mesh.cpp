@@ -2439,15 +2439,6 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_bigAxis(
     norm = Eigen::Vector3d(0,0,1);
   }
 
-  if (mesh_node->parent_)
-  {
-    const Eigen::Vector3d& parent_norm = mesh_node->parent_->plane_.getNormal();
-    Eigen::Vector3d tmp = norm.cross(parent_norm).cross(parent_norm);
-    if (tmp.squaredNorm() <= std::numeric_limits<double>::epsilon())
-      tmp = parent_norm.cross(Eigen::Vector3d(parent_norm.y(), parent_norm.z(), parent_norm.x()));
-    norm = tmp;
-  }
-
   plane = Plane(norm, (max + min) * 0.5);
 
   return true;
