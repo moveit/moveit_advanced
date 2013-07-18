@@ -1629,20 +1629,7 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
       p = p->next_;
     }
     while (p != xmin);
-
-    if (acorn_debug_ear_state)
-    {
-      logInform("Create polygon for %d verts REVERSED:",nverts);
-      p = point0;
-      do
-      {
-        p->print("  ");
-        p = p->next_;
-      }
-      while (p != point0);
-    }
   }
-
 
   // if direction is backwards, reverse direction of points so they are CCW around polygon
   if (direction < 0.0)
@@ -1660,6 +1647,18 @@ logInform("##################### BEGIN generatePolygon nverts=%d",nverts);
       p = pn;
     }
     while (p != point0);
+
+    if (acorn_debug_ear_state)
+    {
+      logInform("Create polygon for %d verts REVERSED:",nverts);
+      p = point0;
+      do
+      {
+        p->print("  ");
+        p = p->next_;
+      }
+      while (p != point0);
+    }
   }
 
   // categorize each point
