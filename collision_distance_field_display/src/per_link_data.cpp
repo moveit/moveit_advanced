@@ -40,6 +40,8 @@
 #include <moveit/robot_sphere_representation/body_bounding_sphere.h>
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
+#include <moveit/distance_field/propagation_distance_field.h>
+#include <moveit/robot_sphere_representation/sphere_rep.h>
 
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
@@ -126,7 +128,7 @@ namespace moveit_rviz_plugin
     {
       per_link_objects.addVisObject(new PerLinkObj<LinkObj_RepLinkSpheres>(
                                   parent,
-                                  "Show Generated Spheres",
+                                  "Show Rep Spheres",
                                   "Show spheres generated with RobotSphereRepresentation.",
                                   QColor(100, 100, 255),
                                   0.5,
@@ -136,7 +138,84 @@ namespace moveit_rviz_plugin
     virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
     {
       robot_relative = false;
-      link_->getSphereRep()->getSpheres(centers, radii);
+      link_->getLinkSphereRep()->getSpheres(centers, radii);
+    }
+  };
+}
+
+namespace moveit_rviz_plugin
+{
+  void getDistanceFieldPoints(const distance_field::DistanceField& df,
+                              EigenSTL::vector_Vector3d& points,
+                              double max_dist = 0.0,
+                              double min_dist = std::numeric_limits<double>::max())
+  {
+    if (min_dist > max_dist)
+    {
+      min_dist = max_dist - df.getResolution();
+    }
+
+    int sx = df.getXNumCells();
+    int sy = df.getYNumCells();
+    int sz = df.getZNumCells();
+    int mx = std::max(sx,std::max(sy,sz));
+    points.reserve(mx*mx*4*2);
+    for (int x = 0 ; x < sx ; ++x)
+    {
+      for (int y = 0 ; y < sy ; ++y)
+      {
+        for (int z = 0 ; z < sz ; ++z)
+        {
+          double d = df.getDistance(x,y,z);
+          if (d <= max_dist && d >= min_dist)
+          {
+            Eigen::Vector3d p;
+            df.gridToWorld(x, y, z, p.x(), p.y(), p.z());
+            points.push_back(p);
+          }
+        }
+      }
+    }
+  }
+}
+
+namespace moveit_rviz_plugin
+{
+  // Draw Link Spheres from RobotSphereRep
+  class LinkObj_RepDF : public PerLinkSubObj
+  {
+  public:
+    LinkObj_RepDF(PerLinkObjBase *base, DFLink *link) :
+      PerLinkSubObj(base, link)
+    {}
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_RepDF>(
+                                  parent,
+                                  "Show Rep DF",
+                                  "Show RobotSphereRepresentation distance field.",
+                                  QColor(0, 0, 255),
+                                  1.0,
+                                  PerLinkObjBase::POINTS,
+                                  0.005));
+    }
+
+    virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+    {
+      robot_relative = false;
+      
+      robot_sphere_representation::LinkSphereRepresentation* link_sphere_rep = link_->getLinkSphereRep();
+      if (!link_sphere_rep)
+        return;
+      const robot_sphere_representation::SphereRep* sphere_rep = link_sphere_rep->getSphereRep();
+      if (!sphere_rep)
+        return;
+      const distance_field::PropagationDistanceField* df = sphere_rep->getDistanceField();
+      if (!df)
+        return;
+
+      getDistanceFieldPoints(*df, centers);
     }
   };
 }
@@ -172,7 +251,7 @@ namespace moveit_rviz_plugin
       shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor()));
 
       bodies::BoundingCylinder cylinder;
-      link_->getSphereRep()->getBoundingCylinder(cylinder);
+      link_->getLinkSphereRep()->getBoundingCylinder(cylinder);
       if (cylinder.radius > 0.0)
         shapes_->addZCylinder(cylinder.pose, cylinder.radius, cylinder.length);
     }
@@ -461,23 +540,23 @@ namespace moveit_rviz_plugin
 namespace moveit_rviz_plugin
 {
 
-  mesh_core::Mesh::SphereRepNode *findSphereTreeNode(
-        mesh_core::Mesh::SphereRepNode *node,
+  mesh_core::Mesh::BoundingSphereNode *findSphereTreeNode(
+        mesh_core::Mesh::BoundingSphereNode *node,
         int id)
   {
     if (node->id_ == id)
       return node;
     if (!node->first_child_)
       return NULL;
-    mesh_core::Mesh::SphereRepNode *nn = findSphereTreeNode(node->first_child_, id);
+    mesh_core::Mesh::BoundingSphereNode *nn = findSphereTreeNode(node->first_child_, id);
     ACORN_ASSERT(node->first_child_->next_sibling_);
     if (nn)
       return nn;
     return findSphereTreeNode(node->first_child_->next_sibling_, id);
   }
   void showSphereTree(
-        const mesh_core::Mesh::SphereRepNode *node, 
-        const mesh_core::Mesh::SphereRepNode *mark,
+        const mesh_core::Mesh::BoundingSphereNode *node, 
+        const mesh_core::Mesh::BoundingSphereNode *mark,
         char *name = NULL,
         char *prefix = NULL,
         int depth = 0)
@@ -557,15 +636,15 @@ namespace moveit_rviz_plugin
 #endif
       obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
       obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
-      obj->addFloatProperty("SphereRepTolerance", 0.01, "Tolerance for filling spheres");
-      obj->addIntProperty("SphereRepMaxDepth", 3, "calculate spheres to this depth");
-      obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
+      obj->addFloatProperty("BoundingSphereTolerance", 0.01, "Tolerance for filling spheres");
+      obj->addIntProperty("BoundingSphereMaxDepth", 3, "calculate spheres to this depth");
+      obj->addIntProperty("ShowBoundingSphereSpheresLevel", -2, "Show spheres up to this level");
       obj->addBoolProperty("ShowPoints", false, "Show all internal points in mesh");
       obj->addFloatProperty("PointResolution", 0.1, "resolution for ShowPoints");
       obj->addBoolProperty("DebugShowPoints", false, "printfs in ShowPoints");
 
-      obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
-      obj->addIntProperty("SphereRepIndex", -1, "Show mesh used for this sphere (-1 to disable)");
+      obj->addBoolProperty("PrintTree", false, "print BoundingSphere tree?");
+      obj->addIntProperty("BoundingSphereIndex", -1, "Show mesh used for this sphere (-1 to disable)");
       obj->addIntProperty("WhichGap", -1, "show one filled gap (-1 to disable)");
       obj->addBoolProperty("PrintEarClipDebug", false, "printfs for ear clip of current gap");
       obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap (-2 to disable)");
@@ -617,15 +696,15 @@ namespace moveit_rviz_plugin
           const mesh_core::Mesh *mp = &mesh;
 
 
-          mesh_core::Mesh::SphereRepNode *sphere_tree = NULL;
-          int sphere_rep_index = base_->getIntProperty("SphereRepIndex")->getInt();
-          int sphere_rep_level = base_->getIntProperty("ShowSphereRepSpheresLevel")->getInt();
+          mesh_core::Mesh::BoundingSphereNode *sphere_tree = NULL;
+          int sphere_rep_index = base_->getIntProperty("BoundingSphereIndex")->getInt();
+          int sphere_rep_level = base_->getIntProperty("ShowBoundingSphereSpheresLevel")->getInt();
           if (sphere_rep_index >= 0 || sphere_rep_level >= -1)
           {
-            double tolerance = base_->getFloatProperty("SphereRepTolerance")->getFloat();
+            double tolerance = base_->getFloatProperty("BoundingSphereTolerance")->getFloat();
             EigenSTL::vector_Vector3d sphere_centers;
             std::vector<double> sphere_radii;
-            int sphere_rep_max_depth = base_->getIntProperty("SphereRepMaxDepth")->getInt();
+            int sphere_rep_max_depth = base_->getIntProperty("BoundingSphereMaxDepth")->getInt();
             logInform("Generate sphere tree to depth %d", sphere_rep_max_depth);
 
             if (base_->getBoolProperty("PrintEarClipDebug")->getBool())
@@ -635,7 +714,7 @@ namespace moveit_rviz_plugin
                       base_->getIntProperty("WhichGap")->getInt());
             }
 
-            mp->getSphereRep(tolerance, sphere_centers, sphere_radii, &sphere_tree, sphere_rep_max_depth);
+            mp->getBoundingSpheres(tolerance, sphere_centers, sphere_radii, &sphere_tree, sphere_rep_max_depth);
 
             mesh.setDebugValues(-1,-1);
 
@@ -643,7 +722,7 @@ namespace moveit_rviz_plugin
             {
               sphere_centers.clear();
               sphere_radii.clear();
-              mp->collectSphereRepSpheres(sphere_tree, sphere_centers, sphere_radii, sphere_rep_level);
+              mp->collectBoundingSpheres(sphere_tree, sphere_centers, sphere_radii, sphere_rep_level);
 ACORN_ASSERT(sphere_centers.size() == sphere_radii.size());
               shapes_->addSpheres(sphere_centers, sphere_radii, Eigen::Vector4f(1,1,0,0.5));
             }
@@ -652,7 +731,7 @@ ACORN_ASSERT(sphere_centers.size() == sphere_radii.size());
             {
 #if 0
               int bits = sphere_rep_index;
-              mesh_core::Mesh::SphereRepNode *node = sphere_tree;
+              mesh_core::Mesh::BoundingSphereNode *node = sphere_tree;
               std::stringstream ss;
               while(bits > 1 && node->first_child_)
               {
@@ -671,7 +750,7 @@ ACORN_ASSERT(sphere_centers.size() == sphere_radii.size());
                 bits >>= 1;
               }
 #endif
-              mesh_core::Mesh::SphereRepNode *node = findSphereTreeNode(sphere_tree, sphere_rep_index);
+              mesh_core::Mesh::BoundingSphereNode *node = findSphereTreeNode(sphere_tree, sphere_rep_index);
 
               if (base_->getBoolProperty("PrintTree")->getBool())
                 showSphereTree(sphere_tree, node);
@@ -680,10 +759,10 @@ ACORN_ASSERT(sphere_centers.size() == sphere_radii.size());
               {
                 if (node->parent_)
                 {
-                  mesh_core::Mesh::SphereRepNode *n = node;
+                  mesh_core::Mesh::BoundingSphereNode *n = node;
                   while (n->parent_)
                   {
-                    mesh_core::Mesh::SphereRepNode *p = n->parent_;
+                    mesh_core::Mesh::BoundingSphereNode *p = n->parent_;
                     bool is_left = n == p->first_child_;
 
                     Eigen::Vector3d center;
@@ -901,7 +980,7 @@ acorn_closest_debug = false;
                   Eigen::Vector4f(0,0,1,0.5));
           }
 
-          mesh_core::Mesh::deleteSphereRepTree(sphere_tree);
+          mesh_core::Mesh::deleteBioundingSphereTree(sphere_tree);
         }
         else
         {
@@ -956,11 +1035,11 @@ namespace moveit_rviz_plugin
       obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
       obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
       obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
-      obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
-      obj->addFloatProperty("SphereRepTolerance", 0.01, "Tolerance for filling spheres");
-      obj->addIntProperty("SphereRepMaxDepth", 3, "calculate spheres to this depth");
-      obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
-      obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
+      obj->addIntProperty("BoundingSphereIndex", -1, "Show results of sphere fitting");
+      obj->addFloatProperty("BoundingSphereTolerance", 0.01, "Tolerance for filling spheres");
+      obj->addIntProperty("BoundingSphereMaxDepth", 3, "calculate spheres to this depth");
+      obj->addIntProperty("ShowBoundingSphereSpheresLevel", -2, "Show spheres up to this level");
+      obj->addBoolProperty("PrintTree", false, "print BoundingSphere tree?");
       obj->addFloatProperty("PointResolution", 0.1, "resolution for ShowPoints");
       obj->addBoolProperty("DebugShowPoints", false, "printfs in ShowPoints");
       obj->addBoolProperty("ShowPoints", false, "Show all internal points in mesh");
@@ -1241,6 +1320,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData()
   addSphereGenProperties(sphere_gen_category_);
 
   LinkObj_RepLinkSpheres::addSelf(sphere_gen_category_, *per_link_objects_);
+  LinkObj_RepDF::addSelf(sphere_gen_category_, *per_link_objects_);
   LinkObj_BCyl::addSelf(sphere_gen_category_, *per_link_objects_);
   LinkObj_SDFBSphere::addSelf(sphere_gen_category_, *per_link_objects_);
   LinkObj_VertBSphere::addSelf(sphere_gen_category_, *per_link_objects_);

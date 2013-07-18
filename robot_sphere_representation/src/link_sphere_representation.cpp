@@ -245,15 +245,20 @@ void robot_sphere_representation::LinkSphereRepresentation::updateSphereRepLink(
     dirty_ = true;
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::genSpheresUsingSphereRep() const
+const robot_sphere_representation::SphereRep* robot_sphere_representation::LinkSphereRepresentation::getSphereRep() const
 {
   robot_->ensureSphereRepRobot();
 
-  const SphereRep* sphere_rep = sphere_rep_link_->getSphereRep(
-                                                  requested_nspheres_,
-                                                  gen_method_,
-                                                  tolerance_,
-                                                  qual_method_);
+  return sphere_rep_link_->getSphereRep(
+                                    requested_nspheres_,
+                                    gen_method_,
+                                    tolerance_,
+                                    qual_method_);
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::genSpheresUsingSphereRep() const
+{
+  const SphereRep* sphere_rep = getSphereRep();
   if (sphere_rep)
   {
     radii_ = sphere_rep->getSphereRadii();

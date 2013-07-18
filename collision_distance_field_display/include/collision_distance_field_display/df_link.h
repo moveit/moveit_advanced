@@ -84,7 +84,7 @@ public:
   virtual void hideSubProperties(bool hide);
 
   CollisionDistanceFieldDisplay* getDisplay() const { return display_; }
-  robot_sphere_representation::LinkSphereRepresentation* getSphereRep() const { return sphere_rep_; }
+  robot_sphere_representation::LinkSphereRepresentation* getLinkSphereRep() const { return link_sphere_rep_; }
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
   void getLinkBoundingSphere(Eigen::Vector3d& center, double& radius) const;
@@ -118,7 +118,7 @@ protected:
 
   CollisionDistanceFieldDisplay *display_;
   std::vector<PerLinkSubObjBase*> per_link_objects_;
-  robot_sphere_representation::LinkSphereRepresentation *sphere_rep_;
+  robot_sphere_representation::LinkSphereRepresentation *link_sphere_rep_;
 
   bool inUpdatePropertyValues; // true when in updatePropertyValues()
 

@@ -243,7 +243,7 @@ public:
   // get face normals (one for each tri, indexed by tri index)
   const EigenSTL::vector_Vector3d& getFaceNormals() const;
 
-  // Method to use to find a splitting plane for getSphereRep()
+  // Method to use to find a splitting plane for getBoundingSpheres()
   enum SplitMethod
   {
     SPLIT_CLOSE_FAR,
@@ -252,14 +252,14 @@ public:
     SPLIT_BIG_AXIS,
   };
 
-  // internal info for getSphereRep()
+  // internal info for getBoundingSpheres()
   // Exposed for debugging.
-  struct SphereRepNode
+  struct BoundingSphereNode
   {
-    SphereRepNode *parent_;
-    SphereRepNode *first_child_;
-    SphereRepNode *next_sibling_;
-    SphereRepNode *prev_sibling_;
+    BoundingSphereNode *parent_;
+    BoundingSphereNode *first_child_;
+    BoundingSphereNode *next_sibling_;
+    BoundingSphereNode *prev_sibling_;
     SplitMethod split_method_;
     const Mesh *mesh_;
 
@@ -296,24 +296,24 @@ public:
   //   sphere_radii   - result
   //   mesh_tree - optional - returns sub meshes for debugging.
   //   max_depth - recurse at most this deep when splitting (-1 = no limit)
-  void getSphereRep(
+  void getBoundingSpheres(
                 double tolerance,
                 EigenSTL::vector_Vector3d& sphere_centers,
                 std::vector <double> sphere_radii,
-                SphereRepNode **mesh_tree = NULL,
+                BoundingSphereNode **mesh_tree = NULL,
                 int max_depth = -1,
                 SplitMethod split_method = SPLIT_BIG_AXIS) const;
 
-  // delete a mesh_tree returned by getSphereRep()
-  static void deleteSphereRepTree(SphereRepNode *mesh_tree);
+  // delete a mesh_tree returned by getBoundingSpheres()
+  static void deleteBioundingSphereTree(BoundingSphereNode *mesh_tree);
 
   // harvest spheres from leaves of tree.
   // Nodes at max_depth are treated as leaves.
   // Using max_depth = 0 will return just spheres from mesh_tree and its
   // siblings (if any).
   // Using max_depth = -1 (default) will return all spheres.
-  static void collectSphereRepSpheres(
-                SphereRepNode *mesh_tree,
+  static void collectBoundingSpheres(
+                BoundingSphereNode *mesh_tree,
                 EigenSTL::vector_Vector3d& sphere_centers,
                 std::vector<double>& sphere_radii,
                 int max_depth = -1);
@@ -503,63 +503,63 @@ private:
   // check whether point is an ear.  Used by fillGap().
   static void calcEarState(GapPoint* point);
 
-  struct GetSphereRepParams;
+  struct BoundingSphereParams;
 
-  // recursive helper for getSphereRep()
-  void calculateSphereRep(
-          const GetSphereRepParams& params,
-          SphereRepNode *mesh_tree) const;
+  // recursive helper for getBoundingSpheres()
+  void calculateBoundingSpheres(
+          const BoundingSphereParams& params,
+          BoundingSphereNode *mesh_tree) const;
 
-  // create 2 children for mesh_node (used by getSphereRep())
-  bool calculateSphereRepTreeSplit(
+  // create 2 children for mesh_node (used by getBoundingSpheres())
+  bool calculateBoundingSpheresTreeSplit(
           double tolerance,
-          SphereRepNode *mesh_node) const;
+          BoundingSphereNode *mesh_node) const;
 
-  // split mesh in 2 for getSphereRep()
-  bool calculateSphereRepMeshSplit(
+  // split mesh in 2 for getBoundingSpheres()
+  bool calculateBoundingSpheresMeshSplit(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Mesh **mesh_a,
           Mesh **mesh_b) const;
 
-  // calculate splitting plane for getSphereRep()
-  bool calculateSphereRepSplitPlane(
+  // calculate splitting plane for getBoundingSpheres()
+  bool calculateBoundingSpheresSplitPlane(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const;
 
-  // implement calculateSphereRepSplitPlane() by finding plane perpendular to
+  // implement calculateBoundingSpheresSplitPlane() by finding plane perpendular to
   // liner between bounding sphere center and farthest vertex from bounding
   // sphere center.
-  bool calculateSphereRepSplitPlane_far(
+  bool calculateBoundingSpheresSplitPlane_far(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const;
 
-  // implement calculateSphereRepSplitPlane() by
+  // implement calculateBoundingSpheresSplitPlane() by
   //  1) find closest point on original mesh to center of bounding sphere
   //  2) y_axis to line through that point and bsphere center
   //  3) find farthest vertex on submesh from y_axis
   //  4) z_axis is from y_axis to farthest point
   //  5) plane contains y_axis and perpendicular to z_axis
-  bool calculateSphereRepSplitPlane_closeFar(
+  bool calculateBoundingSpheresSplitPlane_closeFar(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const;
 
-  // implement calculateSphereRepSplitPlane() by
+  // implement calculateBoundingSpheresSplitPlane() by
   //   1) if parents, splitting plane kis perpendicular to parent(s)
   //   2) otherwise split largest axis-aligned dimension
-  bool calculateSphereRepSplitPlane_ortho(
+  bool calculateBoundingSpheresSplitPlane_ortho(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const;
 
-  // implement calculateSphereRepSplitPlane() by splitting along largest of
+  // implement calculateBoundingSpheresSplitPlane() by splitting along largest of
   // x,y,z axes
-  bool calculateSphereRepSplitPlane_bigAxis(
+  bool calculateBoundingSpheresSplitPlane_bigAxis(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const;
 
 
@@ -614,7 +614,7 @@ private:
 
   // enable debugging features
   static bool debug_;             // save gap_debug_ info if true
-  static int debug_node_id_;      // debug this node in getSphereRep
+  static int debug_node_id_;      // debug this node in getBoundingSpheres
   static int debug_gap_id_;       // debug this gap (only for debugged node)
   static bool debug_this_node_;   // internal use
   static bool debug_this_gap_;    // internal use

@@ -46,7 +46,7 @@ moveit_rviz_plugin::DFLink::DFLink(
     CollisionDistanceFieldDisplay *display)
   : RobotLink(robot, link, parent_joint_name, visual, collision)
   , sample_prop_(NULL)
-  , sphere_rep_(NULL)
+  , link_sphere_rep_(NULL)
   , display_(display)
   , inUpdatePropertyValues(false)
 {
@@ -60,7 +60,7 @@ moveit_rviz_plugin::DFLink::DFLink(
                             this );
   sample_prop_->hide();
 
-  sphere_rep_ = display_->getSphereRep()->getLink(getName());
+  link_sphere_rep_ = display_->getRobotSphereRep()->getLink(getName());
 
   addSphereGenProperties(link_property_);
 

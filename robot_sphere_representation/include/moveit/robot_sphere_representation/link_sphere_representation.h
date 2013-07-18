@@ -65,6 +65,7 @@ class BoundingCylinder;
 namespace robot_sphere_representation
 {
 class Link;
+class SphereRep;
 
 class LinkSphereRepresentation
 {
@@ -122,6 +123,10 @@ public:
 
   const Link* getSphereRepLink() const;
   Link* getSphereRepLink();
+
+  // get sphere rep given current params.  Create if necessary.
+  // May return NULL.
+  const SphereRep* getSphereRep() const;
 
   // Actually generate the spheres.  This is not needed as it is called from
   // getSpheres() when required.  However, calling it will ensure that a future

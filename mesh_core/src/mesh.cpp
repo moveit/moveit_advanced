@@ -2177,26 +2177,26 @@ const EigenSTL::vector_Vector3d& mesh_core::Mesh::getFaceNormals() const
   return face_normals_;
 }
 
-void mesh_core::Mesh::deleteSphereRepTree(SphereRepNode *mesh_tree)
+void mesh_core::Mesh::deleteBioundingSphereTree(BoundingSphereNode *mesh_tree)
 {
   if (!mesh_tree)
     return;
 
-  SphereRepNode *sibling = mesh_tree->next_sibling_;
+  BoundingSphereNode *sibling = mesh_tree->next_sibling_;
   if (sibling != mesh_tree)
   {
     mesh_tree->next_sibling_->prev_sibling_ = mesh_tree->prev_sibling_;
     mesh_tree->prev_sibling_->next_sibling_ = mesh_tree->next_sibling_;
-    deleteSphereRepTree(sibling);
+    deleteBioundingSphereTree(sibling);
   }
-  deleteSphereRepTree(mesh_tree->first_child_);
+  deleteBioundingSphereTree(mesh_tree->first_child_);
   delete mesh_tree->tmp_mesh_;
   delete mesh_tree;
 }
 
 // harvest spheres from leaves of tree
-void mesh_core::Mesh::collectSphereRepSpheres(
-      SphereRepNode *mesh_tree,
+void mesh_core::Mesh::collectBoundingSpheres(
+      BoundingSphereNode *mesh_tree,
       EigenSTL::vector_Vector3d& sphere_centers,
       std::vector<double>& sphere_radii,
       int max_depth)
@@ -2204,12 +2204,12 @@ void mesh_core::Mesh::collectSphereRepSpheres(
   if (!mesh_tree)
     return;
 
-  SphereRepNode *sibling = mesh_tree;
+  BoundingSphereNode *sibling = mesh_tree;
   do
   {
     if (sibling->first_child_ && max_depth != 0)
     {
-      collectSphereRepSpheres(sibling->first_child_, sphere_centers, sphere_radii, max_depth - 1);
+      collectBoundingSpheres(sibling->first_child_, sphere_centers, sphere_radii, max_depth - 1);
     }
     else
     {
@@ -2225,28 +2225,28 @@ void mesh_core::Mesh::collectSphereRepSpheres(
   while (sibling != mesh_tree);
 }
 
-struct mesh_core::Mesh::GetSphereRepParams
+struct mesh_core::Mesh::BoundingSphereParams
 {
   double tolerance_;
   int max_depth_;
 };
 
-void mesh_core::Mesh::getSphereRep(
+void mesh_core::Mesh::getBoundingSpheres(
           double tolerance,
           EigenSTL::vector_Vector3d& sphere_centers,
           std::vector <double> sphere_radii,
-          SphereRepNode **mesh_tree,
+          BoundingSphereNode **mesh_tree,
           int max_depth,
           SplitMethod split_method) const
 {
-  logInform("################### CALL getSphereRep()");
-  SphereRepNode *tree = NULL;
+  logInform("################### CALL getBoundingSpheres()");
+  BoundingSphereNode *tree = NULL;
   sphere_centers.clear();
   sphere_radii.clear();
 
   if (tris_.size() > 0)
   {
-    tree = new SphereRepNode;
+    tree = new BoundingSphereNode;
 
     tree->mesh_ = this;
     tree->parent_ = NULL;
@@ -2258,50 +2258,50 @@ void mesh_core::Mesh::getSphereRep(
     tree->id_ = 1;
     tree->split_method_ = split_method;
 
-    GetSphereRepParams params;
+    BoundingSphereParams params;
     params.tolerance_ = tolerance;
     params.max_depth_ = max_depth;
     
-    calculateSphereRep(params, tree);
+    calculateBoundingSpheres(params, tree);
 
-    collectSphereRepSpheres(tree, sphere_centers, sphere_radii);
+    collectBoundingSpheres(tree, sphere_centers, sphere_radii);
   }
 
   if (mesh_tree)
     *mesh_tree = tree;
   else
-    deleteSphereRepTree(tree);
+    deleteBioundingSphereTree(tree);
 }
 
 // recursively divide into 2 pieces until the piece is fit well by a sphere
-void mesh_core::Mesh::calculateSphereRep(
-          const GetSphereRepParams& params,
-          SphereRepNode *mesh_node) const
+void mesh_core::Mesh::calculateBoundingSpheres(
+          const BoundingSphereParams& params,
+          BoundingSphereNode *mesh_node) const
 {
   if (params.max_depth_ >= 0 && mesh_node->depth_ >= params.max_depth_)
     return;
 
-  if (!calculateSphereRepTreeSplit(params.tolerance_, mesh_node))
+  if (!calculateBoundingSpheresTreeSplit(params.tolerance_, mesh_node))
     return;
 
   ACORN_ASSERT(mesh_node->first_child_);
   ACORN_ASSERT(mesh_node->first_child_->next_sibling_);
-  calculateSphereRep(params, mesh_node->first_child_);
-  calculateSphereRep(params, mesh_node->first_child_->next_sibling_);
+  calculateBoundingSpheres(params, mesh_node->first_child_);
+  calculateBoundingSpheres(params, mesh_node->first_child_->next_sibling_);
 }
 
-bool mesh_core::Mesh::calculateSphereRepTreeSplit(
+bool mesh_core::Mesh::calculateBoundingSpheresTreeSplit(
           double tolerance,
-          SphereRepNode *mesh_node) const
+          BoundingSphereNode *mesh_node) const
 {
   Mesh *mesh_a = NULL;
   Mesh *mesh_b = NULL;
 
-  if (!calculateSphereRepMeshSplit(tolerance, mesh_node, &mesh_a, &mesh_b))
+  if (!calculateBoundingSpheresMeshSplit(tolerance, mesh_node, &mesh_a, &mesh_b))
     return false;
 
-  SphereRepNode *a = new SphereRepNode;
-  SphereRepNode *b = new SphereRepNode;
+  BoundingSphereNode *a = new BoundingSphereNode;
+  BoundingSphereNode *b = new BoundingSphereNode;
 
   a->mesh_ = mesh_a;
   a->tmp_mesh_ = mesh_a;
@@ -2331,9 +2331,9 @@ bool mesh_core::Mesh::calculateSphereRepTreeSplit(
 
 // If split needed, split mesh_node and return true.
 // Else return false.
-bool mesh_core::Mesh::calculateSphereRepMeshSplit(
+bool mesh_core::Mesh::calculateBoundingSpheresMeshSplit(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Mesh **mesh_a,
           Mesh **mesh_b) const
 {
@@ -2341,7 +2341,7 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
   acorn_debug_current_node = mesh_node->id_<<1;
 
   Plane plane;
-  if (!calculateSphereRepSplitPlane(tolerance, mesh_node, plane))
+  if (!calculateBoundingSpheresSplitPlane(tolerance, mesh_node, plane))
     return false;
 
   *mesh_a = new Mesh;
@@ -2369,22 +2369,22 @@ bool mesh_core::Mesh::calculateSphereRepMeshSplit(
 
 // If mesh_node should be split, calculate a splitting plane and return true.
 // If no split needed, return false.
-bool mesh_core::Mesh::calculateSphereRepSplitPlane(
+bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const
 {
   switch (mesh_node->split_method_)
   {
   case SPLIT_CLOSE_FAR:
-    return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
+    return calculateBoundingSpheresSplitPlane_closeFar(tolerance, mesh_node, plane);
   case SPLIT_FAR:
-    return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
+    return calculateBoundingSpheresSplitPlane_far(tolerance, mesh_node, plane);
   case SPLIT_ORTHO:
-    return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
+    return calculateBoundingSpheresSplitPlane_ortho(tolerance, mesh_node, plane);
   case SPLIT_BIG_AXIS:
   default:
-    return calculateSphereRepSplitPlane_bigAxis(tolerance, mesh_node, plane);
+    return calculateBoundingSpheresSplitPlane_bigAxis(tolerance, mesh_node, plane);
   }
 }
 
@@ -2392,9 +2392,9 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
 // If no split needed, return false.
 //
 // This version works by splitting along greatest of x,y,z axis
-bool mesh_core::Mesh::calculateSphereRepSplitPlane_bigAxis(
+bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_bigAxis(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const
 {
   Eigen::Vector3d center;
@@ -2462,9 +2462,9 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_bigAxis(
 // This version works by:
 //   1) if parents, splitting plane kis perpendicular to parent(s)
 //   2) otherwise try to use longest axis
-bool mesh_core::Mesh::calculateSphereRepSplitPlane_ortho(
+bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_ortho(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const
 {
   Eigen::Vector3d center;
@@ -2565,9 +2565,9 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_ortho(
 // This version works by:
 //   1) split plane goes through center of split-mesh bounding sphere.
 //   2) find farthest vertex from center.  Plane is perpendicular to center-farpoint
-bool mesh_core::Mesh::calculateSphereRepSplitPlane_far(
+bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_far(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const
 {
   const Mesh& mesh_node_mesh = *mesh_node->mesh_;
@@ -2636,9 +2636,9 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane_far(
 //   1) split plane goes through center of split-mesh bounding sphere.
 //   2) find closest point on original mesh to center of split-mesh bounding sphere.  It will be on split plane.
 //   3) find farthest point from the line of points 1 and 1.  Plane avoids this point.
-bool mesh_core::Mesh::calculateSphereRepSplitPlane_closeFar(
+bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_closeFar(
           double tolerance,
-          SphereRepNode *mesh_node,
+          BoundingSphereNode *mesh_node,
           Plane& plane) const
 {
   int nverts = verts_.size();
