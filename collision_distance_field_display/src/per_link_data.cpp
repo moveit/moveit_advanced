@@ -552,23 +552,25 @@ namespace moveit_rviz_plugin
                                   0.005);
 
 #if 0
-      obj->addIntProperty("NTris", -1, "Number of tris to show");
-      obj->addIntProperty("FirstTri", 0, "first tri to show");
       obj->addIntProperty("WhichHalf", 0, "which half of split to show 0=all 1=left 2=right");
-      obj->addIntProperty("WhichGap", -1, "show one filled gap");
-      obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap");
       obj->addIntProperty("WhichClip", -1, "Show one triangle and its clip result");
 #endif
       obj->addBoolProperty("ShowBoundingSphere", false, "Show bounding sphere for mesh?");
       obj->addBoolProperty("ShowAABB", false, "Show AABB for mesh?");
-      obj->addIntProperty("SphereRepIndex", -1, "Show results of sphere fitting");
       obj->addFloatProperty("SphereRepTolerance", 0.01, "Tolerance for filling spheres");
       obj->addIntProperty("SphereRepMaxDepth", 3, "calculate spheres to this depth");
       obj->addIntProperty("ShowSphereRepSpheresLevel", -2, "Show spheres up to this level");
-      obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
       obj->addBoolProperty("ShowPoints", false, "Show all internal points in mesh");
       obj->addFloatProperty("PointResolution", 0.1, "resolution for ShowPoints");
       obj->addBoolProperty("DebugShowPoints", false, "printfs in ShowPoints");
+
+      obj->addBoolProperty("PrintTree", false, "print SphereRep tree?");
+      obj->addIntProperty("SphereRepIndex", -1, "Show mesh used for this sphere (-1 to disable)");
+      obj->addIntProperty("WhichGap", -1, "show one filled gap (-1 to disable)");
+      obj->addBoolProperty("PrintEarClipDebug", false, "printfs for ear clip of current gap");
+      obj->addIntProperty("ShowGapLoopPoint", -2, "show one or all (-1) loop points for the current gap (-2 to disable)");
+      obj->addIntProperty("NTris", -1, "Number of tris to show (-1 for all)");
+      obj->addIntProperty("FirstTri", 0, "first tri to show");
 
       per_link_objects.addVisObject(obj);
     }
@@ -611,17 +613,6 @@ namespace moveit_rviz_plugin
 
           mesh.fillGaps();
 
-#if 0
-          if (base_->getIntProperty("NTris")->getInt() == -2)
-          {
-            acorn_debug_ear_state = true;
-          }
-          else
-          {
-            acorn_debug_ear_state = false;
-          }
-#endif
-
           const mesh_core::Mesh *mp = &mesh;
 
 
@@ -635,7 +626,17 @@ namespace moveit_rviz_plugin
             std::vector<double> sphere_radii;
             int sphere_rep_max_depth = base_->getIntProperty("SphereRepMaxDepth")->getInt();
             logInform("Generate sphere tree to depth %d", sphere_rep_max_depth);
+
+            if (base_->getBoolProperty("PrintEarClipDebug")->getBool())
+            {
+              mesh.setDebugValues(
+                      sphere_rep_index,
+                      base_->getIntProperty("WhichGap")->getInt());
+            }
+
             mp->getSphereRep(tolerance, sphere_centers, sphere_radii, &sphere_tree, sphere_rep_max_depth);
+
+            mesh.setDebugValues(-1,-1);
 
             if (sphere_rep_level >= -1)
             {
@@ -795,7 +796,6 @@ acorn_closest_debug = false;
                                             NULL,
                                             base_->getColor()));
 
-#if 0
           int which_gap = base_->getIntProperty("WhichGap")->getInt();
           if (which_gap >= 0)
           {
@@ -845,16 +845,6 @@ acorn_closest_debug = false;
                   
               }
 
-ROS_INFO("draw %s gap %d tri[113]=%d of %d total",
-mp==&a?"a":
-mp==&b?"b":
-mp==&mesh?"mesh":
-"???",
-which_gap,
-gdi.gap_tris_.size()>113?gdi.gap_tris_[113]:-1,
-int(gdi.gap_tris_.size()));
-
-
               int showpt = base_->getIntProperty("ShowGapLoopPoint")->getInt();
               if (showpt >=0 && showpt < gdi.points_.size())
               {
@@ -870,17 +860,12 @@ int(gdi.gap_tris_.size()));
             }
           }
           else
-#endif
           {
             ROS_INFO("draw mesh with %d tris %d verts",mp->getTriCount(), mp->getVertCount());
-#if 1
-            mesh_shape_->reset(mp);
-#else
             mesh_shape_->reset(
                           mp,
                           base_->getIntProperty("FirstTri")->getInt(),
                           base_->getIntProperty("NTris")->getInt());
-#endif
           }
 
           if (base_->getBoolProperty("ShowBoundingSphere")->getBool())
@@ -1003,6 +988,8 @@ namespace moveit_rviz_plugin
         meshid, dbmesh.name_.c_str());
       
       mesh_core::Mesh *mesh = &dbmesh.mesh_;
+
+      base_->getIntProperty("NGaps")->setValue(int(mesh->getGapDebugInfo().size()));
 
       {
         Eigen::Vector3d point(
