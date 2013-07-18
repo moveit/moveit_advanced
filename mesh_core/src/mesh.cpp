@@ -2236,7 +2236,8 @@ void mesh_core::Mesh::getSphereRep(
           EigenSTL::vector_Vector3d& sphere_centers,
           std::vector <double> sphere_radii,
           SphereRepNode **mesh_tree,
-          int max_depth) const
+          int max_depth,
+          SplitMethod split_method) const
 {
   logInform("################### CALL getSphereRep()");
   SphereRepNode *tree = NULL;
@@ -2255,6 +2256,7 @@ void mesh_core::Mesh::getSphereRep(
     tree->tmp_mesh_ = NULL;
     tree->depth_ = 0;
     tree->id_ = 1;
+    tree->split_method_ = split_method;
 
     GetSphereRepParams params;
     params.tolerance_ = tolerance;
@@ -2309,6 +2311,7 @@ bool mesh_core::Mesh::calculateSphereRepTreeSplit(
   a->prev_sibling_ = b;
   a->depth_ = mesh_node->depth_ + 1;
   a->id_ = mesh_node->id_ << 1;
+  a->split_method_ = mesh_node->split_method_;
   
   b->mesh_ = mesh_b;
   b->tmp_mesh_ = mesh_b;
@@ -2318,6 +2321,7 @@ bool mesh_core::Mesh::calculateSphereRepTreeSplit(
   b->prev_sibling_ = a;
   b->depth_ = mesh_node->depth_ + 1;
   b->id_ = a->id_ | 1;
+  a->split_method_ = mesh_node->split_method_;
   
   ACORN_ASSERT(mesh_node->first_child_ == NULL);
   mesh_node->first_child_ = a;
@@ -2370,10 +2374,18 @@ bool mesh_core::Mesh::calculateSphereRepSplitPlane(
           SphereRepNode *mesh_node,
           Plane& plane) const
 {
-  //return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
-  //return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
-  //return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
-  return calculateSphereRepSplitPlane_bigAxis(tolerance, mesh_node, plane);
+  switch (mesh_node->split_method_)
+  {
+  case SPLIT_CLOSE_FAR:
+    return calculateSphereRepSplitPlane_closeFar(tolerance, mesh_node, plane);
+  case SPLIT_FAR:
+    return calculateSphereRepSplitPlane_far(tolerance, mesh_node, plane);
+  case SPLIT_ORTHO:
+    return calculateSphereRepSplitPlane_ortho(tolerance, mesh_node, plane);
+  case SPLIT_BIG_AXIS:
+  default:
+    return calculateSphereRepSplitPlane_bigAxis(tolerance, mesh_node, plane);
+  }
 }
 
 // If mesh_node should be split, calculate a splitting plane and return true.

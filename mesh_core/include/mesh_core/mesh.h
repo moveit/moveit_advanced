@@ -243,12 +243,24 @@ public:
   // get face normals (one for each tri, indexed by tri index)
   const EigenSTL::vector_Vector3d& getFaceNormals() const;
 
+  // Method to use to find a splitting plane for getSphereRep()
+  enum SplitMethod
+  {
+    SPLIT_CLOSE_FAR,
+    SPLIT_FAR,
+    SPLIT_ORTHO,
+    SPLIT_BIG_AXIS,
+  };
+
+  // internal info for getSphereRep()
+  // Exposed for debugging.
   struct SphereRepNode
   {
     SphereRepNode *parent_;
     SphereRepNode *first_child_;
     SphereRepNode *next_sibling_;
     SphereRepNode *prev_sibling_;
+    SplitMethod split_method_;
     const Mesh *mesh_;
 
     // same as mesh_ if this is a temporary mesh that should be deleted.
@@ -285,11 +297,12 @@ public:
   //   mesh_tree - optional - returns sub meshes for debugging.
   //   max_depth - recurse at most this deep when splitting (-1 = no limit)
   void getSphereRep(
-          double tolerance,
-          EigenSTL::vector_Vector3d& sphere_centers,
-          std::vector <double> sphere_radii,
-          SphereRepNode **mesh_tree = NULL,
-          int max_depth = -1) const;
+                double tolerance,
+                EigenSTL::vector_Vector3d& sphere_centers,
+                std::vector <double> sphere_radii,
+                SphereRepNode **mesh_tree = NULL,
+                int max_depth = -1,
+                SplitMethod split_method = SPLIT_BIG_AXIS) const;
 
   // delete a mesh_tree returned by getSphereRep()
   static void deleteSphereRepTree(SphereRepNode *mesh_tree);
@@ -300,10 +313,10 @@ public:
   // siblings (if any).
   // Using max_depth = -1 (default) will return all spheres.
   static void collectSphereRepSpheres(
-                      SphereRepNode *mesh_tree,
-                      EigenSTL::vector_Vector3d& sphere_centers,
-                      std::vector<double>& sphere_radii,
-                      int max_depth = -1);
+                SphereRepNode *mesh_tree,
+                EigenSTL::vector_Vector3d& sphere_centers,
+                std::vector<double>& sphere_radii,
+                int max_depth = -1);
 
 
   // slize this mesh in half along plane and create 2 new meshes
