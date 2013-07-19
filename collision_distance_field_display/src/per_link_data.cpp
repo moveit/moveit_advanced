@@ -41,7 +41,7 @@
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 #include <moveit/distance_field/propagation_distance_field.h>
-#include <moveit/robot_sphere_representation/sphere_rep.h>
+#include <moveit/robot_sphere_representation/sphere_calc.h>
 
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>

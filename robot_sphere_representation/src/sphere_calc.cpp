@@ -34,7 +34,7 @@
 
 /* Author: Acorn Pooley */
 
-#include <moveit/robot_sphere_representation/sphere_rep.h>
+#include <moveit/robot_sphere_representation/sphere_calc.h>
 #include <moveit/distance_field/propagation_distance_field.h>
 #include <moveit/distance_field/distance_field_common.h>
 #include <moveit/robot_state/robot_state.h>

@@ -36,7 +36,7 @@
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
 #include <moveit/robot_sphere_representation/robot_sphere_representation.h>
-#include <moveit/robot_sphere_representation/sphere_rep.h>
+#include <moveit/robot_sphere_representation/sphere_calc.h>
 #include <moveit/robot_model/robot_model.h>
 
 #include <geometric_shapes/shape_operations.h>

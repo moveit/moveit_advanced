@@ -59,7 +59,7 @@ add_library(
   ${MOVEIT_LIB_NAME}
     src/robot_sphere_representation.cpp
     src/link_sphere_representation.cpp
-    src/sphere_rep.cpp
+    src/sphere_calc.cpp
     src/method_enums.cpp
     src/body_bounding_sphere.cpp
 )

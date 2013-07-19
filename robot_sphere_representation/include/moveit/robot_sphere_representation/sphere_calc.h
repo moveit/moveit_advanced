@@ -34,8 +34,8 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_REP_
-#define MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_REP_
+#ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_CALC_
+#define MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_CALC_
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
