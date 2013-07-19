@@ -40,8 +40,6 @@ if __name__ == '__main__':
     detector = ObjectDetector(broadcaster.broadcast)
     detector.start_on_off_client()
 
-    rospy.loginfo("Inside the object recognition trigger")
-
     if cmd_args['topic'] is True:
         detector.start_continuous_monitor_client() 
 

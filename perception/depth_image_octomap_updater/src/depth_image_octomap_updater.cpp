@@ -64,6 +64,7 @@ DepthImageOctomapUpdater::DepthImageOctomapUpdater() :
   average_callback_dt_(0.0),
   good_tf_(5), // start optimistically, so we do not output warnings right from the beginning
   failed_tf_(0),
+  active_(true),
   K0_(0.0), K2_(0.0), K4_(0.0), K5_(0.0)
 {
 }
@@ -133,6 +134,8 @@ void DepthImageOctomapUpdater::start()
 
   pub_filtered_label_image_ = filtered_label_transport_.advertiseCamera("filtered_label", 1);
 
+  updates_trigger_subscriber_ = node_handle_.subscribe("/octomap_updates_trigger", 1, &DepthImageOctomapUpdater::updateTriggerCallback, this);
+  
   sub_depth_image_ = input_depth_transport_.subscribeCamera(image_topic_, queue_size_, &DepthImageOctomapUpdater::depthImageCallback, this, hints);
 }
 
@@ -197,10 +200,16 @@ bool host_is_big_endian(void)
 
 static const bool HOST_IS_BIG_ENDIAN = host_is_big_endian();
 
+void DepthImageOctomapUpdater::updateTriggerCallback(const std_msgs::BoolPtr &msg)
+{
+  active_ = msg->data;  
+}
+
 void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
-  ROS_DEBUG("Received a new depth image message (frame = '%s', encoding='%s')", depth_msg->header.frame_id.c_str(), depth_msg->encoding.c_str());
 
+  ROS_DEBUG("Received a new depth image message (frame = '%s', encoding='%s')", depth_msg->header.frame_id.c_str(), depth_msg->encoding.c_str());
+  
   ros::WallTime start = ros::WallTime::now();
   
   // measure the frequency at which we receive updates
@@ -220,6 +229,9 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     image_callback_count_ = 2;
   last_depth_callback_start_ = start;
   ++image_callback_count_;
+
+  if(!active_)
+    return;
   
   if (monitor_->getMapFrame().empty())
     monitor_->setMapFrame(depth_msg->header.frame_id);

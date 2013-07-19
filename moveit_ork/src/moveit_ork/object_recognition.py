@@ -108,6 +108,7 @@ class ObjectBroadcaster:
         self._last_broadcast_time = rospy.Time.now()
 
     def broadcast_one(self, ob):
+        rospy.loginfo("Got object of type %s because confidence %s < %s" % (ob.type.key, str(ob.confidence), str(self._min_confidence)))
         if ob.confidence < self._min_confidence:
             rospy.loginfo("Not publishing object of type %s because confidence %s < %s" % (ob.type.key, str(ob.confidence), str(self._min_confidence)))
             return

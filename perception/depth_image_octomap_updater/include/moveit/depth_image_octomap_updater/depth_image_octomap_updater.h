@@ -45,6 +45,7 @@
 #include <moveit/depth_image_octomap_updater/lazy_free_space_updater.h>
 #include <image_transport/image_transport.h>
 #include <boost/scoped_ptr.hpp>
+#include <std_msgs/Bool.h>
 
 namespace occupancy_map_monitor
 {
@@ -104,7 +105,12 @@ private:
   double inv_fx_, inv_fy_, K0_, K2_, K4_, K5_;
   std::vector<unsigned int> filtered_labels_;
   ros::WallTime last_depth_callback_start_;
-  
+
+  ros::NodeHandle node_handle_;  
+  bool active_;
+  ros::Subscriber updates_trigger_subscriber_;
+  void updateTriggerCallback(const std_msgs::BoolPtr &msg);
+
 };
 }
 
