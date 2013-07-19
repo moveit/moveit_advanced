@@ -492,6 +492,192 @@ private:
 };
 
 
+#define ACORN_USE_DFLINKGRID 0
+#if ACORN_USE_DFLINKGRID
+
+template<T>
+class DFGrid
+{
+public:
+  DFGrid(const Eigen::Vector3d& origin,
+         const Eigen::Vector3d& size,
+         double resolution);
+  ~DFGrid();
+
+  void resize(const Eigen::Vector3d& origin,
+              const Eigen::Vector3d& size,
+              double resolution);
+
+  bool worldToGrid(const Eigen::Vector3d& world, Eigen::Vector3i& grid) const;
+  void gridToWorld(const Eigen::Vector3i& grid, Eigen::Vector3d& world) const;
+
+  const T& voxel(const Eigen::Vector3d& world) const;
+  const T& voxel(const Eigen::Vector3i& grid) const;
+
+  T& voxel(const Eigen::Vector3d& world);
+  T& voxel(const Eigen::Vector3i& grid);
+
+  const Eigen::Vector3d& getOrigin() const { return origin_; }
+  const Eigen::Vector3d& getSize() const { return size_; }
+  const Eigen::Vector3i& getISize() const { return isize_; }
+  double getResolution() const { return resolution_; }
+
+  void clear(const T& val);
+         
+private:
+  int index(const Eigen::Vector3i& grid) const;
+
+  Eigen::Vector3d origin_;
+  Eigen::Vector3d origin_minus_;
+  Eigen::Vector3d size_;
+  Eigen::Vector3i isize_;
+  double resolution_;
+  double oo_resolution_;
+  int zstride_;
+  int total_cells_;
+  int max_dist_;
+  int *sqrt_table_;
+
+protected:
+  T  outside_;  // cell returned when world coordinates are outside range
+  T *data_;
+};
+
+
+struct DFVoxel
+{
+  enum Flags
+  {
+    IN_MESH = 0x00000001,
+    IN_HULL = 0x00000002,
+    IN_PARENT = 0x00000004,
+    IN_CHILD = 0x00000008,
+  };
+
+  int flag_;  // values from Flags
+  int dsq_;   // distance squared to nearest mesh vertex, or 0 if outside mesh
+};
+
+class DFLinkGrid : public DFGrid<DFVoxel>
+{
+public:
+  DFLinkGrid(const Eigen::Vector3d& origin,
+             const Eigen::Vector3d& size,
+             double resolution);
+  
+  // clear all values to empty
+  void clear();
+
+private:
+};
+#endif
+
+
+
 }
+
+#if ACORN_USE_DFLINKGRID
+template<T>
+inline robot_sphere_representation::DFGrid<T>::DFGrid(
+      Eigen::Vector3d origin,
+      Eigen::Vector3d size,
+      double resolution)
+  : data_(NULL)
+{
+  resize(origin, size, resolution);
+}
+
+template<T>
+inline robot_sphere_representation::DFGrid<T>::~DFGrid()
+{
+  delete[] data_;
+}
+
+template<T>
+inline void robot_sphere_representation::DFGrid<T>::resize(
+      Eigen::Vector3d origin,
+      Eigen::Vector3d size,
+      double resolution)
+{
+  delete data_;
+
+  origin_ = origin;
+  size_ = size;
+  resolution_ = resolution;
+  oo_resolution_ = 1.0 / resolution;
+  Eigen::Vector3d size_tmp = size * oo_resolution_;
+  isize_.x() = std::max(1, int(ceil(size_.x() * oo_resolution_)));
+  isize_.y() = std::max(1, int(ceil(size_.y() * oo_resolution_)));
+  isize_.z() = std::max(1, int(ceil(size_.z() * oo_resolution_)));
+  origin_minus_ = origin_ - (0.5 * resolution_);
+  zstride_ = isize_.x() * isize_.y();
+
+  max_dist_ = 
+
+  total_cells_ = isize_.x() * isize_.y() * isize_.z();
+  data_ = new T[total_cells_];
+}
+
+template<T>
+inline bool robot_sphere_representation::DFGrid<T>::worldToGrid(const Eigen::Vector3d& world, Eigen::Vector3i& grid) const
+{
+  Eigen::Vector3d& fgrid = (world - origin_minus_) * oo_resolution_;
+  grid.x() = int(std::floor(fgrid.x());
+  grid.y() = int(std::floor(fgrid.y());
+  grid.z() = int(std::floor(fgrid.z());
+  return grid.x() >= 0 &&
+         grid.x() < isize_.x() &&
+         grid.y() >= 0 &&
+         grid.y() < isize_.y() &&
+         grid.z() >= 0 &&
+         grid.z() < isize_.z();
+}
+
+template<T>
+inline void robot_sphere_representation::DFGrid<T>::clear(const T& val)
+{
+  outside_ = val;
+  for (int i = total_cells_ - 1 ; i >= 0 ; --i)
+    data_[i] = outside_;
+}
+
+template<T>
+inline void robot_sphere_representation::DFGrid<T>::gridToWorld(const Eigen::Vector3i& grid, Eigen::Vector3d& world) const
+{
+  world = Eigen::Vector3d(grid) * resolution_ + origin_;
+}
+
+template<T>
+inline const T& robot_sphere_representation::DFGrid<T>::index(const Eigen::Vector3i& grid) const
+{
+  return grid.x() + grid.y() * isize_.x() + grid.z() * zstride_;
+}
+
+template<T>
+inline const T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3i& grid) const
+{
+  return data_[index(grid)];
+}
+
+template<T>
+inline T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3i& grid)
+{
+  return data_[index(grid)];
+}
+
+template<T>
+inline const T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3d& world) const
+{
+  Eigen::Vector3i& grid;
+  return worldToGrid(world, grid) ? data_[index(grid)] : outside_;
+}
+
+template<T>
+inline T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3d& world)
+{
+  Eigen::Vector3i& grid;
+  return worldToGrid(world, grid) ? data_[index(grid)] : outside_;
+}
+#endif
 
 #endif

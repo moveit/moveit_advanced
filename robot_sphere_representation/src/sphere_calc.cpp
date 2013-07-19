@@ -2730,3 +2730,23 @@ robot_sphere_representation::Robot::~Robot()
     delete it->second;
 }
 
+#if ACORN_USE_DFLINKGRID
+robot_sphere_representation::DFLinkGrid::DFLinkGrid(
+      Eigen::Vector3d origin,
+      Eigen::Vector3d size,
+      double resolution)
+  : DFGrid<DFVoxel>(origin, size, resolution)
+{
+}
+
+void robot_sphere_representation::DFLinkGrid::clear()
+{
+  DFVoxel vox;
+  vox.flag_ = DFVoxel::IN_PARENT | DFVoxel::IN_CHILD;
+  vox.dsq_ = 0;
+  DFGrid<DFVoxel>::clear(vox);
+}
+#endif
+
+
+
