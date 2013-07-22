@@ -64,7 +64,6 @@ DepthImageOctomapUpdater::DepthImageOctomapUpdater() :
   average_callback_dt_(0.0),
   good_tf_(5), // start optimistically, so we do not output warnings right from the beginning
   failed_tf_(0),
-  active_(true),
   K0_(0.0), K2_(0.0), K4_(0.0), K5_(0.0)
 {
 }
@@ -147,6 +146,10 @@ void DepthImageOctomapUpdater::stop()
 void DepthImageOctomapUpdater::stopHelper()
 {   
   sub_depth_image_.shutdown();
+  updates_trigger_subscriber_.shutdown();
+  pub_filtered_label_image_.shutdown();
+  pub_filtered_depth_image_.shutdown();
+  pub_model_depth_image_.shutdown();  
 }
 
 mesh_filter::MeshHandle DepthImageOctomapUpdater::excludeShape(const shapes::ShapeConstPtr &shape)
@@ -200,10 +203,10 @@ bool host_is_big_endian(void)
 
 static const bool HOST_IS_BIG_ENDIAN = host_is_big_endian();
 
-void DepthImageOctomapUpdater::updateTriggerCallback(const std_msgs::BoolPtr &msg)
+/*void DepthImageOctomapUpdater::updateTriggerCallback(const std_msgs::BoolPtr &msg)
 {
   active_ = msg->data;  
-}
+  }*/
 
 void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
@@ -229,9 +232,6 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     image_callback_count_ = 2;
   last_depth_callback_start_ = start;
   ++image_callback_count_;
-
-  if(!active_)
-    return;
   
   if (monitor_->getMapFrame().empty())
     monitor_->setMapFrame(depth_msg->header.frame_id);

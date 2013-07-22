@@ -62,7 +62,9 @@ public:
   virtual void stop();
   virtual ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape);
   virtual void forgetShape(ShapeHandle handle);
-
+  virtual void pause();
+  virtual void unPause();
+  
 private:
   
   void depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
