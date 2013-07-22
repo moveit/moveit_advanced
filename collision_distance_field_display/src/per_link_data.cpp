@@ -122,21 +122,30 @@ namespace moveit_rviz_plugin
   public:
     LinkObj_RepLinkSpheres(PerLinkObjBase *base, DFLink *link) :
       PerLinkSubObj(base, link)
-    {}
+    {
+    }
 
     static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
     {
-      per_link_objects.addVisObject(new PerLinkObj<LinkObj_RepLinkSpheres>(
+      PerLinkObjBase* obj = new PerLinkObj<LinkObj_RepLinkSpheres>(
                                   parent,
                                   "Show Calc Spheres",
                                   "Show spheres generated with RobotSphereRepresentation.",
                                   QColor(100, 100, 255),
                                   0.5,
-                                  PerLinkObjBase::SPHERES));
+                                  PerLinkObjBase::SPHERES);
+      per_link_objects.addVisObject(obj);
+      new PerLinkProperty(obj,
+                          "NSpheres Requested",
+                          "Some algorithms target a particular number of spheres.  This controls how many are requested per link.",
+                          PropertyHolder::PT_INT,
+                          QVariant(-1));
     }
 
     virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
     {
+      logInform("Calc spheres. NSpheres Requested = %d", getProp("NSpheres Requested")->getInt());
+
       robot_relative = false;
       link_->getLinkSphereRepresentation()->getSpheres(centers, radii);
     }

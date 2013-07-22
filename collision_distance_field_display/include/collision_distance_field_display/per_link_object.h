@@ -58,8 +58,9 @@ class PerLinkSubObjBase;
 
 
 /// Represents a set of objects that may be drawn for any link(s).
-class PerLinkObjList
+class PerLinkObjList : public QObject
 {
+Q_OBJECT;
 public:
 
   // call the update functions for all objects in all links.
@@ -73,7 +74,6 @@ public:
 
   // remove all sub-objects
   void clear();
-
 
   // add a new object which will be available to be added to any link.
   // Generally this is called by a PerLinkSubObj subclass' addSelf() method.
@@ -90,12 +90,16 @@ private:
 };
 
 
+class PerLinkProperty;
+class PerLinkSubProperty;
 
 /// Represents one piece of data from each link.
 class PerLinkObjBase : public rviz::BoolProperty
 {
 Q_OBJECT;
 public:
+  virtual ~PerLinkObjBase();
+
   enum Style { POINTS, SPHERES, CYLINDERS };
 
   Eigen::Vector4f getColor();
@@ -130,6 +134,18 @@ public:
   rviz::IntProperty* getIntProperty(const std::string& name);
   rviz::FloatProperty* getFloatProperty(const std::string& name);
   rviz::BoolProperty* getBoolProperty(const std::string& name);
+  
+  // get a property
+  PerLinkProperty* getProp(const std::string& name);
+
+  // should only be called by PerLinkProperty constructor
+  void addProp(PerLinkProperty *prop);
+
+  // set value of property in all links
+  void setPropValue(const std::string& name, QVariant value);
+
+  // should only be called by PerLinkProperty when property changes
+  void propChanged(PerLinkProperty* prop);
 
 protected:
   PerLinkObjBase(rviz::Property *parent,
@@ -143,15 +159,19 @@ protected:
 
   void addSubObject(PerLinkSubObjBase*);
 
+
 private Q_SLOTS:
   void changedSlot();
   void changedEnableSlot();
 
 private:
+
   rviz::ColorProperty* color_;
   rviz::FloatProperty* alpha_;
   rviz::FloatProperty* size_;
   std::map<std::string, rviz::Property*> extra_property_map_;
+  std::map<std::string, PerLinkProperty*> prop_map_;
+  std::vector<PerLinkProperty*> prop_list_;
   Style style_;
   std::vector<PerLinkSubObjBase*> sub_objs_;
   bool avoid_enable_update_;
@@ -195,8 +215,20 @@ class PerLinkSubObjBase : public rviz::BoolProperty
 {
 Q_OBJECT;
 public:
+  virtual ~PerLinkSubObjBase();
+
   // Call to recalc and redisplay the vis.  Calls getGeom.
   virtual void changed();
+
+  // get a property
+  PerLinkSubProperty* getProp(const std::string& name);
+  PerLinkProperty* getObjProp(const std::string& name);
+
+  // add a property.  Only called from PerLinkObjBase::addSubObject()
+  void addProp(PerLinkSubProperty *prop);
+
+  // Should only be called by PerLinkSubProperty when property changes
+  virtual void propChanged(PerLinkSubProperty* prop);
 
 protected:
   PerLinkSubObjBase(PerLinkObjBase *base, rviz::Property *parent);
@@ -227,10 +259,12 @@ private Q_SLOTS:
   void changedEnableSlot();
 
 protected:
+
   EigenSTL::vector_Vector3d centers_;
   std::vector<double> radii_;
   PerLinkObjBase *base_;
   bool robot_relative_;
+  std::map<std::string, PerLinkSubProperty*> prop_map_;
 
   // Display a set of shapes.  Set up in the changed() method.
   boost::shared_ptr<ShapesDisplay> shapes_;
@@ -250,6 +284,109 @@ protected:
 
 
 // class PerJointSubObj ... not implemented.
+
+
+class PropertyHolder : public QObject
+{
+Q_OBJECT;
+public:
+  enum PropertyType {
+    PT_EMPTY,
+    PT_BOOL,
+    PT_INT,
+    PT_FLOAT,
+  };
+
+  enum PropertyFlags {
+    PF_NOT_GLOBAL = 0x00000001,
+    PF_NOT_PERLINK = 0x00000002,
+    PF_NOT_FREEZABLE = 0x00000004,
+    PF_READ_ONLY = 0x00000008,
+  };
+
+  PropertyHolder(rviz::Property *parent_property,
+                 const std::string& name,
+                 const std::string& descr,
+                 PropertyType type,
+                 QVariant value,
+                 unsigned int flags = 0); // PropertyFlags
+  PropertyHolder(rviz::Property *parent_property,
+                 const PropertyHolder* clone);
+  virtual ~PropertyHolder();
+
+  double getFloat() const;
+  int getInt() const;
+  bool getBool() const;
+  QVariant getValue() const;
+
+  const std::string& getName() const { return name_; }
+  const rviz::Property* getProperty() const { return property_; }
+  rviz::Property* getProperty() { return property_; }
+    
+private Q_SLOTS:
+  void changedSlot();
+
+protected:
+  virtual void changed();
+
+private:
+  void createProperty(rviz::Property *parent_property,
+                      const std::string& descr,
+                      QVariant value);
+
+protected:
+  std::string name_;
+  PropertyType type_;
+  unsigned int flags_;      // PropertyFlags
+  rviz::Property* property_;
+};
+
+
+// a per obj property
+class PerLinkProperty : public PropertyHolder
+{
+Q_OBJECT;
+public:
+  PerLinkProperty(PerLinkObjBase* obj,
+                  const std::string& name,
+                  const std::string& descr,
+                  PropertyType type,
+                  QVariant value,
+                  unsigned int flags = 0); // bits from PropertyFlags
+
+  virtual void setValue(QVariant value,
+                        bool update_children = true);
+    
+protected:
+  virtual void changed();
+
+protected:
+  PerLinkObjBase *obj_;
+};
+
+
+// a per link copy of a PerLinkProperty
+class PerLinkSubProperty : public PropertyHolder
+{
+Q_OBJECT;
+public:
+  PerLinkSubProperty(PerLinkProperty* parent,
+                     PerLinkSubObjBase* sub_obj);
+
+  virtual void setValue(QVariant value,
+                        bool update_all = false);
+
+  PerLinkProperty* getObjProp() { return parent_; }
+
+protected:
+  virtual void changed();
+
+protected:
+  PerLinkProperty* parent_;
+  PerLinkSubObjBase *sub_obj_;
+  
+  bool modified_;
+};
 
 
 }
