@@ -231,6 +231,7 @@ private:
   void findSpheres();
 
   void solveUsingGreedy(int max_spheres = -1);
+  void solveUsingGreedy2();
   void solveUsingGradientDescent();
   void solveUsingGobble();
   void solveUsingClustering();
@@ -264,6 +265,7 @@ private:
   double findClosestBadPointDistance(const Eigen::Vector3d& center, double& exterior_distance);
   Eigen::Vector3d findClosestBadPoint(const Eigen::Vector3d& center);
 
+  // call func on all sample points that are within min_radius - max_radius distance from center.
   void sphereIterate(
         boost::function<void (const V3*, const V3i*)> func,
         const Eigen::Vector3d& center,
@@ -415,6 +417,7 @@ public:
   void gridToWorld(const V3i& grid, Eigen::Vector3d& world) const;
   void worldToGrid(const Eigen::Vector3d& world, V3i& grid) const;
 
+  // get a marker showing all points inside link's mesh.
   void getLinkAllPointsMarker(
                         const std::string& link_name,
                         visualization_msgs::Marker& m,
@@ -423,6 +426,8 @@ public:
                         const std::string ns = "",
                         int id=0) const;
 
+  // get a marker showing all points inside link's mesh after removing extra points.
+  // Points are removed if they are contained in the parent (or sometimes in a child).
   void getLinkFinalPointsMarker(
                         const std::string& link_name,
                         visualization_msgs::Marker& m,
@@ -431,6 +436,7 @@ public:
                         const std::string ns = "",
                         int id=0) const;
 
+  // get a marker showing points in one cluster.
   void getLinkClusterPointsMarker(
                         const std::string& link_name,
                         std::size_t nclusters,
@@ -440,6 +446,8 @@ public:
                         const Eigen::Vector4d& color = Eigen::Vector4d(1,1,1,1),
                         const std::string ns = "",
                         int id=0);
+
+  // return the SphereCalc for this link.  This can be queried to determine how the spheres were generated for debugging.
   const SphereCalc* getLinkSphereCalc(
                         const std::string& link_name,
                         std::size_t nspheres,
