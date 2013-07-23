@@ -434,7 +434,6 @@ public:
   Grid(double size_x, double size_y, double size_z, double resolution,
        double origin_x, double origin_y, double origin_z, const Voxel& default_object) :
     distance_field::VoxelGrid<Voxel>(size_x, size_y, size_z, resolution, origin_x, origin_y, origin_z, default_object),
-    oo_resolution_(1.0/resolution),
     vorigin_(origin_x, origin_y, origin_z)
   {}
 
@@ -445,7 +444,6 @@ public:
   double getDistanceInterp(const V3& point) const;
 
 private:
-  double oo_resolution_;
   V3 vorigin_;
 };
 
