@@ -136,18 +136,51 @@ namespace moveit_rviz_plugin
                                   PerLinkObjBase::SPHERES);
       per_link_objects.addVisObject(obj);
       new PerLinkProperty(obj,
-                          "NSpheres Requested",
-                          "Some algorithms target a particular number of spheres.  This controls how many are requested per link.",
+                          "Iteration",
+                          "Which iteration to show (-1 = last)",
                           PropertyHolder::PT_INT,
                           QVariant(-1));
+      new PerLinkProperty(obj,
+                          "NumIterations",
+                          "How many iterations were used",
+                          PropertyHolder::PT_INT,
+                          QVariant(-1),
+                          PropertyHolder::PF_READ_ONLY);
+    }
+
+    virtual void propChanged(PerLinkSubProperty* prop)
+    {
+      if (prop->getName() == "NumIterations")
+        return;
+      changed();
     }
 
     virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
     {
-      logInform("Calc spheres. NSpheres Requested = %d", getProp("NSpheres Requested")->getInt());
-
       robot_relative = false;
-      link_->getLinkSphereRepresentation()->getSpheres(centers, radii);
+      int iteration = getProp("Iteration")->getInt();
+      const robot_sphere_representation::SphereCalc* scalc = link_->getLinkSphereRepresentation()->getSphereCalc();
+      if (iteration < 0 || !scalc)
+      {
+        link_->getLinkSphereRepresentation()->getSpheres(centers, radii);
+        if (!scalc)
+          scalc = link_->getLinkSphereRepresentation()->getSphereCalc();
+      }
+
+      if (iteration >= 0 && scalc)
+      {
+        centers = scalc->getSphereCenters(iteration);
+        radii = scalc->getSphereRadii(iteration);
+        const char * algo = scalc->getAlgorithm(iteration);
+        logInform("Iteration[%d] nspheres=%d  algo=%s",
+          iteration,
+          centers.size(),
+          algo);
+        robot_relative = true;
+      }
+
+      if (scalc)
+        getProp("NumIterations")->setValue(scalc->getNumIterations());
     }
   };
 }
