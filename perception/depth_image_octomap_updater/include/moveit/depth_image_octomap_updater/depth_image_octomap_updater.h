@@ -62,8 +62,6 @@ public:
   virtual void stop();
   virtual ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape);
   virtual void forgetShape(ShapeHandle handle);
-  virtual void pause();
-  virtual void unPause();
   
 private:
   
@@ -110,8 +108,6 @@ private:
 
   ros::NodeHandle node_handle_;  
   bool active_;
-  ros::Subscriber updates_trigger_subscriber_;
-  void updateTriggerCallback(const std_msgs::BoolPtr &msg);
 
 };
 }

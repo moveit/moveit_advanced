@@ -132,8 +132,6 @@ void DepthImageOctomapUpdater::start()
     pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera("filtered_depth", 1);
 
   pub_filtered_label_image_ = filtered_label_transport_.advertiseCamera("filtered_label", 1);
-
-  updates_trigger_subscriber_ = node_handle_.subscribe("/octomap_updates_trigger", 1, &DepthImageOctomapUpdater::updateTriggerCallback, this);
   
   sub_depth_image_ = input_depth_transport_.subscribeCamera(image_topic_, queue_size_, &DepthImageOctomapUpdater::depthImageCallback, this, hints);
 }
@@ -146,7 +144,6 @@ void DepthImageOctomapUpdater::stop()
 void DepthImageOctomapUpdater::stopHelper()
 {   
   sub_depth_image_.shutdown();
-  updates_trigger_subscriber_.shutdown();
   pub_filtered_label_image_.shutdown();
   pub_filtered_depth_image_.shutdown();
   pub_model_depth_image_.shutdown();  
@@ -202,11 +199,6 @@ bool host_is_big_endian(void)
 }
 
 static const bool HOST_IS_BIG_ENDIAN = host_is_big_endian();
-
-/*void DepthImageOctomapUpdater::updateTriggerCallback(const std_msgs::BoolPtr &msg)
-{
-  active_ = msg->data;  
-  }*/
 
 void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
