@@ -62,7 +62,7 @@ inline void collision_detection::CollisionRobotDistanceField::initQuery(
   work.acm_ = acm;
 
   // debug
-  if (1 || work.req_->verbose)
+  if (work.req_->verbose)
     dumpQuery(work, descrip);
 }
 

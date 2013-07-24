@@ -78,13 +78,16 @@ void collision_detection::CollisionRobotDistanceField::dumpQuery(const WorkArea&
     work.acm_->getAllEntryNames(names);
     ss_acm << ", acm(nnames=" << names.size() << ", sz=" << work.acm_->getSize() << ")";
   }
-  logInform("   request: result%s%s%s%s%s%s",
-    work.req_->distance ? ", distance" : "",
-    work.req_->cost ? ss_cost.str().c_str() : "",
-    work.req_->contacts ? ss_contacts.str().c_str() : "",
-    work.req_->is_done ? ", is_done-func" : "",
-    work.req_->verbose ? ", VERBOSE" : "",
-    ss_acm.str().c_str());
+  if (0)
+  {
+    logInform("   request: result%s%s%s%s%s%s",
+      work.req_->distance ? ", distance" : "",
+      work.req_->cost ? ss_cost.str().c_str() : "",
+      work.req_->contacts ? ss_contacts.str().c_str() : "",
+      work.req_->is_done ? ", is_done-func" : "",
+      work.req_->verbose ? ", VERBOSE" : "",
+      ss_acm.str().c_str());
+  }
 }
 
 void collision_detection::DFContact::copyFrom(const Contact& contact)
