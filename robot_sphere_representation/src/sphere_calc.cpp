@@ -1688,11 +1688,9 @@ distance_field::PropagationDistanceField* robot_sphere_representation::SphereCal
 void robot_sphere_representation::SphereCalc::getConcaveRequiredPoints(
       EigenSTL::vector_Vector3d& points) const
 {
-logInform("getConcaveRequiredPoints :%d",__LINE__);
   points.clear();
   if (!concave_voxel_grid_)
     return;
-logInform("getConcaveRequiredPoints :%d",__LINE__);
 
   int xend = concave_voxel_grid_->getNumCells(distance_field::DIM_X);
   int yend = concave_voxel_grid_->getNumCells(distance_field::DIM_Y);
@@ -1717,16 +1715,12 @@ logInform("getConcaveRequiredPoints :%d",__LINE__);
       }
     }
   }
-logInform("getConcaveRequiredPoints dim:%d %d %d  cnt:%d=%d  :%d",xend,yend,zend,points.size(),cnt,__LINE__);
-logInform("calcConcaveVoxelGrid   this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
 }
 
 bool robot_sphere_representation::SphereCalc::calcConcaveVoxelGrid()
 {
-logInform("calcConcaveVoxelGrid :%d",__LINE__);
   if (concave_voxel_grid_)
     return true;
-logInform("calcConcaveVoxelGrid :%d",__LINE__);
 
   PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid);
   PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_createMesh);
@@ -1750,7 +1744,6 @@ logInform("calcConcaveVoxelGrid :%d",__LINE__);
     mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
     mesh.fillGaps();
     mesh.getAABB(aabb.min_, aabb.max_);
-logInform("calcConcaveVoxelGrid mesh :%d",__LINE__);
   }
   else
   {
@@ -1759,7 +1752,6 @@ logInform("calcConcaveVoxelGrid mesh :%d",__LINE__);
     Eigen::Vector3d dimv(dim[0], dim[1], dim[2]);
     aabb.min_ = dimv * -0.5;
     aabb.max_ = dimv *  0.5;
-logInform("calcConcaveVoxelGrid body :%d",__LINE__);
   }
 
   aabb.min_.array() -= 2.0 * concave_resolution;
@@ -1795,9 +1787,6 @@ logInform("calcConcaveVoxelGrid body :%d",__LINE__);
                                   aabb.min_.y(),
                                   aabb.min_.z(),
                                   ConcaveVoxel()));
-logInform("calcConcaveVoxelGrid size=%f %f %f  res=%f  :%d",size.x(), size.y(), size.z(), concave_resolution, __LINE__);
-logInform("calcConcaveVoxelGrid size=%f %f %f  res=%f  :%d",concave_voxel_grid_->getSize(distance_field::DIM_X), concave_voxel_grid_->getSize(distance_field::DIM_Y), concave_voxel_grid_->getSize(distance_field::DIM_Z), concave_voxel_grid_->getResolution(), __LINE__);
-logInform("calcConcaveVoxelGrid dim=%d %d %d   :%d",concave_voxel_grid_->getNumCells(distance_field::DIM_X), concave_voxel_grid_->getNumCells(distance_field::DIM_Y), concave_voxel_grid_->getNumCells(distance_field::DIM_Z), __LINE__);
                                     
   PROF_POP();
   PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_GatherPoints);
@@ -1814,7 +1803,6 @@ logInform("calcConcaveVoxelGrid dim=%d %d %d   :%d",concave_voxel_grid_->getNumC
     int xend = concave_voxel_grid_->getNumCells(distance_field::DIM_X);
     int yend = concave_voxel_grid_->getNumCells(distance_field::DIM_Y);
     int zend = concave_voxel_grid_->getNumCells(distance_field::DIM_Z);
-logInform("calcConcaveVoxelGrid dim=%f %f %f :%d",xend,yend,zend, __LINE__);
 
     points.reserve(xend * yend * zend);
     int cnt = 0;
@@ -1836,13 +1824,10 @@ logInform("calcConcaveVoxelGrid dim=%f %f %f :%d",xend,yend,zend, __LINE__);
       }
     }
   }
-logInform("calcConcaveVoxelGrid npoints=%d :%d",points.size(), __LINE__);
 
   PROF_POP();
   PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid);
 
-int req_cnt = 0;
-int opt_cnt = 0;
   // find required points - in mesh and near required_points
   // find optional points - in mesh and outside required_points
   {
@@ -1859,17 +1844,14 @@ int opt_cnt = 0;
       if (d_req < resolution_)
       {
         v.flags_ |= ConcaveVoxel::REQUIRED;
-req_cnt++;
       }
       else if (d_opt < 0.0)
       {
         v.flags_ |= ConcaveVoxel::OPTIONAL;
-opt_cnt++;
       }
       v.distance_ = d_opt;
     }
   }
-logInform("calcConcaveVoxelGrid npoints=%d   req_cnt=%d  opt_cnt=%d  :%d",points.size(),req_cnt,opt_cnt, __LINE__);
 
   PROF_POP();
   PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid2);
@@ -1879,8 +1861,6 @@ logInform("calcConcaveVoxelGrid npoints=%d   req_cnt=%d  opt_cnt=%d  :%d",points
 
   PROF_POP();
 
-logInform("calcConcaveVoxelGrid dim=%d %d %d   :%d",concave_voxel_grid_->getSize(distance_field::DIM_X), concave_voxel_grid_->getSize(distance_field::DIM_Y), concave_voxel_grid_->getSize(distance_field::DIM_Z), __LINE__);
-logInform("calcConcaveVoxelGrid   this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
   return true;
 }
 
