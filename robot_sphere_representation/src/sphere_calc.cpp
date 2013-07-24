@@ -40,6 +40,7 @@
 #include <moveit/robot_state/robot_state.h>
 #include <geometric_shapes/bodies.h>
 #include <geometric_shapes/body_operations.h>
+#include <mesh_core/mesh.h>
 #include <boost/bind.hpp>
 #include <limits>
 #include <cmath>
@@ -71,6 +72,14 @@ public:
     X(SphereCalc_createDistanceField_GatherPoints) \
     X(SphereCalc_createDistanceField_CreateDF) \
     X(SphereCalc_createDistanceField_CreateVoxelGrid) \
+    X(getRequiredDistanceField) \
+    X(SphereCalc_calcConcaveVoxelGrid) \
+    X(SphereCalc_calcConcaveVoxelGrid_createMesh) \
+    X(SphereCalc_calcConcaveVoxelGrid_createReqDF) \
+    X(SphereCalc_calcConcaveVoxelGrid_CreateGrid) \
+    X(SphereCalc_calcConcaveVoxelGrid_GatherPoints) \
+    X(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid) \
+    X(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid2) \
     X(SphereCalc_solveUsingClustering) \
     X(SphereCalc_calcQuality) \
     X(SphereCalc_calcQuality_BadCount) \
@@ -503,26 +512,88 @@ double robot_sphere_representation::SphereCalc::Grid::getDistanceInterp(const V3
   
 }
 
+struct robot_sphere_representation::SphereCalc::ConcaveVoxel
+{
+  ConcaveVoxel(float distance = 1000.0, int flags = 0)
+    : distance_(distance)
+    , flags_(flags)
+  {}
 
-robot_sphere_representation::SphereCalc::SphereCalc(std::size_t nspheres,
-                                                    double resolution,
-                                                    const EigenSTL::vector_Vector3d& required_points,
-                                                    const EigenSTL::vector_Vector3d& optional_points,
-                                                    const std::string& name,
-                                                    GenMethod gen_method,
-                                                    double tolerance,
-                                                    QualMethod qual_method) :
-  gen_method_(gen_method),
-  tolerance_(tolerance),
-  radius2_padding_(resolution*0.1),
-  nspheres_requested_(nspheres),
-  resolution_(resolution),
-  oo_resolution_(1.0/resolution),
-  required_points_(required_points),
-  optional_points_(optional_points),
-  use_required_points_(&required_points_),
-  save_history_(true),
-  name_(name)
+  enum Flags {
+    IN_MESH = 0x00000001,
+    IN_HULL = 0x00000002,
+    IN_PARENT = 0x00000004,
+
+    REQUIRED = 0x00000008,
+    OPTIONAL = 0x00000010,
+
+    IN_SPHERE = 0x00000020,
+  };
+
+  float distance_;
+  char flags_;
+};
+
+class robot_sphere_representation::SphereCalc::ConcaveGrid : public distance_field::VoxelGrid<ConcaveVoxel>
+{
+public:
+  ConcaveGrid(double size_x, double size_y, double size_z, double resolution,
+       double origin_x, double origin_y, double origin_z, const ConcaveVoxel& default_object)
+    : distance_field::VoxelGrid<ConcaveVoxel>(size_x, size_y, size_z, resolution, origin_x, origin_y, origin_z, default_object)
+    // , vorigin_(origin_x, origin_y, origin_z)
+  {}
+
+  
+  ConcaveVoxel& getVoxel(const V3i& point)
+  {
+    return getCell(point.x(), point.y(), point.z());
+  }
+  const ConcaveVoxel& getVoxel(const V3i& point) const
+  {
+    return getCell(point.x(), point.y(), point.z());
+  }
+
+  ConcaveVoxel& getVoxel(const V3& point)
+  {
+    int ix, iy, iz;
+    if (worldToGrid(point.x(), point.y(), point.z(), ix, iy, iz))
+      return getCell(ix, iy, iz);
+    return default_object_;
+  }
+  const ConcaveVoxel& getVoxel(const V3& point) const
+  {
+    int ix, iy, iz;
+    if (worldToGrid(point.x(), point.y(), point.z(), ix, iy, iz))
+      return getCell(ix, iy, iz);
+    return default_object_;
+  }
+
+//private:
+  //V3 vorigin_;
+};
+
+robot_sphere_representation::SphereCalc::SphereCalc(
+      std::size_t nspheres,
+      double resolution,
+      const EigenSTL::vector_Vector3d& required_points,
+      const EigenSTL::vector_Vector3d& optional_points,
+      const robot_state::LinkState* link_state,
+      const std::string& name,
+      GenMethod gen_method,
+      double tolerance,
+      QualMethod qual_method)
+  : gen_method_(gen_method)
+  , tolerance_(tolerance)
+  , radius2_padding_(resolution*0.1)
+  , nspheres_requested_(nspheres)
+  , resolution_(resolution)
+  , oo_resolution_(1.0/resolution)
+  , required_points_(required_points)
+  , optional_points_(optional_points)
+  , use_required_points_(&required_points_)
+  , save_history_(true)
+  , name_(name)
+  , link_state_(link_state)
 {
   current_.qual_method_ = qual_method;
 
@@ -926,6 +997,13 @@ void robot_sphere_representation::SphereCalc::setParams(std::size_t nspheres,
   {
     PROF_PUSH_SCOPED(SphereCalc_setParams);
 
+    if (tolerance_ != tolerance)
+    {
+logInform("RESET (pre):    this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
+      concave_voxel_grid_.reset();
+logInform("RESET (post):   this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
+    }
+
     if (use_required_points_->empty())
     {
       gen_method_ = GenMethod::ZERO_SPHERES;
@@ -1098,6 +1176,12 @@ void robot_sphere_representation::SphereCalc::findSpheres()
 
 void robot_sphere_representation::SphereCalc::solveUsingGreedy2()
 {
+  if (!concave_voxel_grid_)
+    calcConcaveVoxelGrid();
+
+
+
+
   // TODO
   solveUsingGreedy();
 }
@@ -1561,6 +1645,246 @@ void robot_sphere_representation::SphereCalc::createEmptyDistanceField()
 
   df_body_aabb_.clear();
 }
+
+distance_field::PropagationDistanceField* robot_sphere_representation::SphereCalc::getRequiredDistanceField()
+{
+  PROF_PUSH_SCOPED(getRequiredDistanceField);
+
+  AABB aabb;
+  aabb.clear();
+  aabb.add(required_points_);
+
+  V3 aabb_size = aabb.max_ - aabb.min_;
+  aabb.min_.array() -= 2.0 * resolution_;
+  aabb.max_.array() += 2.0 * resolution_;
+
+  for (int i=0; i<3; i++)
+  {
+    double v = aabb.min_(i);
+    double x = std::floor(v * oo_resolution_);
+    aabb.min_(i) = resolution_ * x;
+  }
+
+  V3 aabb_size_ = aabb.max_ - aabb.min_;
+
+  const double max_dist = 2.0 * resolution_;
+
+  distance_field::PropagationDistanceField *df_req = new distance_field::PropagationDistanceField(
+                  df_aabb_size_.x(),
+                  df_aabb_size_.y(),
+                  df_aabb_size_.z(),
+                  resolution_,
+                  df_aabb_.min_.x(),
+                  df_aabb_.min_.y(),
+                  df_aabb_.min_.z(),
+                  max_dist,
+                  false);
+  df_req->addPointsToField(required_points_);
+
+  PROF_POP();
+  return df_req;
+}
+
+void robot_sphere_representation::SphereCalc::getConcaveRequiredPoints(
+      EigenSTL::vector_Vector3d& points) const
+{
+logInform("getConcaveRequiredPoints :%d",__LINE__);
+  points.clear();
+  if (!concave_voxel_grid_)
+    return;
+logInform("getConcaveRequiredPoints :%d",__LINE__);
+
+  int xend = concave_voxel_grid_->getNumCells(distance_field::DIM_X);
+  int yend = concave_voxel_grid_->getNumCells(distance_field::DIM_Y);
+  int zend = concave_voxel_grid_->getNumCells(distance_field::DIM_Z);
+
+  points.reserve(xend * yend * zend);
+  int cnt = 0;
+
+  V3i ipt;
+  for (ipt.x() = xend - 1 ; ipt.x() >= 0 ; --ipt.x())
+  {
+    for (ipt.y() = yend - 1 ; ipt.y() >= 0 ; --ipt.y())
+    {
+      for (ipt.z() = zend - 1 ; ipt.z() >= 0 ; --ipt.z())
+      {
+        ConcaveVoxel &v = concave_voxel_grid_->getVoxel(ipt);
+        if (v.flags_ & ConcaveVoxel::REQUIRED)
+        {
+          points.resize(++cnt);
+          concave_voxel_grid_->gridToWorld(ipt.x(), ipt.y(), ipt.z(), points.back().x(), points.back().y(), points.back().z());
+        }
+      }
+    }
+  }
+logInform("getConcaveRequiredPoints dim:%d %d %d  cnt:%d=%d  :%d",xend,yend,zend,points.size(),cnt,__LINE__);
+logInform("calcConcaveVoxelGrid   this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
+}
+
+bool robot_sphere_representation::SphereCalc::calcConcaveVoxelGrid()
+{
+logInform("calcConcaveVoxelGrid :%d",__LINE__);
+  if (concave_voxel_grid_)
+    return true;
+logInform("calcConcaveVoxelGrid :%d",__LINE__);
+
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid);
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_createMesh);
+
+  const robot_model::LinkModel* lm = link_state_->getLinkModel();
+  const shapes::ShapeConstPtr& shape = lm->getShape();
+  
+  if (!shape)
+    return false;
+
+  double concave_resolution = resolution_ * 0.5;
+  double oo_concave_resolution = 1.0 / concave_resolution;
+  AABB aabb;
+
+  const shapes::Mesh *mesh_shape = dynamic_cast<const shapes::Mesh*>(shape.get());
+  mesh_core::Mesh mesh;
+  bodies::Body *body = NULL;
+
+  if (mesh_shape)
+  {
+    mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
+    mesh.fillGaps();
+    mesh.getAABB(aabb.min_, aabb.max_);
+logInform("calcConcaveVoxelGrid mesh :%d",__LINE__);
+  }
+  else
+  {
+    body = bodies::createBodyFromShape(shape.get());
+    std::vector<double> dim = body->getDimensions();
+    Eigen::Vector3d dimv(dim[0], dim[1], dim[2]);
+    aabb.min_ = dimv * -0.5;
+    aabb.max_ = dimv *  0.5;
+logInform("calcConcaveVoxelGrid body :%d",__LINE__);
+  }
+
+  aabb.min_.array() -= 2.0 * concave_resolution;
+  aabb.max_.array() += 2.0 * concave_resolution;
+
+  for (int i=0; i<3; i++)
+  {
+    double v = aabb.min_(i);
+    double x = std::floor(v * oo_concave_resolution);
+    aabb.min_(i) = concave_resolution * x;
+  }
+
+  Eigen::Vector3d size = aabb.max_ - aabb.min_;
+  
+
+  // create a distance field for required points.
+  // Points in mesh outside this are considered optional.
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_createReqDF);
+  distance_field::PropagationDistanceField *df_req = getRequiredDistanceField();
+  PROF_POP();
+
+
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_CreateGrid);
+
+  concave_voxel_grid_.reset(new ConcaveGrid(
+                                  size.x(),
+                                  size.y(),
+                                  size.z(),
+                                  concave_resolution,
+                                  aabb.min_.x(),
+                                  aabb.min_.y(),
+                                  aabb.min_.z(),
+                                  ConcaveVoxel()));
+logInform("calcConcaveVoxelGrid size=%f %f %f  res=%f  :%d",size.x(), size.y(), size.z(), concave_resolution, __LINE__);
+logInform("calcConcaveVoxelGrid size=%f %f %f  res=%f  :%d",concave_voxel_grid_->getSize(distance_field::DIM_X), concave_voxel_grid_->getSize(distance_field::DIM_Y), concave_voxel_grid_->getSize(distance_field::DIM_Z), concave_voxel_grid_->getResolution(), __LINE__);
+logInform("calcConcaveVoxelGrid dim=%d %d %d   :%d",concave_voxel_grid_->getNumCells(distance_field::DIM_X), concave_voxel_grid_->getNumCells(distance_field::DIM_Y), concave_voxel_grid_->getNumCells(distance_field::DIM_Z), __LINE__);
+                                    
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_GatherPoints);
+
+  const Eigen::Affine3d& xform = link_state_->getGlobalCollisionBodyTransform();
+
+  EigenSTL::vector_Vector3d points;
+  if (mesh_shape)
+  {
+    mesh.getInsidePoints(points, concave_resolution);
+  }
+  else
+  {
+    int xend = concave_voxel_grid_->getNumCells(distance_field::DIM_X);
+    int yend = concave_voxel_grid_->getNumCells(distance_field::DIM_Y);
+    int zend = concave_voxel_grid_->getNumCells(distance_field::DIM_Z);
+logInform("calcConcaveVoxelGrid dim=%f %f %f :%d",xend,yend,zend, __LINE__);
+
+    points.reserve(xend * yend * zend);
+    int cnt = 0;
+
+    V3i ipt;
+    for (ipt.x() = xend - 1 ; ipt.x() >= 0 ; --ipt.x())
+    {
+      for (ipt.y() = yend - 1 ; ipt.y() >= 0 ; --ipt.y())
+      {
+        for (ipt.z() = zend - 1 ; ipt.z() >= 0 ; --ipt.z())
+        {
+          Eigen::Vector3d lpt;
+          concave_voxel_grid_->gridToWorld(ipt.x(), ipt.y(), ipt.z(), lpt.x(), lpt.y(), lpt.z());
+          if (body->containsPoint(lpt.x(), lpt.y(), lpt.z()))
+          {
+            points.push_back(lpt);
+          }
+        }
+      }
+    }
+  }
+logInform("calcConcaveVoxelGrid npoints=%d :%d",points.size(), __LINE__);
+
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid);
+
+int req_cnt = 0;
+int opt_cnt = 0;
+  // find required points - in mesh and near required_points
+  // find optional points - in mesh and outside required_points
+  {
+    EigenSTL::vector_Vector3d::const_iterator it = points.begin();
+    EigenSTL::vector_Vector3d::const_iterator end = points.end();
+    for ( ; it != end ; ++it)
+    {
+      ConcaveVoxel &v = concave_voxel_grid_->getVoxel(*it);
+      Eigen::Vector3d rpoint = xform * *it;
+      double d_req = df_req->getDistance(rpoint.x(), rpoint.y(), rpoint.z());
+      double d_opt = voxel_grid_->getDistanceInterp(rpoint);
+      v.flags_ |= ConcaveVoxel::IN_MESH;
+      v.flags_ |= ConcaveVoxel::IN_HULL;
+      if (d_req < resolution_)
+      {
+        v.flags_ |= ConcaveVoxel::REQUIRED;
+req_cnt++;
+      }
+      else if (d_opt < 0.0)
+      {
+        v.flags_ |= ConcaveVoxel::OPTIONAL;
+opt_cnt++;
+      }
+      v.distance_ = d_opt;
+    }
+  }
+logInform("calcConcaveVoxelGrid npoints=%d   req_cnt=%d  opt_cnt=%d  :%d",points.size(),req_cnt,opt_cnt, __LINE__);
+
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid2);
+
+  delete body;
+  delete df_req;
+
+  PROF_POP();
+
+logInform("calcConcaveVoxelGrid dim=%d %d %d   :%d",concave_voxel_grid_->getSize(distance_field::DIM_X), concave_voxel_grid_->getSize(distance_field::DIM_Y), concave_voxel_grid_->getSize(distance_field::DIM_Z), __LINE__);
+logInform("calcConcaveVoxelGrid   this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
+  return true;
+}
+
+
 
 void robot_sphere_representation::SphereCalc::solveUsingZeroSpheres()
 {
@@ -2119,7 +2443,7 @@ const robot_sphere_representation::SphereCalc* robot_sphere_representation::Link
       points.size(),
       optional_points.size());
 
-    sphere_calc_ = new SphereCalc(nspheres, robot_->resolution_, points, optional_points, getName(), gen_method, tolerance, qual_method);
+    sphere_calc_ = new SphereCalc(nspheres, robot_->resolution_, points, optional_points, lstate_, getName(), gen_method, tolerance, qual_method);
   }
   else
   {

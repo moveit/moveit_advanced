@@ -187,10 +187,20 @@ private:
 class SphereCalc
 {
 public:
+  // nspheres: requested number of spheres (ignored by some methods)
+  // resolution: resolution that was used to generate points and to use for distance field
+  // required_points: sample points in the object.  Should be covered by sphere
+  // optional_points: sample points in the object that are also in the parent object 
   SphereCalc(std::size_t nspheres,
             double resolution,
             const EigenSTL::vector_Vector3d& required_points,
             const EigenSTL::vector_Vector3d& optional_points,
+#if 1
+            const robot_state::LinkState* link_state,
+#else
+            boost::shared_ptr<const shapes::Shape> shape,
+            const Eigen::Affine3d& shape_transform,
+#endif
             const std::string& name = "",
             GenMethod method = GenMethod::DEFAULT,
             double tolerance = 1.0,
@@ -213,6 +223,9 @@ public:
   const std::string& getName() const { return name_; }
 
   const distance_field::PropagationDistanceField* getDistanceField() const { return df_.get(); }
+
+  // get points in (possibly convex) mesh which are required (not in parent)
+  void getConcaveRequiredPoints(EigenSTL::vector_Vector3d& points) const;
 
   // optional points are in the link but overlap the parent link
   const V3iSet& getOptionalPointSet() const;
@@ -261,6 +274,13 @@ private:
   void findRadius2ByLeastDistance();
   void assignExclusiveDistantGoodPoints();
 
+  // get a distance field for the required points.  delete it when done.
+  // distance only propogated outside, and max distance is small (resolution*2)
+  distance_field::PropagationDistanceField* getRequiredDistanceField();
+
+  // calculate concave_voxel_grid_.  Return true on success.
+  bool calcConcaveVoxelGrid();
+
   // distance to closest bad point.  clamped to minimum of resolution/10
   double findClosestBadPointDistance(const Eigen::Vector3d& center, double& exterior_distance);
   Eigen::Vector3d findClosestBadPoint(const Eigen::Vector3d& center);
@@ -292,6 +312,10 @@ private:
   class Grid;
   class Voxel;
   boost::shared_ptr<Grid> voxel_grid_;
+  
+  class ConcaveGrid;
+  class ConcaveVoxel;
+  boost::shared_ptr<ConcaveGrid> concave_voxel_grid_;
   
 
   V3List required_points_;
@@ -349,6 +373,8 @@ private:
   Result best_;
   std::vector<Result> history_; // for debugging
   bool save_history_;
+
+  const robot_state::LinkState *link_state_;
 
   mutable V3iSet optional_point_set_;
   mutable V3iSet thinned_point_set_;
