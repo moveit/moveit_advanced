@@ -230,7 +230,7 @@ public:
   void getBoundingSphere(Eigen::Vector3d& center,
                          double &radius) const;
 
-  // get tight bounding sphere around mesh
+  // get axis aligned bounding box around mesh
   void getAABB(Eigen::Vector3d& min,
                Eigen::Vector3d& max) const;
 
