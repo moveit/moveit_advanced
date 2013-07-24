@@ -117,17 +117,17 @@ namespace moveit_rviz_plugin
 namespace moveit_rviz_plugin
 {
   // Draw Link Spheres from RobotSphereRepresentation
-  class LinkObj_RepLinkSpheres : public PerLinkSubObj
+  class LinkObj_CalcLinkSpheres : public PerLinkSubObj
   {
   public:
-    LinkObj_RepLinkSpheres(PerLinkObjBase *base, DFLink *link) :
+    LinkObj_CalcLinkSpheres(PerLinkObjBase *base, DFLink *link) :
       PerLinkSubObj(base, link)
     {
     }
 
     static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
     {
-      PerLinkObjBase* obj = new PerLinkObj<LinkObj_RepLinkSpheres>(
+      PerLinkObjBase* obj = new PerLinkObj<LinkObj_CalcLinkSpheres>(
                                   parent,
                                   "Show Calc Spheres",
                                   "Show spheres generated with RobotSphereRepresentation.",
@@ -187,6 +187,42 @@ namespace moveit_rviz_plugin
 
 namespace moveit_rviz_plugin
 {
+  // Draw SphereCalc convec points
+  class LinkObj_ConvexPoints : public PerLinkSubObj
+  {
+  public:
+    LinkObj_ConvexPoints(PerLinkObjBase *base, DFLink *link) :
+      PerLinkSubObj(base, link)
+    {
+    }
+
+    static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
+    {
+      PerLinkObjBase* obj = new PerLinkObj<LinkObj_ConvexPoints>(
+                                  parent,
+                                  "Show Convex points",
+                                  "Show points inside link.",
+                                  QColor(255, 78, 214),
+                                  1.0,
+                                  PerLinkObjBase::POINTS,
+                                  0.003);
+      per_link_objects.addVisObject(obj);
+    }
+
+    virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
+    {
+      robot_relative = false;
+      const robot_sphere_representation::SphereCalc* scalc = link_->getLinkSphereRepresentation()->getSphereCalc();
+      if (!scalc)
+        return;
+      scalc->getConcaveRequiredPoints(centers);
+logInform("LinkObj_ConvexPoints found %d points",centers.size());
+    }
+  };
+}
+
+namespace moveit_rviz_plugin
+{
   void getDistanceFieldPoints(const distance_field::DistanceField& df,
                               EigenSTL::vector_Vector3d& points,
                               double max_dist = 0.0,
@@ -224,16 +260,16 @@ namespace moveit_rviz_plugin
 namespace moveit_rviz_plugin
 {
   // Draw Link Spheres from RobotSphereRepresentation
-  class LinkObj_RepDF : public PerLinkSubObj
+  class LinkObj_CalcDF : public PerLinkSubObj
   {
   public:
-    LinkObj_RepDF(PerLinkObjBase *base, DFLink *link) :
+    LinkObj_CalcDF(PerLinkObjBase *base, DFLink *link) :
       PerLinkSubObj(base, link)
     {}
 
     static void addSelf(rviz::Property *parent, PerLinkObjList& per_link_objects)
     {
-      per_link_objects.addVisObject(new PerLinkObj<LinkObj_RepDF>(
+      per_link_objects.addVisObject(new PerLinkObj<LinkObj_CalcDF>(
                                   parent,
                                   "Show Calc DF",
                                   "Show RobotSphereRepresentation distance field.",
@@ -1361,8 +1397,9 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData()
 
   addSphereGenProperties(sphere_gen_category_);
 
-  LinkObj_RepLinkSpheres::addSelf(sphere_gen_category_, *per_link_objects_);
-  LinkObj_RepDF::addSelf(sphere_gen_category_, *per_link_objects_);
+  LinkObj_CalcLinkSpheres::addSelf(sphere_gen_category_, *per_link_objects_);
+  LinkObj_ConvexPoints::addSelf(sphere_gen_category_, *per_link_objects_);
+  LinkObj_CalcDF::addSelf(sphere_gen_category_, *per_link_objects_);
   LinkObj_BCyl::addSelf(sphere_gen_category_, *per_link_objects_);
   LinkObj_SDFBSphere::addSelf(sphere_gen_category_, *per_link_objects_);
   LinkObj_VertBSphere::addSelf(sphere_gen_category_, *per_link_objects_);
