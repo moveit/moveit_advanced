@@ -36,7 +36,7 @@
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
 #include <moveit/robot_sphere_representation/robot_sphere_representation.h>
-#include <moveit/robot_sphere_representation/sphere_rep.h>
+#include <moveit/robot_sphere_representation/sphere_calc.h>
 #include <moveit/robot_model/robot_model.h>
 
 #include <geometric_shapes/shape_operations.h>
@@ -136,7 +136,7 @@ void robot_sphere_representation::LinkSphereRepresentation::genSpheres() const
     break;
 
   default:
-    genSpheresUsingSphereRep();
+    genSpheresUsingSphereCalc();
     break;
   }
   assert(dirty_ == false);
@@ -238,27 +238,32 @@ void robot_sphere_representation::LinkSphereRepresentation::getBoundingCylinder(
   getBody()->computeBoundingCylinder(cylinder);
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::updateSphereRepLink() const
+void robot_sphere_representation::LinkSphereRepresentation::updateSphereCalcLink() const
 {
-  sphere_rep_link_ = robot_->getSphereRepRobot()->getLink(getName());
+  sphere_calc_link_ = robot_->getSphereCalcRobot()->getLink(getName());
   if (gen_method_ != GenMethod::SRDF_EXT)
     dirty_ = true;
 }
 
-void robot_sphere_representation::LinkSphereRepresentation::genSpheresUsingSphereRep() const
+const robot_sphere_representation::SphereCalc* robot_sphere_representation::LinkSphereRepresentation::getSphereCalc() const
 {
-  robot_->ensureSphereRepRobot();
+  robot_->ensureSphereCalcRobot();
 
-  const SphereRep* sphere_rep = sphere_rep_link_->getSphereRep(
-                                                  requested_nspheres_,
-                                                  gen_method_,
-                                                  tolerance_,
-                                                  qual_method_);
+  return sphere_calc_link_->getSphereCalc(
+                                    requested_nspheres_,
+                                    gen_method_,
+                                    tolerance_,
+                                    qual_method_);
+}
+
+void robot_sphere_representation::LinkSphereRepresentation::genSpheresUsingSphereCalc() const
+{
+  const SphereCalc* sphere_rep = getSphereCalc();
   if (sphere_rep)
   {
     radii_ = sphere_rep->getSphereRadii();
     centers_ = sphere_rep->getSphereCenters();
-    sphere_rep_link_->transformRobotToLink(centers_.begin(), centers_.end());
+    sphere_calc_link_->transformRobotToLink(centers_.begin(), centers_.end());
   }
   else
   {

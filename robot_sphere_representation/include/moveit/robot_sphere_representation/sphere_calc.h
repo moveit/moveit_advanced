@@ -34,8 +34,8 @@
 
 /* Author: Acorn Pooley */
 
-#ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_REP_
-#define MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_REP_
+#ifndef MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_CALC_
+#define MOVEIT_ROBOT_SPHERE_REPRESENTATION_SPHERE_CALC_
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
@@ -183,14 +183,24 @@ private:
 };
 
 
-// for finding a set of N spheres which tightly bound the shape in question.
-class SphereRep
+// for calculating a set of N spheres which tightly bound the shape in question.
+class SphereCalc
 {
 public:
-  SphereRep(std::size_t nspheres,
+  // nspheres: requested number of spheres (ignored by some methods)
+  // resolution: resolution that was used to generate points and to use for distance field
+  // required_points: sample points in the object.  Should be covered by sphere
+  // optional_points: sample points in the object that are also in the parent object 
+  SphereCalc(std::size_t nspheres,
             double resolution,
             const EigenSTL::vector_Vector3d& required_points,
             const EigenSTL::vector_Vector3d& optional_points,
+#if 1
+            const robot_state::LinkState* link_state,
+#else
+            boost::shared_ptr<const shapes::Shape> shape,
+            const Eigen::Affine3d& shape_transform,
+#endif
             const std::string& name = "",
             GenMethod method = GenMethod::DEFAULT,
             double tolerance = 1.0,
@@ -214,6 +224,9 @@ public:
 
   const distance_field::PropagationDistanceField* getDistanceField() const { return df_.get(); }
 
+  // get points in (possibly convex) mesh which are required (not in parent)
+  void getConcaveRequiredPoints(EigenSTL::vector_Vector3d& points) const;
+
   // optional points are in the link but overlap the parent link
   const V3iSet& getOptionalPointSet() const;
 
@@ -231,6 +244,7 @@ private:
   void findSpheres();
 
   void solveUsingGreedy(int max_spheres = -1);
+  void solveUsingGreedy2();
   void solveUsingGradientDescent();
   void solveUsingGobble();
   void solveUsingClustering();
@@ -260,10 +274,18 @@ private:
   void findRadius2ByLeastDistance();
   void assignExclusiveDistantGoodPoints();
 
+  // get a distance field for the required points.  delete it when done.
+  // distance only propogated outside, and max distance is small (resolution*2)
+  distance_field::PropagationDistanceField* getRequiredDistanceField();
+
+  // calculate concave_voxel_grid_.  Return true on success.
+  bool calcConcaveVoxelGrid();
+
   // distance to closest bad point.  clamped to minimum of resolution/10
   double findClosestBadPointDistance(const Eigen::Vector3d& center, double& exterior_distance);
   Eigen::Vector3d findClosestBadPoint(const Eigen::Vector3d& center);
 
+  // call func on all sample points that are within min_radius - max_radius distance from center.
   void sphereIterate(
         boost::function<void (const V3*, const V3i*)> func,
         const Eigen::Vector3d& center,
@@ -290,6 +312,10 @@ private:
   class Grid;
   class Voxel;
   boost::shared_ptr<Grid> voxel_grid_;
+  
+  class ConcaveGrid;
+  class ConcaveVoxel;
+  boost::shared_ptr<ConcaveGrid> concave_voxel_grid_;
   
 
   V3List required_points_;
@@ -348,6 +374,8 @@ private:
   std::vector<Result> history_; // for debugging
   bool save_history_;
 
+  const robot_state::LinkState *link_state_;
+
   mutable V3iSet optional_point_set_;
   mutable V3iSet thinned_point_set_;
   mutable V3iSet corner_point_set_;
@@ -369,7 +397,7 @@ public:
   void clusterPoints(std::size_t nclusters);
   EigenSTL::vector_Vector3d getClusterPoints(std::size_t nclusters,
                                              std::size_t cluster_idx);
-  const SphereRep* getSphereRep(std::size_t nspheres,
+  const SphereCalc* getSphereCalc(std::size_t nspheres,
                                 GenMethod method = GenMethod::DEFAULT,
                                 double tolerance = 1.0,
                                 QualMethod qual_method = QualMethod::DEFAULT);
@@ -396,7 +424,7 @@ private:
   bool has_collision_;    // worth colliding after culling?
   bodies::Body* body_;
   PointCluster *cluster_;
-  SphereRep *sphere_rep_;
+  SphereCalc *sphere_calc_;
 
   friend class Robot;
 };
@@ -415,6 +443,7 @@ public:
   void gridToWorld(const V3i& grid, Eigen::Vector3d& world) const;
   void worldToGrid(const Eigen::Vector3d& world, V3i& grid) const;
 
+  // get a marker showing all points inside link's mesh.
   void getLinkAllPointsMarker(
                         const std::string& link_name,
                         visualization_msgs::Marker& m,
@@ -423,6 +452,8 @@ public:
                         const std::string ns = "",
                         int id=0) const;
 
+  // get a marker showing all points inside link's mesh after removing extra points.
+  // Points are removed if they are contained in the parent (or sometimes in a child).
   void getLinkFinalPointsMarker(
                         const std::string& link_name,
                         visualization_msgs::Marker& m,
@@ -431,6 +462,7 @@ public:
                         const std::string ns = "",
                         int id=0) const;
 
+  // get a marker showing points in one cluster.
   void getLinkClusterPointsMarker(
                         const std::string& link_name,
                         std::size_t nclusters,
@@ -440,7 +472,9 @@ public:
                         const Eigen::Vector4d& color = Eigen::Vector4d(1,1,1,1),
                         const std::string ns = "",
                         int id=0);
-  const SphereRep* getLinkSphereRep(
+
+  // return the SphereCalc for this link.  This can be queried to determine how the spheres were generated for debugging.
+  const SphereCalc* getLinkSphereCalc(
                         const std::string& link_name,
                         std::size_t nspheres,
                         GenMethod method = GenMethod::DEFAULT,
@@ -492,6 +526,192 @@ private:
 };
 
 
+#define ACORN_USE_DFLINKGRID 0
+#if ACORN_USE_DFLINKGRID
+
+template<T>
+class DFGrid
+{
+public:
+  DFGrid(const Eigen::Vector3d& origin,
+         const Eigen::Vector3d& size,
+         double resolution);
+  ~DFGrid();
+
+  void resize(const Eigen::Vector3d& origin,
+              const Eigen::Vector3d& size,
+              double resolution);
+
+  bool worldToGrid(const Eigen::Vector3d& world, Eigen::Vector3i& grid) const;
+  void gridToWorld(const Eigen::Vector3i& grid, Eigen::Vector3d& world) const;
+
+  const T& voxel(const Eigen::Vector3d& world) const;
+  const T& voxel(const Eigen::Vector3i& grid) const;
+
+  T& voxel(const Eigen::Vector3d& world);
+  T& voxel(const Eigen::Vector3i& grid);
+
+  const Eigen::Vector3d& getOrigin() const { return origin_; }
+  const Eigen::Vector3d& getSize() const { return size_; }
+  const Eigen::Vector3i& getISize() const { return isize_; }
+  double getResolution() const { return resolution_; }
+
+  void clear(const T& val);
+         
+private:
+  int index(const Eigen::Vector3i& grid) const;
+
+  Eigen::Vector3d origin_;
+  Eigen::Vector3d origin_minus_;
+  Eigen::Vector3d size_;
+  Eigen::Vector3i isize_;
+  double resolution_;
+  double oo_resolution_;
+  int zstride_;
+  int total_cells_;
+  int max_dist_;
+  int *sqrt_table_;
+
+protected:
+  T  outside_;  // cell returned when world coordinates are outside range
+  T *data_;
+};
+
+
+struct DFVoxel
+{
+  enum Flags
+  {
+    IN_MESH = 0x00000001,
+    IN_HULL = 0x00000002,
+    IN_PARENT = 0x00000004,
+    IN_CHILD = 0x00000008,
+  };
+
+  int flag_;  // values from Flags
+  int dsq_;   // distance squared to nearest mesh vertex, or 0 if outside mesh
+};
+
+class DFLinkGrid : public DFGrid<DFVoxel>
+{
+public:
+  DFLinkGrid(const Eigen::Vector3d& origin,
+             const Eigen::Vector3d& size,
+             double resolution);
+  
+  // clear all values to empty
+  void clear();
+
+private:
+};
+#endif
+
+
+
 }
+
+#if ACORN_USE_DFLINKGRID
+template<T>
+inline robot_sphere_representation::DFGrid<T>::DFGrid(
+      Eigen::Vector3d origin,
+      Eigen::Vector3d size,
+      double resolution)
+  : data_(NULL)
+{
+  resize(origin, size, resolution);
+}
+
+template<T>
+inline robot_sphere_representation::DFGrid<T>::~DFGrid()
+{
+  delete[] data_;
+}
+
+template<T>
+inline void robot_sphere_representation::DFGrid<T>::resize(
+      Eigen::Vector3d origin,
+      Eigen::Vector3d size,
+      double resolution)
+{
+  delete data_;
+
+  origin_ = origin;
+  size_ = size;
+  resolution_ = resolution;
+  oo_resolution_ = 1.0 / resolution;
+  Eigen::Vector3d size_tmp = size * oo_resolution_;
+  isize_.x() = std::max(1, int(ceil(size_.x() * oo_resolution_)));
+  isize_.y() = std::max(1, int(ceil(size_.y() * oo_resolution_)));
+  isize_.z() = std::max(1, int(ceil(size_.z() * oo_resolution_)));
+  origin_minus_ = origin_ - (0.5 * resolution_);
+  zstride_ = isize_.x() * isize_.y();
+
+  max_dist_ = 
+
+  total_cells_ = isize_.x() * isize_.y() * isize_.z();
+  data_ = new T[total_cells_];
+}
+
+template<T>
+inline bool robot_sphere_representation::DFGrid<T>::worldToGrid(const Eigen::Vector3d& world, Eigen::Vector3i& grid) const
+{
+  Eigen::Vector3d& fgrid = (world - origin_minus_) * oo_resolution_;
+  grid.x() = int(std::floor(fgrid.x());
+  grid.y() = int(std::floor(fgrid.y());
+  grid.z() = int(std::floor(fgrid.z());
+  return grid.x() >= 0 &&
+         grid.x() < isize_.x() &&
+         grid.y() >= 0 &&
+         grid.y() < isize_.y() &&
+         grid.z() >= 0 &&
+         grid.z() < isize_.z();
+}
+
+template<T>
+inline void robot_sphere_representation::DFGrid<T>::clear(const T& val)
+{
+  outside_ = val;
+  for (int i = total_cells_ - 1 ; i >= 0 ; --i)
+    data_[i] = outside_;
+}
+
+template<T>
+inline void robot_sphere_representation::DFGrid<T>::gridToWorld(const Eigen::Vector3i& grid, Eigen::Vector3d& world) const
+{
+  world = Eigen::Vector3d(grid) * resolution_ + origin_;
+}
+
+template<T>
+inline const T& robot_sphere_representation::DFGrid<T>::index(const Eigen::Vector3i& grid) const
+{
+  return grid.x() + grid.y() * isize_.x() + grid.z() * zstride_;
+}
+
+template<T>
+inline const T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3i& grid) const
+{
+  return data_[index(grid)];
+}
+
+template<T>
+inline T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3i& grid)
+{
+  return data_[index(grid)];
+}
+
+template<T>
+inline const T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3d& world) const
+{
+  Eigen::Vector3i& grid;
+  return worldToGrid(world, grid) ? data_[index(grid)] : outside_;
+}
+
+template<T>
+inline T& robot_sphere_representation::DFGrid<T>::voxel(const Eigen::Vector3d& world)
+{
+  Eigen::Vector3i& grid;
+  return worldToGrid(world, grid) ? data_[index(grid)] : outside_;
+}
+#endif
 
 #endif

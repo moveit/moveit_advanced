@@ -46,12 +46,16 @@ namespace collision_detection
 
 class StaticDistanceField;
 
+// information about a contact detected by distance field
 struct DFContact : public Contact
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   // clear all fields, then copy Contact part from <contact>
   void copyFrom(const Contact& contact);
+
+  // clear all fields
+  void clear();
 
 
   // sphere_centers are in planning frame coordinate system

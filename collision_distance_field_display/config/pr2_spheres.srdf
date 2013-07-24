@@ -1,0 +1,1679 @@
+<?xml version="1.0" ?>
+<!--This does not replace URDF, and is not an extension of URDF.
+    This is a format for representing semantic information about the robot structure.
+    A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
+-->
+<robot name="pr2">
+    <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
+    <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
+    <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
+    <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
+    <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+    <group name="base">
+        <joint name="world_joint" />
+    </group>
+    <group name="left_arm">
+        <chain base_link="torso_lift_link" tip_link="l_wrist_roll_link" />
+    </group>
+    <group name="left_arm_and_torso">
+        <chain base_link="base_link" tip_link="l_wrist_roll_link" />
+    </group>
+    <group name="right_arm">
+        <chain base_link="torso_lift_link" tip_link="r_wrist_roll_link" />
+    </group>
+    <group name="right_arm_and_torso">
+        <chain base_link="base_link" tip_link="r_wrist_roll_link" />
+    </group>
+    <group name="arms">
+        <group name="left_arm" />
+        <group name="right_arm" />
+    </group>
+    <group name="head">
+        <joint name="head_pan_joint" />
+        <joint name="head_tilt_joint" />
+    </group>
+    <group name="torso">
+        <joint name="torso_lift_joint" />
+    </group>
+    <group name="whole_body">
+        <group name="base" />
+        <group name="arms" />
+        <group name="torso" />
+    </group>
+    <group name="right_gripper">
+        <link name="r_gripper_palm_link" />
+        <link name="r_gripper_led_frame" />
+        <link name="r_gripper_motor_accelerometer_link" />
+        <link name="r_gripper_tool_frame" />
+        <link name="r_gripper_motor_slider_link" />
+        <link name="r_gripper_motor_screw_link" />
+        <link name="r_gripper_l_finger_link" />
+        <link name="r_gripper_l_finger_tip_link" />
+        <link name="r_gripper_r_finger_link" />
+        <link name="r_gripper_r_finger_tip_link" />
+        <link name="r_gripper_l_finger_tip_frame" />
+    </group>
+    <group name="left_gripper">
+        <link name="l_gripper_palm_link" />
+        <link name="l_gripper_led_frame" />
+        <link name="l_gripper_motor_accelerometer_link" />
+        <link name="l_gripper_tool_frame" />
+        <link name="l_gripper_motor_slider_link" />
+        <link name="l_gripper_motor_screw_link" />
+        <link name="l_gripper_l_finger_link" />
+        <link name="l_gripper_l_finger_tip_link" />
+        <link name="l_gripper_r_finger_link" />
+        <link name="l_gripper_r_finger_tip_link" />
+        <link name="l_gripper_l_finger_tip_frame" />
+    </group>
+    <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
+    <group_state name="tuck_right_arm" group="right_arm">
+        <joint name="r_elbow_flex_joint" value="-2.12441" />
+        <joint name="r_forearm_roll_joint" value="-1.4175" />
+        <joint name="r_shoulder_lift_joint" value="1.10728" />
+        <joint name="r_shoulder_pan_joint" value="-0.023593" />
+        <joint name="r_upper_arm_roll_joint" value="-1.55669" />
+        <joint name="r_wrist_flex_joint" value="-1.8417" />
+        <joint name="r_wrist_roll_joint" value="0.21436" />
+    </group_state>
+    <group_state name="tuck_left_arm" group="left_arm">
+        <joint name="l_elbow_flex_joint" value="-1.68339" />
+        <joint name="l_forearm_roll_joint" value="-1.73434" />
+        <joint name="l_shoulder_lift_joint" value="1.24853" />
+        <joint name="l_shoulder_pan_joint" value="0.06024" />
+        <joint name="l_upper_arm_roll_joint" value="1.78907" />
+        <joint name="l_wrist_flex_joint" value="-0.0962141" />
+        <joint name="l_wrist_roll_joint" value="-0.0864407" />
+    </group_state>
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <end_effector name="right_eef" parent_link="r_wrist_roll_link" group="right_gripper" />
+    <end_effector name="left_eef" parent_link="l_wrist_roll_link" group="left_gripper" />
+    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    <virtual_joint name="world_joint" type="planar" parent_frame="odom_combined" child_link="base_footprint" />
+    <!--PASSIVE JOINT: Purpose: this element is used to mark joints that are not actuated-->
+    <passive_joint name="world_joint" />
+    <!--COLLISION SPHERES: Purpose: Define a set of spheres that bounds a link.-->
+    <link_sphere_approximation link="base_bellow_link">
+        <sphere center="-0.0099999932944774827526 -0.11999999731779098511 -0.041000018104910940231" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 -0.059999998658895492554 0.0489999798834322986" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0.029999999329447746277 -0.041000018104910940231" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0.089999997988343238831 0.0489999798834322986" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0.14999999664723873138 -0.071000017434358686508" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 -0.14999999664723873138 0.078999979212880044876" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0.14999999664723873138 0.078999979212880044876" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 -0.059999998658895492554 -0.10100001676380643278" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0 0.078999979212880044876" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 -0.17999999597668647766 -0.071000017434358686508" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0.17999999597668647766 -0.011000018775463193954" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0.059999998658895492554 -0.10100001676380643278" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 -0.17999999597668647766 0.018999980553984552323" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 -0.089999997988343238831 0.10899997854232779115" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 -0.029999999329447746277 -0.011000018775463193954" radius="0.06" />
+        <sphere center="-0.0099999932944774827526 0.059999998658895492554 0.10899997854232779115" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="base_footprint">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="base_laser_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="base_link">
+        <sphere center="-0.089999997988343238831 -0.029999999329447746277 0.27899999262392521926" radius="0.274662" />
+        <sphere center="0.11999999731779098511 0.14999999664723873138 0.18899999463558198043" radius="0.213" />
+        <sphere center="0.11999999731779098511 -0.17999999597668647766 0.18899999463558198043" radius="0.20647" />
+        <sphere center="-0.20999999530613422394 0.20999999530613422394 0.15899999530613423415" radius="0.183" />
+        <sphere center="-0.20999999530613422394 0.11999999731779098511 0.4889999879300594432" radius="0.155971" />
+        <sphere center="-0.23999999463558197021 -0.11999999731779098511 0.51899998725950713396" radius="0.153" />
+        <sphere center="-0.20999999530613422394 -0.23999999463558197021 0.12899999597668648788" radius="0.143712" />
+        <sphere center="-0.029999999329447746277 0.20999999530613422394 0.39899998994171620437" radius="0.0978683" />
+        <sphere center="0.23999999463558197021 -0.029999999329447746277 0.098999996647238741598" radius="0.106923" />
+        <sphere center="-0.23999999463558197021 0.20999999530613422394 0.33899999128282071181" radius="0.11525" />
+        <sphere center="-0.26999999396502971649 -0.23999999463558197021 0.27899999262392521926" radius="0.106923" />
+        <sphere center="-0.029999999329447746277 0.26999999396502971649 0.098999996647238741598" radius="0.106923" />
+        <sphere center="-0.059999998658895492554 -0.26999999396502971649 0.098999996647238741598" radius="0.093" />
+        <sphere center="-0.29999999329447746277 -0.029999999329447746277 0.068999997317790995321" radius="0.0764847" />
+        <sphere center="-0.26999999396502971649 0.029999999329447746277 0.60899998524785037279" radius="0.0878528" />
+        <sphere center="0.23999999463558197021 -0.029999999329447746277 0.27899999262392521926" radius="0.093" />
+        <sphere center="-0.26999999396502971649 -0.20999999530613422394 0.39899998994171620437" radius="0.11525" />
+        <sphere center="-0.29999999329447746277 0.17999999597668647766 0.60899998524785037279" radius="0.0878528" />
+        <sphere center="-0.11999999731779098511 -0.20999999530613422394 0.4889999879300594432" radius="0.093" />
+        <sphere center="0.20999999530613422394 0.29999999329447746277 0.068999997317790995321" radius="0.0764847" />
+        <sphere center="-0.059999998658895492554 0.26999999396502971649 0.27899999262392521926" radius="0.0764847" />
+        <sphere center="0.26999999396502971649 -0.26999999396502971649 0.068999997317790995321" radius="0.0454264" />
+        <sphere center="0 -0.23999999463558197021 0.42899998927116395064" radius="0.070082" />
+        <sphere center="-0.29999999329447746277 -0.11999999731779098511 0.098999996647238741598" radius="0.0764847" />
+        <sphere center="-0.29999999329447746277 0.059999998658895492554 0.098999996647238741598" radius="0.0764847" />
+        <sphere center="-0.089999997988343238831 -0.29999999329447746277 0.21899999396502972671" radius="0.0764847" />
+        <sphere center="-0.29999999329447746277 -0.17999999597668647766 0.66899998390674586535" radius="0.0454264" />
+        <sphere center="0.26999999396502971649 0.14999999664723873138 0.038999997988343242106" radius="0.033" />
+        <sphere center="-0.29999999329447746277 -0.089999997988343238831 0.66899998390674586535" radius="0.033" />
+        <sphere center="0.26999999396502971649 0.29999999329447746277 0.18899999463558198043" radius="0.0549615" />
+        <sphere center="-0.029999999329447746277 -0.29999999329447746277 0.33899999128282071181" radius="0.063" />
+        <sphere center="0.29999999329447746277 -0.17999999597668647766 0.038999997988343242106" radius="0.033" />
+        <sphere center="0.29999999329447746277 0.23999999463558197021 0.068999997317790995321" radius="0.0454264" />
+        <sphere center="-0.059999998658895492554 0.14999999664723873138 0.068999997317790995321" radius="0.0764847" />
+        <sphere center="0.089999997988343238831 0.29999999329447746277 0.038999997988343242106" radius="0.033" />
+        <sphere center="0.17999999597668647766 -0.32999999262392520905 0.038999997988343242106" radius="0.063" />
+        <sphere center="0.089999997988343238831 0.14999999664723873138 0.39899998994171620437" radius="0.0454264" />
+        <sphere center="-0.32999999262392520905 0 0.42899998927116395064" radius="0.033" />
+        <sphere center="-0.32999999262392520905 0.11999999731779098511 0.33899999128282071181" radius="0.033" />
+        <sphere center="0.059999998658895492554 0.29999999329447746277 0.33899999128282071181" radius="0.063" />
+        <sphere center="-0.32999999262392520905 0.23999999463558197021 0.42899998927116395064" radius="0.063" />
+        <sphere center="-0.14999999664723873138 -0.29999999329447746277 0.30899999195337296554" radius="0.033" />
+        <sphere center="0.14999999664723873138 0.029999999329447746277 0.39899998994171620437" radius="0.063" />
+        <sphere center="0.17999999597668647766 -0.089999997988343238831 0.36899999061226845809" radius="0.0454264" />
+        <sphere center="-0.14999999664723873138 0.26999999396502971649 0.42899998927116395064" radius="0.0454264" />
+        <sphere center="-0.089999997988343238831 0.23999999463558197021 0.51899998725950713396" radius="0.0454264" />
+        <sphere center="0.029999999329447746277 -0.32999999262392520905 0.038999997988343242106" radius="0.063" />
+        <sphere center="0.26999999396502971649 0.059999998658895492554 0.30899999195337296554" radius="0.0454264" />
+        <sphere center="0.29999999329447746277 0.059999998658895492554 0.038999997988343242106" radius="0.033" />
+        <sphere center="-0.32999999262392520905 -0.26999999396502971649 0.038999997988343242106" radius="0.063" />
+        <sphere center="-0.32999999262392520905 -0.14999999664723873138 0.18899999463558198043" radius="0.033" />
+        <sphere center="-0.20999999530613422394 0.029999999329447746277 0.038999997988343242106" radius="0.033" />
+        <sphere center="-0.14999999664723873138 0.29999999329447746277 0.30899999195337296554" radius="0.033" />
+        <sphere center="0.089999997988343238831 0.23999999463558197021 0.39899998994171620437" radius="0.0549615" />
+        <sphere center="0.29999999329447746277 0.029999999329447746277 0.18899999463558198043" radius="0.033" />
+        <sphere center="-0.32999999262392520905 -0.20999999530613422394 0.60899998524785037279" radius="0.033" />
+        <sphere center="-0.32999999262392520905 -0.029999999329447746277 0.66899998390674586535" radius="0.033" />
+        <sphere center="-0.32999999262392520905 0.059999998658895492554 0.39899998994171620437" radius="0.033" />
+        <sphere center="-0.32999999262392520905 0.089999997988343238831 0.66899998390674586535" radius="0.033" />
+        <sphere center="-0.20999999530613422394 -0.089999997988343238831 0.038999997988343242106" radius="0.033" />
+        <sphere center="-0.17999999597668647766 -0.32999999262392520905 0.24899999329447747298" radius="0.033" />
+        <sphere center="-0.14999999664723873138 -0.26999999396502971649 0.39899998994171620437" radius="0.033" />
+        <sphere center="-0.059999998658895492554 0.17999999597668647766 0.51899998725950713396" radius="0.033" />
+        <sphere center="-0.029999999329447746277 -0.14999999664723873138 0.038999997988343242106" radius="0.033" />
+        <sphere center="0 0.11999999731779098511 0.4889999879300594432" radius="0.033" />
+        <sphere center="0.11999999731779098511 -0.029999999329447746277 0.038999997988343242106" radius="0.033" />
+        <sphere center="0.23999999463558197021 -0.32999999262392520905 0.098999996647238741598" radius="0.033" />
+        <sphere center="0.23999999463558197021 0.32999999262392520905 0.24899999329447747298" radius="0.033" />
+        <sphere center="0.29999999329447746277 -0.26999999396502971649 0.24899999329447747298" radius="0.033" />
+        <sphere center="0.29999999329447746277 0.26999999396502971649 0.24899999329447747298" radius="0.0105" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="bl_caster_l_wheel_link">
+        <sphere center="-0.03039999430030584926 -0.034200001005772549811 -0.011399993629921056915" radius="0.033" />
+        <sphere center="0.028439750346678976944 -0.040539746826192747664 -0.017739739450403357868" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="bl_caster_r_wheel_link">
+        <sphere center="-0.015399994635581976121 -0.049200000670677604409 0.025600003352520356303" radius="0.0454264" />
+        <sphere center="0.044600004023313516432 -0.019200001341229858132 0.02560000335266723881" radius="0.0454264" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="bl_caster_rotation_link">
+        <sphere center="-0.015399994635581976121 -0.014600004693865770156 -0.019200001341104500074" radius="0.06" />
+        <sphere center="0.044600004023313516432 0.015399994635581976121 -0.019200001341104500074" radius="0.06" />
+        <sphere center="-0.075399993294477468675 0.015399994635581976121 -0.019200001341104500074" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="br_caster_l_wheel_link">
+        <sphere center="-0.03039999430030584926 -0.034200001005776463348 -0.010600003688204823193" radius="0.033" />
+        <sphere center="0.028439750346678976944 -0.0405397468261966612 -0.016939749508687151902" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="br_caster_r_wheel_link">
+        <sphere center="-0.015399994635581976121 -0.049200000670681517945 0.026399993294236534513" radius="0.0454264" />
+        <sphere center="0.044600004023313516432 -0.019200001341233771668 0.026399993294383472531" radius="0.0454264" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="br_caster_rotation_link">
+        <sphere center="-0.015399994635581976121 -0.015399994635581976121 -0.019200001341104500074" radius="0.06" />
+        <sphere center="0.044600004023313516432 0.014600004693865770156 -0.019200001341104500074" radius="0.06" />
+        <sphere center="-0.075399993294477468675 0.014600004693865770156 -0.019200001341104500074" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="double_stereo_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="fl_caster_l_wheel_link">
+        <sphere center="-0.024296703618228554511 -0.036396700097846838851 0.0036000060347921025716" radius="0.0447103" />
+        <sphere center="0.045399993965029722398 -0.019200001340975228481 -0.026399993294571433289" radius="0.0454264" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="fl_caster_r_wheel_link">
+        <sphere center="-0.014600004693865770156 -0.049200000670677604409 0.025600003352520356303" radius="0.0454264" />
+        <sphere center="0.045399993965029722398 -0.019200001341229858132 0.02560000335266723881" radius="0.0454264" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="fl_caster_rotation_link">
+        <sphere center="-0.014600004693865770156 -0.014600004693865770156 -0.019200001341104500074" radius="0.06" />
+        <sphere center="0.045399993965029722398 0.015399994635581976121 -0.019200001341104500074" radius="0.06" />
+        <sphere center="-0.074600003352761262709 0.015399994635581976121 -0.019200001341104500074" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="fr_caster_l_wheel_link">
+        <sphere center="-0.029600004358589643294 -0.034200001005776463348 -0.010600003688204823193" radius="0.033" />
+        <sphere center="0.02923974028839518291 -0.0405397468261966612 -0.016939749508687151902" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="fr_caster_r_wheel_link">
+        <sphere center="-0.014600004693865770156 -0.049200000670681517945 0.026399993294236534513" radius="0.0454264" />
+        <sphere center="0.045399993965029722398 -0.019200001341233771668 0.026399993294383472531" radius="0.0454264" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="fr_caster_rotation_link">
+        <sphere center="-0.014600004693865770156 -0.015399994635581976121 -0.019200001341104500074" radius="0.06" />
+        <sphere center="0.045399993965029722398 0.014600004693865770156 -0.019200001341104500074" radius="0.06" />
+        <sphere center="-0.074600003352761262709 0.014600004693865770156 -0.019200001341104500074" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_mount_kinect_ir_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_mount_kinect_ir_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_mount_kinect_rgb_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_mount_kinect_rgb_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_mount_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_mount_prosilica_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_mount_prosilica_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_pan_link">
+        <sphere center="0.067070000000000004614 -0.029999999329447746277 -0.020375029504299257965" radius="0.09" />
+        <sphere center="0.037070000670552258337 0.089999997988343238831 -0.020375029504299257965" radius="0.09" />
+        <sphere center="-0.022929997988343234216 -0.059999998658895492554 -0.020375029504299257965" radius="0.0724264" />
+        <sphere center="-0.08292999664723872677 0.029999999329447746277 -0.050375028833747004242" radius="0.06" />
+        <sphere center="0.067070000000000004614 -0.11999999731779098511 0.0096249698251484883116" radius="0.06" />
+        <sphere center="0.12706999865889551105 0.11999999731779098511 -0.020375029504299257965" radius="0.06" />
+        <sphere center="-0.08292999664723872677 0.11999999731779098511 -0.050375028833747004242" radius="0.06" />
+        <sphere center="0.097069999329447750891 -0.11999999731779098511 -0.050375028833747004242" radius="0.06" />
+        <sphere center="-0.052929997317790980493 -0.11999999731779098511 -0.050375028833747004242" radius="0.06" />
+        <sphere center="0.12706999865889551105 0.059999998658895492554 -0.050375028833747004242" radius="0.06" />
+        <sphere center="0.097069999329447750891 0.14999999664723873138 0.039624969154596234588" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_plate_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="head_tilt_link">
+        <sphere center="-0.060929998658895492825 -0.029999999329447746277 0.099624967813491727142" radius="0.09" />
+        <sphere center="-0.00093000000000000027089 0.059999998658895492554 0.099624967813491727142" radius="0.09" />
+        <sphere center="-0.090929997988343239101 0.089999997988343238831 0.099624967813491727142" radius="0.09" />
+        <sphere center="0.029069999329447746006 -0.089999997988343238831 0.099624967813491727142" radius="0.09" />
+        <sphere center="-0.12092999731779098538 -0.11999999731779098511 0.099624967813491727142" radius="0.06" />
+        <sphere center="-0.15092999664723871778 -0.029999999329447746277 0.12962496714293947342" radius="0.06" />
+        <sphere center="-0.060929998658895492825 -0.11999999731779098511 0.069624968484043980865" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="high_def_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="high_def_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="imu_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_elbow_flex_link">
+        <sphere center="0.066117923573013381855 0.0069999956414103503555 -0.068513299873348310065" radius="0.036541" />
+        <sphere center="0.095233839285189247903 -0.008000004023313522783 0.011187786257120468925" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_forearm_cam_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_forearm_cam_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_forearm_link">
+        <sphere center="0.18949288327174573787 -0.008000004023313522783 0.021922413610179103394" radius="0.09" />
+        <sphere center="0.29639821986287562261 -0.03800000335276126906 0.0054527905025766876257" radius="0.0819615" />
+        <sphere center="0.10788013188976242063 -0.03800000335276126906 -0.016016464203540692335" radius="0.06" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_forearm_roll_link">
+        <sphere center="0.095233839285189247903 0.051999994635581969771 0.011187786257120468925" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_l_finger_link">
+        <sphere center="0.023706288840959377495 0.011999995306134214612 0.021149267965816287429" radius="0.0454264" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_l_finger_tip_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_l_finger_tip_link">
+        <sphere center="0.023158664457265443204 -0.022950004023313541612 -0.0062605055662527941962" radius="0.0549615" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_led_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_motor_accelerometer_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_motor_screw_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_motor_slider_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_palm_link">
+        <sphere center="0.078979076311959328649 -0.010196703115314370569 -0.00029731666867616191041" radius="0.0507802" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_r_finger_link">
+        <sphere center="0.02191189791578751489 0.015196702780033571889 -0.022416409673939430292" radius="0.037649" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_r_finger_tip_link">
+        <sphere center="-0.018652240495670824316 0.023050003352764025788 0.013461071276681613185" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_gripper_tool_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_shoulder_lift_link">
+        <sphere center="0.069999997317790982332 -0.015500003855675459352 0.083574976698309155765" radius="0.0772462" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_shoulder_pan_link">
+        <sphere center="0.050000000000000002776 0.021999995306134223494 -0.20892501676380637043" radius="0.143712" />
+        <sphere center="0.10999999865889549533 0.021999995306134223494 0.0010749785423278535035" radius="0.153" />
+        <sphere center="-0.0099999986588954897782 -0.008000004023313522783 -0.35892501341104510182" radius="0.143712" />
+        <sphere center="-0.039999997988343236055 0.051999994635581969771 -0.088925019446015385327" radius="0.0764847" />
+        <sphere center="-0.0099999986588954897782 0.081999993965029716048 0.091074976530671092334" radius="0.070082" />
+        <sphere center="0.13999999798834322773 -0.068000002682209015337 -0.1189250187754631316" radius="0.093" />
+        <sphere center="-0.0099999986588954897782 0.11199999329447746232 -0.47892501072883608693" radius="0.063" />
+        <sphere center="0.13999999798834322773 -0.098000002011656761614 0.091074976530671092334" radius="0.0454264" />
+        <sphere center="-0.099999996647238728609 0.051999994635581969771 -0.23892501609325411671" radius="0.063" />
+        <sphere center="0.079999999329447749052 0.11199999329447746232 -0.41892501206994059437" radius="0.033" />
+        <sphere center="0.13999999798834322773 0.11199999329447746232 -0.1189250187754631316" radius="0.0454264" />
+        <sphere center="0.19999999664723872028 -0.098000002011656761614 0.03107497787177559978" radius="0.033" />
+        <sphere center="-0.069999997317790982332 0.081999993965029716048 0.0010749785423278535035" radius="0.033" />
+        <sphere center="0.079999999329447749052 0.11199999329447746232 -0.32892501408159735554" radius="0.033" />
+        <sphere center="0.10999999865889549533 -0.098000002011656761614 -0.32892501408159735554" radius="0.033" />
+        <sphere center="0.13999999798834322773 -0.098000002011656761614 -0.23892501609325411671" radius="0.0243397" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_torso_lift_side_plate_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_upper_arm_link">
+        <sphere center="0.34530329202318182924 -0.008000004023313522783 0.0063782792826889700422" radius="0.114077" />
+        <sphere center="0.18999999463558198132 -0.008000004023313522783 0.0010749785423278535035" radius="0.111167" />
+        <sphere center="0.45566986167847539635 -0.042330130274897570519 0.026744850949639298321" radius="0.0529644" />
+        <sphere center="0.45999998860061169781 -0.008000004023313522783 -0.028925020787119892773" radius="0.0454264" />
+        <sphere center="0.42999998927116395153 -0.068000002682209015337 -0.05892502011656763905" radius="0.0454264" />
+        <sphere center="0.45999998860061169781 0.021999995306134223494 0.061074977201223346057" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_upper_arm_roll_link">
+        <sphere center="0.12999999597668648876 0.0048032965494095025694 -0.031121719879120712804" radius="0.037649" />
+        <sphere center="0.12999999597668648876 0.021999995306134223494 0.03107497787177559978" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_wrist_flex_link">
+        <sphere center="0.024195044645521024407 -0.008000004023313522783 -0.035062768407987165986" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="l_wrist_roll_link">
+        <sphere center="0.04150021426677219516 0.021999995306134223494 -0.010557033076302291263" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="laser_tilt_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="laser_tilt_mount_link">
+        <sphere center="0.04106999798834323756 -0.059999998658895492554 0.014074973177909733124" radius="0.0549615" />
+        <sphere center="0.04106999798834323756 0.029999999329447746277 0.014074973177909733124" radius="0.0549615" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="narrow_stereo_l_stereo_camera_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="narrow_stereo_l_stereo_camera_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="narrow_stereo_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="narrow_stereo_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="narrow_stereo_r_stereo_camera_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="narrow_stereo_r_stereo_camera_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="projector_wg6802418_child_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="projector_wg6802418_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_elbow_flex_link">
+        <sphere center="0.066117923573013381855 -0.0069999956414103503555 -0.068513299873348310065" radius="0.036541" />
+        <sphere center="0.095233839285189247903 -0.021999995306134223494 0.011187786257120468925" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_forearm_cam_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_forearm_cam_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_forearm_link">
+        <sphere center="0.17589075804141529602 0.008000004023313522783 0.01559926730789246152" radius="0.0837775" />
+        <sphere center="0.29639821986287562261 -0.014499995473772286925 0.0054527905025766876257" radius="0.0737549" />
+        <sphere center="0.10788013188976242063 -0.021999995306134223494 -0.016016464203540692335" radius="0.0454264" />
+        <sphere center="0.095233839285189247903 0.03800000335276126906 0.011187786257120468925" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_forearm_roll_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_l_finger_link">
+        <sphere center="0.065517193793895645015 -0.0019999959766864860988 0.028349833676249769354" radius="0.033" />
+        <sphere center="-0.00079944649072549722746 -0.0019999959766864860988 0.038454437587067458182" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_l_finger_tip_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_l_finger_tip_link">
+        <sphere center="0.023158664457265443204 -0.0069499959766864960464 -0.0062605055662527941962" radius="0.0549615" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_led_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_motor_accelerometer_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_motor_screw_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_motor_slider_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_palm_link">
+        <sphere center="0.078979076311959328649 0.0058033049313126749968 -0.00029731666867616191041" radius="0.0507802" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_r_finger_link">
+        <sphere center="0.02191189791578751489 -0.00080330526659347367691 -0.022416409673936321667" radius="0.037649" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_r_finger_tip_link">
+        <sphere center="-0.018652240495670824316 0.0070499953061369802221 0.013461071276684943854" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_gripper_tool_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_shoulder_lift_link">
+        <sphere center="0.069999997317790982332 -0.029499995138496160063 0.083574976698309155765" radius="0.0772462" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_shoulder_pan_link">
+        <sphere center="0.020000000670552256499 -0.021999995306134223494 -0.23892501609325411671" radius="0.153" />
+        <sphere center="0.10999999865889549533 -0.021999995306134223494 0.0010749785423278535035" radius="0.143712" />
+        <sphere center="-0.039999997988343236055 -0.051999994635581969771 0.03107497787177559978" radius="0.11525" />
+        <sphere center="-0.0099999986588954897782 -0.051999994635581969771 -0.3889250127404928481" radius="0.11525" />
+        <sphere center="0.10999999865889549533 0.068000002682209015337 -0.14892501810491087788" radius="0.0764847" />
+        <sphere center="0.050000000000000002776 0.068000002682209015337 -0.35892501341104510182" radius="0.0764847" />
+        <sphere center="-0.0099999986588954897782 -0.051999994635581969771 -0.088925019446015385327" radius="0.102499" />
+        <sphere center="0.13999999798834322773 -0.051999994635581969771 -0.14892501810491087788" radius="0.070082" />
+        <sphere center="0.13999999798834322773 0.068000002682209015337 0.12107497586011883861" radius="0.0454264" />
+        <sphere center="0.079999999329447749052 -0.11199999329447746232 0.12107497586011883861" radius="0.063" />
+        <sphere center="0.10999999865889549533 0.098000002011656761614 -0.26892501542270186299" radius="0.0454264" />
+        <sphere center="0.19999999664723872028 0.098000002011656761614 -0.05892502011656763905" radius="0.0454264" />
+        <sphere center="0.19999999664723872028 0.098000002011656761614 0.03107497787177559978" radius="0.033" />
+        <sphere center="-0.069999997317790982332 -0.11199999329447746232 -0.47892501072883608693" radius="0.033" />
+        <sphere center="0.050000000000000002776 -0.11199999329447746232 -0.47892501072883608693" radius="0.033" />
+        <sphere center="0.10999999865889549533 -0.11199999329447746232 -0.32892501408159735554" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_torso_lift_side_plate_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_upper_arm_link">
+        <sphere center="0.34530329202318182924 0.008000004023313522783 0.0063782792826889700422" radius="0.114077" />
+        <sphere center="0.18999999463558198132 0.008000004023313522783 0.0010749785423278535035" radius="0.111167" />
+        <sphere center="0.45566986167847539635 -0.026330122228270524953 0.026744850949639298321" radius="0.0529644" />
+        <sphere center="0.45999998860061169781 0.008000004023313522783 -0.028925020787119892773" radius="0.0454264" />
+        <sphere center="0.42999998927116395153 -0.051999994635581969771 -0.05892502011656763905" radius="0.0454264" />
+        <sphere center="0.45999998860061169781 0.03800000335276126906 0.061074977201223346057" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_upper_arm_roll_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_wrist_flex_link">
+        <sphere center="0.024195044645521024407 -0.021999995306134223494 -0.035062768407987165986" radius="0.033" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="r_wrist_roll_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="sensor_mount_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="torso_lift_link">
+        <sphere center="-0.099999996647238728609 0 0.091074976530671092334" radius="0.233434" />
+        <sphere center="-0.099999996647238728609 0.029999999329447746277 -0.14892501810491087788" radius="0.183" />
+        <sphere center="-0.0099999986588954897782 0.17999999597668647766 0.21107497384846207744" radius="0.11525" />
+        <sphere center="0.020000000670552256499 -0.14999999664723873138 0.24107497317790982372" radius="0.093" />
+        <sphere center="-0.18999999463558198132 -0.14999999664723873138 -0.14892501810491087788" radius="0.0878528" />
+        <sphere center="-0.21999999396502972759 0.14999999664723873138 -0.05892502011656763905" radius="0.093" />
+        <sphere center="-0.039999997988343236055 0.20999999530613422394 0.0010749785423278535035" radius="0.0764847" />
+        <sphere center="0.050000000000000002776 0.029999999329447746277 0.27107497250735757" radius="0.093" />
+        <sphere center="-0.069999997317790982332 -0.14999999664723873138 -0.088925019446015385327" radius="0.093" />
+        <sphere center="-0.12999999597668648876 -0.11999999731779098511 -0.26892501542270186299" radius="0.0878528" />
+        <sphere center="-0.18999999463558198132 0.17999999597668647766 0.21107497384846207744" radius="0.070082" />
+        <sphere center="-0.039999997988343236055 0 -0.32892501408159735554" radius="0.093" />
+        <sphere center="-0.21999999396502972759 -0.14999999664723873138 -0.05892502011656763905" radius="0.0878528" />
+        <sphere center="-0.24999999329447747387 0.17999999597668647766 0.091074976530671092334" radius="0.070082" />
+        <sphere center="-0.12999999597668648876 0.17999999597668647766 -0.26892501542270186299" radius="0.0764847" />
+        <sphere center="-0.0099999986588954897782 -0.20999999530613422394 0.15107497518956658489" radius="0.070082" />
+        <sphere center="-0.099999996647238728609 -0.14999999664723873138 0.27107497250735757" radius="0.0549615" />
+        <sphere center="-0.21999999396502972759 0.17999999597668647766 -0.17892501743435862416" radius="0.0454264" />
+        <sphere center="-0.15999999530613423504 0.20999999530613422394 0.0010749785423278535035" radius="0.070082" />
+        <sphere center="-0.12999999597668648876 0.23999999463558197021 0.12107497586011883861" radius="0.063" />
+        <sphere center="-0.12999999597668648876 0.14999999664723873138 0.27107497250735757" radius="0.063" />
+        <sphere center="0.079999999329447749052 -0.059999998658895492554 0.24107497317790982372" radius="0.063" />
+        <sphere center="-0.21999999396502972759 -0.14999999664723873138 0.24107497317790982372" radius="0.0454264" />
+        <sphere center="0.020000000670552256499 0.20999999530613422394 0.091074976530671092334" radius="0.0549615" />
+        <sphere center="-0.069999997317790982332 0.20999999530613422394 -0.088925019446015385327" radius="0.070082" />
+        <sphere center="-0.24999999329447747387 -0.17999999597668647766 0.061074977201223346057" radius="0.0549615" />
+        <sphere center="-0.24999999329447747387 0.089999997988343238831 0.27107497250735757" radius="0.063" />
+        <sphere center="-0.0099999986588954897782 -0.20999999530613422394 0.0010749785423278535035" radius="0.0549615" />
+        <sphere center="0.020000000670552256499 0.14999999664723873138 -0.05892502011656763905" radius="0.0454264" />
+        <sphere center="-0.27999999262392522015 0 -0.05892502011656763905" radius="0.033" />
+        <sphere center="-0.24999999329447747387 -0.059999998658895492554 0.27107497250735757" radius="0.033" />
+        <sphere center="0.050000000000000002776 -0.17999999597668647766 0.091074976530671092334" radius="0.033" />
+        <sphere center="0.050000000000000002776 0.11999999731779098511 0.30107497183680531627" radius="0.0454264" />
+        <sphere center="0.10999999865889549533 0.059999998658895492554 0.18107497451901433116" radius="0.0454264" />
+        <sphere center="-0.069999997317790982332 0.11999999731779098511 -0.32892501408159735554" radius="0.070082" />
+        <sphere center="-0.24999999329447747387 -0.17999999597668647766 0.15107497518956658489" radius="0.033" />
+        <sphere center="-0.099999996647238728609 -0.20999999530613422394 0.21107497384846207744" radius="0.0454264" />
+        <sphere center="-0.069999997317790982332 -0.17999999597668647766 -0.20892501676380637043" radius="0.033" />
+        <sphere center="-0.039999997988343236055 0.26999999396502971649 0.12107497586011883861" radius="0.033" />
+        <sphere center="-0.0099999986588954897782 -0.059999998658895492554 0.30107497183680531627" radius="0.033" />
+        <sphere center="0.020000000670552256499 -0.11999999731779098511 -0.1189250187754631316" radius="0.033" />
+        <sphere center="-0.15999999530613423504 -0.20999999530613422394 0.0010749785423278535035" radius="0.033" />
+        <sphere center="-0.15999999530613423504 0.20999999530613422394 -0.14892501810491087788" radius="0.033" />
+        <sphere center="0.050000000000000002776 0.17999999597668647766 0.0010749785423278535035" radius="0.033" />
+        <sphere center="0.079999999329447749052 -0.17999999597668647766 0.15107497518956658489" radius="0.033" />
+        <sphere center="-0.24999999329447747387 -0.089999997988343238831 -0.20892501676380637043" radius="0.033" />
+        <sphere center="-0.15999999530613423504 -0.089999997988343238831 0.30107497183680531627" radius="0.033" />
+        <sphere center="-0.069999997317790982332 0.20999999530613422394 -0.20892501676380637043" radius="0.033" />
+        <sphere center="-0.0099999986588954897782 -0.089999997988343238831 -0.26892501542270186299" radius="0.033" />
+        <sphere center="0.050000000000000002776 -0.11999999731779098511 -0.05892502011656763905" radius="0.033" />
+        <sphere center="0.10999999865889549533 -0.089999997988343238831 0.18107497451901433116" radius="0.0243397" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="torso_lift_motor_screw_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="wide_stereo_l_stereo_camera_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="wide_stereo_l_stereo_camera_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="wide_stereo_link">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="wide_stereo_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="wide_stereo_r_stereo_camera_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <link_sphere_approximation link="wide_stereo_r_stereo_camera_optical_frame">
+        <sphere center="0 0 0" radius="0" />
+    </link_sphere_approximation>
+    <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="base_bellow_link" link2="base_footprint" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="base_link" reason="Adjacent" />
+    <disable_collisions link1="base_bellow_link" link2="bl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="bl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="bl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="br_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="br_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="br_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="base_bellow_link" link2="torso_lift_link" reason="Default" />
+    <disable_collisions link1="base_footprint" link2="base_link" reason="Adjacent" />
+    <disable_collisions link1="base_footprint" link2="bl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="bl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="bl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="br_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="br_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="br_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="base_footprint" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="bl_caster_l_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="bl_caster_r_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="bl_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="base_link" link2="br_caster_l_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="br_caster_r_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="br_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="base_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="fl_caster_l_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="fl_caster_r_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="fl_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="base_link" link2="fr_caster_l_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="fr_caster_r_wheel_link" reason="Default" />
+    <disable_collisions link1="base_link" link2="fr_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="base_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="base_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="base_link" link2="torso_lift_link" reason="Adjacent" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="bl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="bl_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="br_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="br_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="br_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_l_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="bl_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="br_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="br_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="br_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_r_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="br_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="br_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="br_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="bl_caster_rotation_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="br_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="br_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_l_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="br_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_r_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="double_stereo_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="br_caster_rotation_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="fl_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="fl_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="head_pan_link" reason="Default" />
+    <disable_collisions link1="double_stereo_link" link2="head_plate_frame" reason="Default" />
+    <disable_collisions link1="double_stereo_link" link2="head_tilt_link" reason="Default" />
+    <disable_collisions link1="double_stereo_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="double_stereo_link" link2="sensor_mount_link" reason="Adjacent" />
+    <disable_collisions link1="double_stereo_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="fl_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="fl_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_l_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="fl_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_r_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="fr_caster_l_wheel_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="fr_caster_rotation_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="fl_caster_rotation_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="fr_caster_r_wheel_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="fr_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_l_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="fr_caster_rotation_link" reason="Adjacent" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_r_wheel_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="head_mount_kinect_ir_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="head_mount_kinect_rgb_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="fr_caster_rotation_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="head_mount_kinect_rgb_link" reason="Adjacent" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="head_mount_link" reason="Adjacent" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_ir_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="head_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="head_mount_prosilica_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_kinect_rgb_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="head_mount_prosilica_link" reason="Adjacent" />
+    <disable_collisions link1="head_mount_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="head_plate_frame" reason="Adjacent" />
+    <disable_collisions link1="head_mount_link" link2="head_tilt_link" reason="Default" />
+    <disable_collisions link1="head_mount_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="head_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="head_plate_frame" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="head_tilt_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="head_mount_prosilica_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="head_plate_frame" reason="Default" />
+    <disable_collisions link1="head_pan_link" link2="head_tilt_link" reason="Adjacent" />
+    <disable_collisions link1="head_pan_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_pan_link" link2="sensor_mount_link" reason="Default" />
+    <disable_collisions link1="head_pan_link" link2="torso_lift_link" reason="Adjacent" />
+    <disable_collisions link1="head_plate_frame" link2="head_tilt_link" reason="Adjacent" />
+    <disable_collisions link1="head_plate_frame" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_plate_frame" link2="sensor_mount_link" reason="Adjacent" />
+    <disable_collisions link1="head_plate_frame" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="head_tilt_link" link2="sensor_mount_link" reason="Default" />
+    <disable_collisions link1="head_tilt_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_forearm_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_forearm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_upper_arm_link" reason="Adjacent" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_elbow_flex_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_forearm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="l_forearm_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="l_wrist_flex_link" reason="Adjacent" />
+    <disable_collisions link1="l_forearm_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_forearm_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_forearm_roll_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_gripper_l_finger_tip_link" reason="Adjacent" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_gripper_palm_link" reason="Adjacent" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_gripper_r_finger_tip_link" reason="Default" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_gripper_l_finger_tip_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_gripper_palm_link" reason="Adjacent" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_motor_accelerometer_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_gripper_palm_link" link2="l_gripper_r_finger_link" reason="Adjacent" />
+    <disable_collisions link1="l_gripper_palm_link" link2="l_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="l_gripper_palm_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_gripper_palm_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_gripper_palm_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_palm_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_gripper_palm_link" link2="l_wrist_roll_link" reason="Adjacent" />
+    <disable_collisions link1="l_gripper_r_finger_link" link2="l_gripper_r_finger_tip_link" reason="Adjacent" />
+    <disable_collisions link1="l_gripper_r_finger_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_tip_link" link2="l_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_tip_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_tip_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_tip_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_tip_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_tip_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_gripper_r_finger_tip_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="l_shoulder_pan_link" reason="Adjacent" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="l_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="l_upper_arm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_lift_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_pan_link" link2="l_upper_arm_link" reason="Default" />
+    <disable_collisions link1="l_shoulder_pan_link" link2="l_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_pan_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_pan_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_pan_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_pan_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_shoulder_pan_link" link2="torso_lift_link" reason="Adjacent" />
+    <disable_collisions link1="l_upper_arm_link" link2="l_upper_arm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="l_upper_arm_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="l_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="l_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_upper_arm_roll_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="l_wrist_flex_link" link2="l_wrist_roll_link" reason="Adjacent" />
+    <disable_collisions link1="l_wrist_flex_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="l_wrist_roll_link" link2="laser_tilt_mount_link" reason="Never" />
+    <disable_collisions link1="l_wrist_roll_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_elbow_flex_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_forearm_roll_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="laser_tilt_mount_link" link2="torso_lift_link" reason="Adjacent" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_forearm_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_forearm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_upper_arm_link" reason="Adjacent" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_elbow_flex_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_forearm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="r_forearm_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="r_wrist_flex_link" reason="Adjacent" />
+    <disable_collisions link1="r_forearm_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_forearm_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_gripper_l_finger_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_gripper_l_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_shoulder_pan_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_forearm_roll_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_gripper_l_finger_tip_link" reason="Adjacent" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_gripper_palm_link" reason="Adjacent" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_gripper_motor_accelerometer_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_gripper_palm_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_gripper_r_finger_tip_link" reason="Default" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_l_finger_tip_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_gripper_palm_link" reason="Adjacent" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_gripper_r_finger_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_motor_accelerometer_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_gripper_palm_link" link2="r_gripper_r_finger_link" reason="Adjacent" />
+    <disable_collisions link1="r_gripper_palm_link" link2="r_gripper_r_finger_tip_link" reason="Never" />
+    <disable_collisions link1="r_gripper_palm_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_gripper_palm_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_gripper_palm_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_palm_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_gripper_palm_link" link2="r_wrist_roll_link" reason="Adjacent" />
+    <disable_collisions link1="r_gripper_palm_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_link" link2="r_gripper_r_finger_tip_link" reason="Adjacent" />
+    <disable_collisions link1="r_gripper_r_finger_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_tip_link" link2="r_shoulder_lift_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_tip_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_tip_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_tip_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_tip_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_gripper_r_finger_tip_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_lift_link" link2="r_shoulder_pan_link" reason="Adjacent" />
+    <disable_collisions link1="r_shoulder_lift_link" link2="r_upper_arm_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_lift_link" link2="r_upper_arm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="r_shoulder_lift_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_lift_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_lift_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_lift_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_pan_link" link2="r_upper_arm_link" reason="Default" />
+    <disable_collisions link1="r_shoulder_pan_link" link2="r_upper_arm_roll_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_pan_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_shoulder_pan_link" link2="torso_lift_link" reason="Adjacent" />
+    <disable_collisions link1="r_upper_arm_link" link2="r_upper_arm_roll_link" reason="Adjacent" />
+    <disable_collisions link1="r_upper_arm_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_upper_arm_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_upper_arm_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_upper_arm_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="r_upper_arm_roll_link" link2="r_wrist_flex_link" reason="Never" />
+    <disable_collisions link1="r_upper_arm_roll_link" link2="r_wrist_roll_link" reason="Never" />
+    <disable_collisions link1="r_upper_arm_roll_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_upper_arm_roll_link" link2="torso_lift_link" reason="Never" />
+    <disable_collisions link1="r_wrist_flex_link" link2="r_wrist_roll_link" reason="Adjacent" />
+    <disable_collisions link1="r_wrist_flex_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="r_wrist_roll_link" link2="sensor_mount_link" reason="Never" />
+    <disable_collisions link1="sensor_mount_link" link2="torso_lift_link" reason="Never" />
+</robot>

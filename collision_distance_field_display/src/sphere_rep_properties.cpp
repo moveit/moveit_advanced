@@ -32,9 +32,6 @@
 #include <collision_distance_field_display/collision_distance_field_display.h>
 #include <collision_distance_field_display/per_link_object.h>
 #include <collision_distance_field_display/df_link.h>
-#include <collision_distance_field_display/points_display.h>
-#include <collision_distance_field_display/spheres_display.h>
-#include <collision_distance_field_display/cylinders_display.h>
 #include <collision_distance_field_display/color_cast.h>
 
 #include <moveit/robot_sphere_representation/link_sphere_representation.h>
@@ -263,7 +260,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::saveSpheresToSrdf()
 }
 
 
-// Set property values for links to match current SphereRep values.
+// Set property values for links to match current RobotSphereRepresentation values.
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkSphereGenPropertyValues()
 {
   rviz::Robot::M_NameToLink::const_iterator link_it = robot_visual_->getRobot().getLinks().begin();
@@ -278,7 +275,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkSphereGenPrope
   }
 }
 
-// Set property values (global and per link properties) to match current SphereRep values.
+// Set property values (global and per link properties) to match current RobotSphereRepresentation values.
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateAllSphereGenPropertyValues()
 {
   if (!robot_model_loaded_ || unsetting_property_)
@@ -307,20 +304,20 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateAllSphereGenProper
       if (first)
       {
         first = false;
-        gen_method = link->getSphereRep()->getGenMethod();
-        qual_method = link->getSphereRep()->getQualMethod();
-        tolerance = link->getSphereRep()->getTolerance();
-        requested_nspheres = link->getSphereRep()->getRequestedNumSpheres();
+        gen_method = link->getLinkSphereRepresentation()->getGenMethod();
+        qual_method = link->getLinkSphereRepresentation()->getQualMethod();
+        tolerance = link->getLinkSphereRepresentation()->getTolerance();
+        requested_nspheres = link->getLinkSphereRepresentation()->getRequestedNumSpheres();
       }
       else
       {
-        if (gen_method != link->getSphereRep()->getGenMethod())
+        if (gen_method != link->getLinkSphereRepresentation()->getGenMethod())
           gen_method_is_same = false;
-        if (qual_method != link->getSphereRep()->getQualMethod())
+        if (qual_method != link->getLinkSphereRepresentation()->getQualMethod())
           qual_method_is_same = false;
-        if (tolerance != link->getSphereRep()->getTolerance())
+        if (tolerance != link->getLinkSphereRepresentation()->getTolerance())
           tolerance_is_same = false;
-        if (requested_nspheres != link->getSphereRep()->getRequestedNumSpheres())
+        if (requested_nspheres != link->getLinkSphereRepresentation()->getRequestedNumSpheres())
           requested_nspheres_is_same = false;
 
       }
@@ -405,11 +402,11 @@ void moveit_rviz_plugin::DFLink::updatePropertyValues()
 
   inUpdatePropertyValues = true;
 
-  sphere_gen_method_property_->setStringStd(getSphereRep()->getGenMethod().toName());
-  sphere_qual_method_property_->setStringStd(getSphereRep()->getQualMethod().toName());
-  sphere_gen_tolerance_property_->setValue(getSphereRep()->getTolerance());
-  requested_nspheres_property_->setValue(getSphereRep()->getRequestedNumSpheres());
-  generated_nspheres_property_->setValue(getSphereRep()->getActualNumSpheres());
+  sphere_gen_method_property_->setStringStd(getLinkSphereRepresentation()->getGenMethod().toName());
+  sphere_qual_method_property_->setStringStd(getLinkSphereRepresentation()->getQualMethod().toName());
+  sphere_gen_tolerance_property_->setValue(getLinkSphereRepresentation()->getTolerance());
+  requested_nspheres_property_->setValue(getLinkSphereRepresentation()->getRequestedNumSpheres());
+  generated_nspheres_property_->setValue(getLinkSphereRepresentation()->getActualNumSpheres());
 
   inUpdatePropertyValues = false;
 }
@@ -419,12 +416,12 @@ void moveit_rviz_plugin::DFLink::updateObjects()
   if (inUpdatePropertyValues)
     return;
 
-  if (getSphereRep())
+  if (getLinkSphereRepresentation())
   {
-    getSphereRep()->setGenMethod(sphere_gen_method_property_->getStdString());
-    getSphereRep()->setQualMethod(sphere_qual_method_property_->getStdString());
-    getSphereRep()->setTolerance(sphere_gen_tolerance_property_->getFloat());
-    getSphereRep()->setRequestedNumSpheres(requested_nspheres_property_->getInt());
+    getLinkSphereRepresentation()->setGenMethod(sphere_gen_method_property_->getStdString());
+    getLinkSphereRepresentation()->setQualMethod(sphere_qual_method_property_->getStdString());
+    getLinkSphereRepresentation()->setTolerance(sphere_gen_tolerance_property_->getFloat());
+    getLinkSphereRepresentation()->setRequestedNumSpheres(requested_nspheres_property_->getInt());
   }
 
   std::vector<PerLinkSubObjBase*>::iterator it = per_link_objects_.begin();
