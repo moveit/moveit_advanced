@@ -91,7 +91,7 @@ bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
     readXmlParam(params, "skip_vertical_pixels", &skip_vertical_pixels_);
     readXmlParam(params, "skip_horizontal_pixels", &skip_horizontal_pixels_);
 
-    ROS_INFO("************* Shadow threshold: %f", shadow_threshold_);
+    ROS_DEBUG("Shadow threshold: %f", shadow_threshold_);
     if (params.hasMember("filtered_cloud_topic"))
       filtered_cloud_topic_ = static_cast<const std::string&>(params["filtered_cloud_topic"]);
   }
@@ -117,7 +117,7 @@ bool DepthImageOctomapUpdater::initialize()
   mesh_filter_->setPaddingOffset(padding_offset_);
   mesh_filter_->setPaddingScale(padding_scale_);
   mesh_filter_->setTransformCallback(boost::bind(&DepthImageOctomapUpdater::getShapeTransform, this, _1, _2));
-  ROS_INFO("@@@@@@@************* Shadow threshold: %f", shadow_threshold_);
+  ROS_DEBUG("Shadow threshold: %f", shadow_threshold_);
   return true;
 }
 
