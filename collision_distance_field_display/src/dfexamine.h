@@ -31,18 +31,6 @@
 #ifndef COLLISION_DISTANCE_FIELD_DISPLAY__DFEXAMINE
 #define COLLISION_DISTANCE_FIELD_DISPLAY__DFEXAMINE
 
-#if 0
-#include <collision_distance_field_display/collision_distance_field_display.h>
-#include <collision_distance_field_display/spheres_display.h>
-#include <collision_distance_field_display/color_cast.h>
-
-#include <moveit/collision_detection_distance_field/static_distance_field.h>
-
-#include <rviz/properties/color_property.h>
-#include <rviz/properties/int_property.h>
-#include <rviz/properties/float_property.h>
-#endif
-
 #include <Eigen/Geometry>
 
 
@@ -58,7 +46,7 @@ class StaticDistanceField;
 
 namespace moveit_rviz_plugin
 {
-class SpheresDisplay;
+class ShapesDisplay;
 }
 
 
@@ -77,7 +65,7 @@ public:
         double size);
 
 private:
-  SpheresDisplay spheres_;
+  ShapesDisplay spheres_;
 };
 
 #endif

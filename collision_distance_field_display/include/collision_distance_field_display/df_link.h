@@ -50,10 +50,23 @@ namespace robot_sphere_representation
 class LinkSphereRepresentation;
 }
 
+namespace robot_model
+{
+class RobotModel;
+class LinkModel;
+}
+
+namespace robot_state
+{
+class RobotState;
+class LinkState;
+}
+
 namespace moveit_rviz_plugin
 {
 class CollisionDistanceFieldDisplay;
 class PerLinkSubObjBase;
+class DebugMesh;
 
 // extra per-link properties to display
 class DFLink : public rviz::RobotLink
@@ -71,12 +84,21 @@ public:
   virtual void hideSubProperties(bool hide);
 
   CollisionDistanceFieldDisplay* getDisplay() const { return display_; }
-  robot_sphere_representation::LinkSphereRepresentation* getSphereRep() const { return sphere_rep_; }
+  robot_sphere_representation::LinkSphereRepresentation* getLinkSphereRepresentation() const { return link_sphere_rep_; }
 
   void getLinkSpheres(EigenSTL::vector_Vector3d& centers, std::vector<double>& radii) const;
+  void getLinkBoundingSphere(Eigen::Vector3d& center, double& radius) const;
 
-  // update displayed property values based on current getSphereRep() values.
+  // access the display's RobotModel and RobotState
+  const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const;
+  boost::shared_ptr<const robot_state::RobotState> getRobotState() const;
+  const robot_model::LinkModel *getLinkModel() const;
+  const robot_state::LinkState *getLinkState() const;
+
+  // update displayed property values based on current RobotSphereRepresentation values.
   void updatePropertyValues();
+
+  std::vector<boost::shared_ptr<DebugMesh> >& getDebugMeshes() { return debug_meshes_; }
 
 private Q_SLOTS:
   void updateSampleProp();
@@ -96,7 +118,7 @@ protected:
 
   CollisionDistanceFieldDisplay *display_;
   std::vector<PerLinkSubObjBase*> per_link_objects_;
-  robot_sphere_representation::LinkSphereRepresentation *sphere_rep_;
+  robot_sphere_representation::LinkSphereRepresentation *link_sphere_rep_;
 
   bool inUpdatePropertyValues; // true when in updatePropertyValues()
 
@@ -111,6 +133,8 @@ protected:
   // sample property
   rviz::BoolProperty* sample_prop_;
 
+  // mesh debugging
+  std::vector<boost::shared_ptr<DebugMesh> > debug_meshes_;
 };
 
 

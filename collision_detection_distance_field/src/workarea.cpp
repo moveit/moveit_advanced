@@ -46,11 +46,16 @@ collision_detection::CollisionRobotDistanceField::WorkArea& collision_detection:
     work_area_.reset(new WorkArea);
     WorkArea& work = *work_area_;
     work.transformed_sphere_centers_.resize(sphere_centers_.size());
-    work.df_contacts_ = NULL;
   }
 
   WorkArea& work = *work_area_;
   return work;
+}
+
+collision_detection::CollisionRobotDistanceField::WorkArea::WorkArea()
+  : df_contacts_(NULL)
+  , df_distance_(NULL)
+{
 }
 
 collision_detection::CollisionRobotDistanceField::WorkArea::~WorkArea()
@@ -73,13 +78,16 @@ void collision_detection::CollisionRobotDistanceField::dumpQuery(const WorkArea&
     work.acm_->getAllEntryNames(names);
     ss_acm << ", acm(nnames=" << names.size() << ", sz=" << work.acm_->getSize() << ")";
   }
-  logInform("   request: result%s%s%s%s%s%s",
-    work.req_->distance ? ", distance" : "",
-    work.req_->cost ? ss_cost.str().c_str() : "",
-    work.req_->contacts ? ss_contacts.str().c_str() : "",
-    work.req_->is_done ? ", is_done-func" : "",
-    work.req_->verbose ? ", VERBOSE" : "",
-    ss_acm.str().c_str());
+  if (0)
+  {
+    logInform("   request: result%s%s%s%s%s%s",
+      work.req_->distance ? ", distance" : "",
+      work.req_->cost ? ss_cost.str().c_str() : "",
+      work.req_->contacts ? ss_contacts.str().c_str() : "",
+      work.req_->is_done ? ", is_done-func" : "",
+      work.req_->verbose ? ", VERBOSE" : "",
+      ss_acm.str().c_str());
+  }
 }
 
 void collision_detection::DFContact::copyFrom(const Contact& contact)
@@ -98,3 +106,22 @@ void collision_detection::DFContact::copyFrom(const Contact& contact)
   sdf_2 = NULL;
   eliminated_by_acm_function = false;
 }
+
+void collision_detection::DFContact::clear()
+{
+  pos = Eigen::Vector3d::Zero();
+	normal = Eigen::Vector3d::Zero();
+	depth = std::numeric_limits<double>::max();
+	body_name_1.clear();
+	body_name_2.clear();
+	body_type_1 = BodyTypes::ROBOT_LINK;
+	body_type_2 = BodyTypes::ROBOT_LINK;
+
+  sphere_radius_1 = 0;
+  sphere_radius_2 = 0;
+  sdf_1 = NULL;
+  sdf_2 = NULL;
+  eliminated_by_acm_function = false;
+}
+
+

@@ -26,6 +26,8 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
   geometric_shapes
   interactive_markers
+  mesh_core
+  mesh_ros
   class_loader
   rviz
   tf
@@ -88,9 +90,7 @@ add_library(
     src/sphere_rep_properties.cpp
     src/per_link_object.cpp
     src/dfexamine.cpp
-    src/cylinders_display.cpp
-    src/spheres_display.cpp
-    src/points_display.cpp
+    src/shapes_display.cpp
     src/color_cast.cpp
     ${MOC_SOURCES}
 )

@@ -74,7 +74,7 @@ void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
     const robot_state::RobotState &state, 
     const AllowedCollisionMatrix &acm) const
 {
-  logError("CollisionWorldDistanceField::checkRobotCollision 1 not yet implemented");
+  //logError("CollisionWorldDistanceField::checkRobotCollision 1 not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
