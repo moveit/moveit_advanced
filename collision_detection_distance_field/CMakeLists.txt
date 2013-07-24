@@ -11,8 +11,6 @@ find_package(
   catkin
   REQUIRED
   COMPONENTS
-    console_bridge
-    eigen
     eigen_conversions
     eigen_stl_containers
     geometric_shapes
@@ -23,7 +21,6 @@ find_package(
     rostime
     shape_msgs
     shape_tools
-    std_msgs
     visualization_msgs
 )
 
