@@ -34,12 +34,13 @@
 
 /* Author: Acorn Pooley */
 
-#include <moveit/robot_sphere_representation/sphere_rep.h>
+#include <moveit/robot_sphere_representation/sphere_calc.h>
 #include <moveit/distance_field/propagation_distance_field.h>
 #include <moveit/distance_field/distance_field_common.h>
 #include <moveit/robot_state/robot_state.h>
 #include <geometric_shapes/bodies.h>
 #include <geometric_shapes/body_operations.h>
+#include <mesh_core/mesh.h>
 #include <boost/bind.hpp>
 #include <limits>
 #include <cmath>
@@ -55,30 +56,38 @@ public:
   // :.!sed -n 's|^ *PROF_PUSH[_SCOPED]*(\([^)]*\)).*|    X(\1) \\|p' %
   #define PROF_TRACKER_CATEGORIES() \
     X(findClusters) \
-    X(SphereRep_Constructor) \
-    X(SphereRep_thinInternalPoints) \
-    X(SphereRep_thinInternalPoints_make_debug_sets) \
-    X(SphereRep_getOptionalPointSet) \
-    X(SphereRep_getThinnedPointSet) \
-    X(SphereRep_setParams) \
-    X(SphereRep_findSpheres) \
-    X(SphereRep_findSpheres_COMBINED) \
-    X(SphereRep_solveUsingGreedy) \
-    X(SphereRep_eliminateUselessSpheres) \
-    X(SphereRep_solveUsingGradientDescent) \
-    X(SphereRep_solveUsingGobble) \
-    X(SphereRep_createDistanceField) \
-    X(SphereRep_createDistanceField_GatherPoints) \
-    X(SphereRep_createDistanceField_CreateDF) \
-    X(SphereRep_createDistanceField_CreateVoxelGrid) \
-    X(SphereRep_solveUsingClustering) \
-    X(SphereRep_calcQuality) \
-    X(SphereRep_calcQuality_BadCount) \
-    X(SphereRep_calcQuality_MaxDist) \
-    X(SphereRep_calcQuality_Radius) \
-    X(SphereRep_checkQuality) \
-    X(SphereRep_findRadius2) \
-    X(SphereRep_findRadius1) \
+    X(SphereCalc_Constructor) \
+    X(SphereCalc_thinInternalPoints) \
+    X(SphereCalc_thinInternalPoints_make_debug_sets) \
+    X(SphereCalc_getOptionalPointSet) \
+    X(SphereCalc_getThinnedPointSet) \
+    X(SphereCalc_setParams) \
+    X(SphereCalc_findSpheres) \
+    X(SphereCalc_findSpheres_COMBINED) \
+    X(SphereCalc_solveUsingGreedy) \
+    X(SphereCalc_eliminateUselessSpheres) \
+    X(SphereCalc_solveUsingGradientDescent) \
+    X(SphereCalc_solveUsingGobble) \
+    X(SphereCalc_createDistanceField) \
+    X(SphereCalc_createDistanceField_GatherPoints) \
+    X(SphereCalc_createDistanceField_CreateDF) \
+    X(SphereCalc_createDistanceField_CreateVoxelGrid) \
+    X(getRequiredDistanceField) \
+    X(SphereCalc_calcConcaveVoxelGrid) \
+    X(SphereCalc_calcConcaveVoxelGrid_createMesh) \
+    X(SphereCalc_calcConcaveVoxelGrid_createReqDF) \
+    X(SphereCalc_calcConcaveVoxelGrid_CreateGrid) \
+    X(SphereCalc_calcConcaveVoxelGrid_GatherPoints) \
+    X(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid) \
+    X(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid2) \
+    X(SphereCalc_solveUsingClustering) \
+    X(SphereCalc_calcQuality) \
+    X(SphereCalc_calcQuality_BadCount) \
+    X(SphereCalc_calcQuality_MaxDist) \
+    X(SphereCalc_calcQuality_Radius) \
+    X(SphereCalc_checkQuality) \
+    X(SphereCalc_findRadius2) \
+    X(SphereCalc_findRadius1) \
     X(RemoveChildOccludedLinks) \
     X(CullLinks) \
     X(GenerateFinalPoints) \
@@ -276,7 +285,6 @@ ProfTracker *g_profTracker = 0;
 
 
 
-
 robot_sphere_representation::PointCluster::PointCluster(std::size_t nclusters, const EigenSTL::vector_Vector3d& points) :
   points_(points),
   nclusters_(std::min(nclusters, points.size()))
@@ -420,7 +428,7 @@ void robot_sphere_representation::PointCluster::assignClusters()
 }
 
 
-struct robot_sphere_representation::SphereRep::Voxel
+struct robot_sphere_representation::SphereCalc::Voxel
 {
   Voxel(double distance = 1000.0) :
     distance_(distance)
@@ -429,13 +437,12 @@ struct robot_sphere_representation::SphereRep::Voxel
   double distance_;
 };
 
-class robot_sphere_representation::SphereRep::Grid : public distance_field::VoxelGrid<Voxel>
+class robot_sphere_representation::SphereCalc::Grid : public distance_field::VoxelGrid<Voxel>
 {
 public:
   Grid(double size_x, double size_y, double size_z, double resolution,
        double origin_x, double origin_y, double origin_z, const Voxel& default_object) :
     distance_field::VoxelGrid<Voxel>(size_x, size_y, size_z, resolution, origin_x, origin_y, origin_z, default_object),
-    oo_resolution_(1.0/resolution),
     vorigin_(origin_x, origin_y, origin_z)
   {}
 
@@ -446,16 +453,15 @@ public:
   double getDistanceInterp(const V3& point) const;
 
 private:
-  double oo_resolution_;
   V3 vorigin_;
 };
 
-inline double robot_sphere_representation::SphereRep::Grid::getDistanceNoCheck(const V3i& point) const
+inline double robot_sphere_representation::SphereCalc::Grid::getDistanceNoCheck(const V3i& point) const
 {
   return getCell(point.x(), point.y(), point.z()).distance_;
 }
 
-inline double robot_sphere_representation::SphereRep::Grid::getDistance(const V3i& point) const
+inline double robot_sphere_representation::SphereCalc::Grid::getDistance(const V3i& point) const
 {
   if (isCellValid(point.x(), point.y(), point.z()))
     return getCell(point.x(), point.y(), point.z()).distance_;
@@ -463,7 +469,7 @@ inline double robot_sphere_representation::SphereRep::Grid::getDistance(const V3
     return default_object_.distance_;
 }
 
-inline double robot_sphere_representation::SphereRep::Grid::getDistanceQuick(const V3& point) const
+inline double robot_sphere_representation::SphereCalc::Grid::getDistanceQuick(const V3& point) const
 {
   int x, y, z;
   if (worldToGrid(point.x(), point.y(), point.z(), x, y, z))
@@ -472,7 +478,7 @@ inline double robot_sphere_representation::SphereRep::Grid::getDistanceQuick(con
     return default_object_.distance_;
 }
 
-double robot_sphere_representation::SphereRep::Grid::getDistanceInterp(const V3& point) const
+double robot_sphere_representation::SphereCalc::Grid::getDistanceInterp(const V3& point) const
 {
   V3 offset(point - vorigin_);
   offset *= oo_resolution_;
@@ -506,30 +512,92 @@ double robot_sphere_representation::SphereRep::Grid::getDistanceInterp(const V3&
   
 }
 
+struct robot_sphere_representation::SphereCalc::ConcaveVoxel
+{
+  ConcaveVoxel(float distance = 1000.0, int flags = 0)
+    : distance_(distance)
+    , flags_(flags)
+  {}
 
-robot_sphere_representation::SphereRep::SphereRep(std::size_t nspheres,
-                                                    double resolution,
-                                                    const EigenSTL::vector_Vector3d& required_points,
-                                                    const EigenSTL::vector_Vector3d& optional_points,
-                                                    const std::string& name,
-                                                    GenMethod gen_method,
-                                                    double tolerance,
-                                                    QualMethod qual_method) :
-  gen_method_(gen_method),
-  tolerance_(tolerance),
-  radius2_padding_(resolution*0.1),
-  nspheres_requested_(nspheres),
-  resolution_(resolution),
-  oo_resolution_(1.0/resolution),
-  required_points_(required_points),
-  optional_points_(optional_points),
-  use_required_points_(&required_points_),
-  save_history_(true),
-  name_(name)
+  enum Flags {
+    IN_MESH = 0x00000001,
+    IN_HULL = 0x00000002,
+    IN_PARENT = 0x00000004,
+
+    REQUIRED = 0x00000008,
+    OPTIONAL = 0x00000010,
+
+    IN_SPHERE = 0x00000020,
+  };
+
+  float distance_;
+  char flags_;
+};
+
+class robot_sphere_representation::SphereCalc::ConcaveGrid : public distance_field::VoxelGrid<ConcaveVoxel>
+{
+public:
+  ConcaveGrid(double size_x, double size_y, double size_z, double resolution,
+       double origin_x, double origin_y, double origin_z, const ConcaveVoxel& default_object)
+    : distance_field::VoxelGrid<ConcaveVoxel>(size_x, size_y, size_z, resolution, origin_x, origin_y, origin_z, default_object)
+    // , vorigin_(origin_x, origin_y, origin_z)
+  {}
+
+  
+  ConcaveVoxel& getVoxel(const V3i& point)
+  {
+    return getCell(point.x(), point.y(), point.z());
+  }
+  const ConcaveVoxel& getVoxel(const V3i& point) const
+  {
+    return getCell(point.x(), point.y(), point.z());
+  }
+
+  ConcaveVoxel& getVoxel(const V3& point)
+  {
+    int ix, iy, iz;
+    if (worldToGrid(point.x(), point.y(), point.z(), ix, iy, iz))
+      return getCell(ix, iy, iz);
+    return default_object_;
+  }
+  const ConcaveVoxel& getVoxel(const V3& point) const
+  {
+    int ix, iy, iz;
+    if (worldToGrid(point.x(), point.y(), point.z(), ix, iy, iz))
+      return getCell(ix, iy, iz);
+    return default_object_;
+  }
+
+//private:
+  //V3 vorigin_;
+};
+
+robot_sphere_representation::SphereCalc::SphereCalc(
+      std::size_t nspheres,
+      double resolution,
+      const EigenSTL::vector_Vector3d& required_points,
+      const EigenSTL::vector_Vector3d& optional_points,
+      const robot_state::LinkState* link_state,
+      const std::string& name,
+      GenMethod gen_method,
+      double tolerance,
+      QualMethod qual_method)
+  : gen_method_(gen_method)
+  , tolerance_(tolerance)
+  , radius2_padding_(resolution*0.1)
+  , nspheres_requested_(nspheres)
+  , resolution_(resolution)
+  , oo_resolution_(1.0/resolution)
+  , required_points_(required_points)
+  , optional_points_(optional_points)
+  , use_required_points_(&required_points_)
+  , save_history_(true)
+  , name_(name)
+  , link_state_(link_state)
 {
   current_.qual_method_ = qual_method;
 
-  PROF_PUSH_SCOPED(SphereRep_Constructor);
+  PROF_PUSH_SCOPED(SphereCalc_Constructor);
   if (use_required_points_->empty())
   {
     gen_method_ = GenMethod::ZERO_SPHERES;
@@ -617,11 +685,11 @@ public:
 
 }
 
-void robot_sphere_representation::SphereRep::thinInternalPoints()
+void robot_sphere_representation::SphereCalc::thinInternalPoints()
 {
   static robot_sphere_representation::IntDirVector shell1(1,1);
 
-  PROF_PUSH_SCOPED(SphereRep_thinInternalPoints);
+  PROF_PUSH_SCOPED(SphereCalc_thinInternalPoints);
 
   thinned_point_set_.clear();
   corner_point_set_.clear();
@@ -807,7 +875,7 @@ void robot_sphere_representation::SphereRep::thinInternalPoints()
     required_points_.size(),
     thinned_required_points_.size());
 
-  PROF_PUSH_SCOPED(SphereRep_thinInternalPoints_make_debug_sets);
+  PROF_PUSH_SCOPED(SphereCalc_thinInternalPoints_make_debug_sets);
   for (V3iList::const_iterator p = face_points.begin() ; p != face_points.end() ; ++p)
     face_point_set_.insert(*p);
   for (V3iList::const_iterator p = edge_points.begin() ; p != edge_points.end() ; ++p)
@@ -816,7 +884,7 @@ void robot_sphere_representation::SphereRep::thinInternalPoints()
     corner_point_set_.insert(*p);
 }
 
-const robot_sphere_representation::SphereRep::Result* robot_sphere_representation::SphereRep::getIteration(int iteration) const
+const robot_sphere_representation::SphereCalc::Result* robot_sphere_representation::SphereCalc::getIteration(int iteration) const
 {
   if (iteration < 0 || history_.empty())
     return &best_;
@@ -827,30 +895,30 @@ const robot_sphere_representation::SphereRep::Result* robot_sphere_representatio
   return &history_[history_.size() - 1];
 }
 
-const std::vector<double>& robot_sphere_representation::SphereRep::getSphereRadii(int iteration) const
+const std::vector<double>& robot_sphere_representation::SphereCalc::getSphereRadii(int iteration) const
 {
   const Result *r = getIteration(iteration);
   return r->radius2_;
 }
 
-const std::vector<double>& robot_sphere_representation::SphereRep::getSphereInnerRadii(int iteration) const
+const std::vector<double>& robot_sphere_representation::SphereCalc::getSphereInnerRadii(int iteration) const
 {
   const Result *r = getIteration(iteration);
   return r->radius1_;
 }
 
-const EigenSTL::vector_Vector3d& robot_sphere_representation::SphereRep::getSphereCenters(int iteration) const
+const EigenSTL::vector_Vector3d& robot_sphere_representation::SphereCalc::getSphereCenters(int iteration) const
 {
   const Result *r = getIteration(iteration);
   return r->centers_;
 }
 
-const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRep::getOptionalPointSet() const
+const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereCalc::getOptionalPointSet() const
 {
   if (!optional_point_set_.empty() || optional_points_.empty())
     return optional_point_set_;
 
-  PROF_PUSH_SCOPED(SphereRep_getOptionalPointSet);
+  PROF_PUSH_SCOPED(SphereCalc_getOptionalPointSet);
   for (V3List::const_iterator it = optional_points_.begin() ; it != optional_points_.end() ; ++it)
   {
     V3i ip;
@@ -868,12 +936,12 @@ const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRe
   return optional_point_set_;
 }
 
-const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRep::getThinnedPointSet() const
+const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereCalc::getThinnedPointSet() const
 {
   if (!thinned_point_set_.empty() || thinned_required_points_.empty())
     return thinned_point_set_;
 
-  PROF_PUSH_SCOPED(SphereRep_getThinnedPointSet);
+  PROF_PUSH_SCOPED(SphereCalc_getThinnedPointSet);
   for (V3List::const_iterator it = thinned_required_points_.begin() ; it != thinned_required_points_.end() ; ++it)
   {
     V3i ip;
@@ -885,22 +953,22 @@ const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRe
   return thinned_point_set_;
 }
 
-const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRep::getCornerPointSet() const
+const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereCalc::getCornerPointSet() const
 {
   return corner_point_set_;
 }
 
-const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRep::getEdgePointSet() const
+const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereCalc::getEdgePointSet() const
 {
   return edge_point_set_;
 }
 
-const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereRep::getFacePointSet() const
+const robot_sphere_representation::V3iSet& robot_sphere_representation::SphereCalc::getFacePointSet() const
 {
   return face_point_set_;
 }
 
-double robot_sphere_representation::SphereRep::getQuality(int iteration, QualMethod qual_method) const
+double robot_sphere_representation::SphereCalc::getQuality(int iteration, QualMethod qual_method) const
 {
   const Result *r = getIteration(iteration);
 
@@ -910,14 +978,14 @@ double robot_sphere_representation::SphereRep::getQuality(int iteration, QualMet
   return calcQuality(*r, qual_method);
 }
 
-const char* robot_sphere_representation::SphereRep::getAlgorithm(int iteration) const
+const char* robot_sphere_representation::SphereCalc::getAlgorithm(int iteration) const
 {
   const Result *r = getIteration(iteration);
   return r->algorithm_;
 }
 
 
-void robot_sphere_representation::SphereRep::setParams(std::size_t nspheres,
+void robot_sphere_representation::SphereCalc::setParams(std::size_t nspheres,
                                                          GenMethod gen_method,
                                                          double tolerance,
                                                          QualMethod qual_method)
@@ -927,7 +995,14 @@ void robot_sphere_representation::SphereRep::setParams(std::size_t nspheres,
       gen_method_ != gen_method ||
       current_.qual_method_ != qual_method)
   {
-    PROF_PUSH_SCOPED(SphereRep_setParams);
+    PROF_PUSH_SCOPED(SphereCalc_setParams);
+
+    if (tolerance_ != tolerance)
+    {
+logInform("RESET (pre):    this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
+      concave_voxel_grid_.reset();
+logInform("RESET (post):   this(SphereCalc)=%08lx concave_voxel_grid_=%08lx",long(this),long(concave_voxel_grid_.get()));
+    }
 
     if (use_required_points_->empty())
     {
@@ -945,7 +1020,7 @@ void robot_sphere_representation::SphereRep::setParams(std::size_t nspheres,
   }
 }
 
-void robot_sphere_representation::SphereRep::Result::clear(int nspheres)
+void robot_sphere_representation::SphereCalc::Result::clear(int nspheres)
 {
   nspheres_ = nspheres;
   centers_.clear();
@@ -970,7 +1045,7 @@ void robot_sphere_representation::SphereRep::Result::clear(int nspheres)
   }
 }
 
-void robot_sphere_representation::SphereRep::clear(int nspheres)
+void robot_sphere_representation::SphereCalc::clear(int nspheres)
 {
   history_.clear();
 
@@ -983,9 +1058,9 @@ void robot_sphere_representation::SphereRep::clear(int nspheres)
   best_ = current_;
 }
 
-void robot_sphere_representation::SphereRep::findSpheres()
+void robot_sphere_representation::SphereCalc::findSpheres()
 {
-  PROF_PUSH_SCOPED(SphereRep_findSpheres);
+  PROF_PUSH_SCOPED(SphereCalc_findSpheres);
 
   clear(0);
 
@@ -997,7 +1072,7 @@ void robot_sphere_representation::SphereRep::findSpheres()
   if (use_required_points_->empty())
     gen_method_ = GenMethod::ZERO_SPHERES;
 
-  logInform("SphereRep(%s) ======= BEGIN findSpheres N=%d npoints=%d thin=%d opt=%d gen=%d=%s qual=%d=%s",
+  logInform("SphereCalc(%s) ======= BEGIN findSpheres N=%d npoints=%d thin=%d opt=%d gen=%d=%s qual=%d=%s",
     getName().c_str(),
     nspheres_requested_,
     required_points_.size(),
@@ -1008,7 +1083,7 @@ void robot_sphere_representation::SphereRep::findSpheres()
     current_.qual_method_.toValue(),
     current_.qual_method_.toName().c_str());
 
-  PROF_PUSH_SCOPED(SphereRep_findSpheres_COMBINED);
+  PROF_PUSH_SCOPED(SphereCalc_findSpheres_COMBINED);
 
   step_size_ = resolution_;
   use_required_points_ = &thinned_required_points_;
@@ -1041,6 +1116,14 @@ void robot_sphere_representation::SphereRep::findSpheres()
   case GenMethod::THIN_GREEDY:
     // Use as many spheres as necessary with greedy assignment
     solveUsingGreedy();
+    break;
+
+  case GenMethod::GREEDY2:
+    use_required_points_ = &required_points_;
+  case GenMethod::THIN_GREEDY2:
+    // Use as many spheres as necessary with greedy assignment
+    // Faster version of greedy which also uses concavity info
+    solveUsingGreedy2();
     break;
 
   case GenMethod::GREEDY_GRADIENT:
@@ -1079,7 +1162,7 @@ void robot_sphere_representation::SphereRep::findSpheres()
 
   }
 
-  logInform("SphereRep(%s) ======= END   findSpheres N=%d npoints=%d thin=%d opt=%d gen=%d=%s qual=%d=%s",
+  logInform("SphereCalc(%s) ======= END   findSpheres N=%d npoints=%d thin=%d opt=%d gen=%d=%s qual=%d=%s",
     getName().c_str(),
     nspheres_requested_,
     required_points_.size(),
@@ -1089,6 +1172,18 @@ void robot_sphere_representation::SphereRep::findSpheres()
     gen_method_.toName().c_str(),
     current_.qual_method_.toValue(),
     current_.qual_method_.toName().c_str());
+}
+
+void robot_sphere_representation::SphereCalc::solveUsingGreedy2()
+{
+  if (!concave_voxel_grid_)
+    calcConcaveVoxelGrid();
+
+
+
+
+  // TODO
+  solveUsingGreedy();
 }
 
 // Greedy algorithm
@@ -1101,9 +1196,9 @@ void robot_sphere_representation::SphereRep::findSpheres()
 // Find largest sphere that will fit in tolerance with center that is not in any other sphere.
 // Move it so it swallows the most unswallowed points.
 // Repeat until all points are claimed or we hit max_spheres (-1=no limit).
-void robot_sphere_representation::SphereRep::solveUsingGreedy(int max_spheres)
+void robot_sphere_representation::SphereCalc::solveUsingGreedy(int max_spheres)
 {
-  PROF_PUSH_SCOPED(SphereRep_solveUsingGreedy);
+  PROF_PUSH_SCOPED(SphereCalc_solveUsingGreedy);
   clear(0);
 
   double tolerance = resolution_ * tolerance_;
@@ -1196,9 +1291,9 @@ void robot_sphere_representation::SphereRep::solveUsingGreedy(int max_spheres)
     checkQuality("Greedy(end)");
 }
 
-void robot_sphere_representation::SphereRep::eliminateUselessSpheres()
+void robot_sphere_representation::SphereCalc::eliminateUselessSpheres()
 {
-  PROF_PUSH_SCOPED(SphereRep_eliminateUselessSpheres);
+  PROF_PUSH_SCOPED(SphereCalc_eliminateUselessSpheres);
   bool eliminated = false;
   std::vector<bool> elim(current_.centers_.size(), false);
   std::multimap<double,int> center_map;
@@ -1262,9 +1357,9 @@ void robot_sphere_representation::SphereRep::eliminateUselessSpheres()
   saveCurrentState("eliminateUselessSpheres", true, save_history_);
 }
 
-void robot_sphere_representation::SphereRep::solveUsingGradientDescent()
+void robot_sphere_representation::SphereCalc::solveUsingGradientDescent()
 {
-  PROF_PUSH_SCOPED(SphereRep_solveUsingGradientDescent);
+  PROF_PUSH_SCOPED(SphereCalc_solveUsingGradientDescent);
   bool orig_save_history = save_history_;
   save_history_ = false;
 
@@ -1354,11 +1449,11 @@ void robot_sphere_representation::SphereRep::solveUsingGradientDescent()
     {
       step_size_ *= 0.5;
 step_size_ = 0;
-      logWarn("SphereRep(%s) after %d iterations setting step size to %f",
+      logWarn("SphereCalc(%s) after %d iterations setting step size to %f",
           getName().c_str(), iterations, step_size_);
       if (step_size_ < resolution_/10)
       {
-        logWarn("SphereRep(%s) no improvement after %d iterations with final step size %f",
+        logWarn("SphereCalc(%s) no improvement after %d iterations with final step size %f",
           getName().c_str(), iterations, step_size_);
         break;
       }
@@ -1366,7 +1461,7 @@ step_size_ = 0;
 
     if (iterations > 1000)
     {
-      logWarn("SphereRep(%s) abort after %d iterations",getName().c_str(), iterations);
+      logWarn("SphereCalc(%s) abort after %d iterations",getName().c_str(), iterations);
       break;
     }
 
@@ -1376,9 +1471,9 @@ step_size_ = 0;
   save_history_ = orig_save_history;
 }
 
-void robot_sphere_representation::SphereRep::solveUsingGobble()
+void robot_sphere_representation::SphereCalc::solveUsingGobble()
 {
-  PROF_PUSH_SCOPED(SphereRep_solveUsingGobble);
+  PROF_PUSH_SCOPED(SphereCalc_solveUsingGobble);
   int iterations = 0;
   for (;;)
   {
@@ -1391,7 +1486,7 @@ void robot_sphere_representation::SphereRep::solveUsingGobble()
     findCenterMotions();
     if (iterations > 1000)
     {
-      logWarn("SphereRep(%s) abort after %d iterations",getName().c_str(), iterations);
+      logWarn("SphereCalc(%s) abort after %d iterations",getName().c_str(), iterations);
       break;
     }
     applyCenterMotions();
@@ -1399,10 +1494,10 @@ void robot_sphere_representation::SphereRep::solveUsingGobble()
   }
 }
 
-void robot_sphere_representation::SphereRep::createDistanceField()
+void robot_sphere_representation::SphereCalc::createDistanceField()
 {
-  PROF_PUSH_SCOPED(SphereRep_createDistanceField);
-  PROF_PUSH_SCOPED(SphereRep_createDistanceField_GatherPoints);
+  PROF_PUSH_SCOPED(SphereCalc_createDistanceField);
+  PROF_PUSH_SCOPED(SphereCalc_createDistanceField_GatherPoints);
 
   df_aabb_.clear();
   df_aabb_.add(required_points_);
@@ -1428,7 +1523,7 @@ void robot_sphere_representation::SphereRep::createDistanceField()
   std::copy(optional_points_.begin(), optional_points_.end(), std::back_insert_iterator<EigenSTL::vector_Vector3d>(points));
 
   PROF_POP();
-  PROF_PUSH_SCOPED(SphereRep_createDistanceField_CreateDF);
+  PROF_PUSH_SCOPED(SphereCalc_createDistanceField_CreateDF);
   df_.reset(new distance_field::PropagationDistanceField(
                   df_aabb_size_.x(),
                   df_aabb_size_.y(),
@@ -1443,7 +1538,7 @@ void robot_sphere_representation::SphereRep::createDistanceField()
   ysize_ = df_->getYNumCells();
   zsize_ = df_->getZNumCells();
 
-  logInform("SphereRep(%s) AABB:",getName().c_str());
+  logInform("SphereCalc(%s) AABB:",getName().c_str());
   logInform("     (%7.3f, %7.3f, %7.3f) min",
     df_aabb_.min_.x(),
     df_aabb_.min_.y(),
@@ -1478,7 +1573,7 @@ void robot_sphere_representation::SphereRep::createDistanceField()
   df_->addPointsToField(points);
 
   PROF_POP();
-  PROF_PUSH_SCOPED(SphereRep_createDistanceField_CreateVoxelGrid);
+  PROF_PUSH_SCOPED(SphereCalc_createDistanceField_CreateVoxelGrid);
   Voxel default_voxel(big_distance_);
   voxel_grid_.reset(new Grid(
                   df_aabb_size_.x(),
@@ -1506,7 +1601,7 @@ void robot_sphere_representation::SphereRep::createDistanceField()
   }
 }
 
-void robot_sphere_representation::SphereRep::createEmptyDistanceField()
+void robot_sphere_representation::SphereCalc::createEmptyDistanceField()
 {
   V3List dummy_points;
   dummy_points.push_back(V3(0,0,0));
@@ -1551,15 +1646,235 @@ void robot_sphere_representation::SphereRep::createEmptyDistanceField()
   df_body_aabb_.clear();
 }
 
-void robot_sphere_representation::SphereRep::solveUsingZeroSpheres()
+distance_field::PropagationDistanceField* robot_sphere_representation::SphereCalc::getRequiredDistanceField()
+{
+  PROF_PUSH_SCOPED(getRequiredDistanceField);
+
+  AABB aabb;
+  aabb.clear();
+  aabb.add(required_points_);
+
+  V3 aabb_size = aabb.max_ - aabb.min_;
+  aabb.min_.array() -= 2.0 * resolution_;
+  aabb.max_.array() += 2.0 * resolution_;
+
+  for (int i=0; i<3; i++)
+  {
+    double v = aabb.min_(i);
+    double x = std::floor(v * oo_resolution_);
+    aabb.min_(i) = resolution_ * x;
+  }
+
+  V3 aabb_size_ = aabb.max_ - aabb.min_;
+
+  const double max_dist = 2.0 * resolution_;
+
+  distance_field::PropagationDistanceField *df_req = new distance_field::PropagationDistanceField(
+                  df_aabb_size_.x(),
+                  df_aabb_size_.y(),
+                  df_aabb_size_.z(),
+                  resolution_,
+                  df_aabb_.min_.x(),
+                  df_aabb_.min_.y(),
+                  df_aabb_.min_.z(),
+                  max_dist,
+                  false);
+  df_req->addPointsToField(required_points_);
+
+  PROF_POP();
+  return df_req;
+}
+
+void robot_sphere_representation::SphereCalc::getConcaveRequiredPoints(
+      EigenSTL::vector_Vector3d& points) const
+{
+  points.clear();
+  if (!concave_voxel_grid_)
+    return;
+
+  int xend = concave_voxel_grid_->getNumCells(distance_field::DIM_X);
+  int yend = concave_voxel_grid_->getNumCells(distance_field::DIM_Y);
+  int zend = concave_voxel_grid_->getNumCells(distance_field::DIM_Z);
+
+  points.reserve(xend * yend * zend);
+  int cnt = 0;
+
+  V3i ipt;
+  for (ipt.x() = xend - 1 ; ipt.x() >= 0 ; --ipt.x())
+  {
+    for (ipt.y() = yend - 1 ; ipt.y() >= 0 ; --ipt.y())
+    {
+      for (ipt.z() = zend - 1 ; ipt.z() >= 0 ; --ipt.z())
+      {
+        ConcaveVoxel &v = concave_voxel_grid_->getVoxel(ipt);
+        if (v.flags_ & ConcaveVoxel::REQUIRED)
+        {
+          points.resize(++cnt);
+          concave_voxel_grid_->gridToWorld(ipt.x(), ipt.y(), ipt.z(), points.back().x(), points.back().y(), points.back().z());
+        }
+      }
+    }
+  }
+}
+
+bool robot_sphere_representation::SphereCalc::calcConcaveVoxelGrid()
+{
+  if (concave_voxel_grid_)
+    return true;
+
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid);
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_createMesh);
+
+  const robot_model::LinkModel* lm = link_state_->getLinkModel();
+  const shapes::ShapeConstPtr& shape = lm->getShape();
+  
+  if (!shape)
+    return false;
+
+  double concave_resolution = resolution_ * 0.5;
+  double oo_concave_resolution = 1.0 / concave_resolution;
+  AABB aabb;
+
+  const shapes::Mesh *mesh_shape = dynamic_cast<const shapes::Mesh*>(shape.get());
+  mesh_core::Mesh mesh;
+  bodies::Body *body = NULL;
+
+  if (mesh_shape)
+  {
+    mesh.add(mesh_shape->triangle_count, (int*)mesh_shape->triangles, mesh_shape->vertices);
+    mesh.fillGaps();
+    mesh.getAABB(aabb.min_, aabb.max_);
+  }
+  else
+  {
+    body = bodies::createBodyFromShape(shape.get());
+    std::vector<double> dim = body->getDimensions();
+    Eigen::Vector3d dimv(dim[0], dim[1], dim[2]);
+    aabb.min_ = dimv * -0.5;
+    aabb.max_ = dimv *  0.5;
+  }
+
+  aabb.min_.array() -= 2.0 * concave_resolution;
+  aabb.max_.array() += 2.0 * concave_resolution;
+
+  for (int i=0; i<3; i++)
+  {
+    double v = aabb.min_(i);
+    double x = std::floor(v * oo_concave_resolution);
+    aabb.min_(i) = concave_resolution * x;
+  }
+
+  Eigen::Vector3d size = aabb.max_ - aabb.min_;
+  
+
+  // create a distance field for required points.
+  // Points in mesh outside this are considered optional.
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_createReqDF);
+  distance_field::PropagationDistanceField *df_req = getRequiredDistanceField();
+  PROF_POP();
+
+
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_CreateGrid);
+
+  concave_voxel_grid_.reset(new ConcaveGrid(
+                                  size.x(),
+                                  size.y(),
+                                  size.z(),
+                                  concave_resolution,
+                                  aabb.min_.x(),
+                                  aabb.min_.y(),
+                                  aabb.min_.z(),
+                                  ConcaveVoxel()));
+                                    
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_GatherPoints);
+
+  const Eigen::Affine3d& xform = link_state_->getGlobalCollisionBodyTransform();
+
+  EigenSTL::vector_Vector3d points;
+  if (mesh_shape)
+  {
+    mesh.getInsidePoints(points, concave_resolution);
+  }
+  else
+  {
+    int xend = concave_voxel_grid_->getNumCells(distance_field::DIM_X);
+    int yend = concave_voxel_grid_->getNumCells(distance_field::DIM_Y);
+    int zend = concave_voxel_grid_->getNumCells(distance_field::DIM_Z);
+
+    points.reserve(xend * yend * zend);
+    int cnt = 0;
+
+    V3i ipt;
+    for (ipt.x() = xend - 1 ; ipt.x() >= 0 ; --ipt.x())
+    {
+      for (ipt.y() = yend - 1 ; ipt.y() >= 0 ; --ipt.y())
+      {
+        for (ipt.z() = zend - 1 ; ipt.z() >= 0 ; --ipt.z())
+        {
+          Eigen::Vector3d lpt;
+          concave_voxel_grid_->gridToWorld(ipt.x(), ipt.y(), ipt.z(), lpt.x(), lpt.y(), lpt.z());
+          if (body->containsPoint(lpt.x(), lpt.y(), lpt.z()))
+          {
+            points.push_back(lpt);
+          }
+        }
+      }
+    }
+  }
+
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid);
+
+  // find required points - in mesh and near required_points
+  // find optional points - in mesh and outside required_points
+  {
+    EigenSTL::vector_Vector3d::const_iterator it = points.begin();
+    EigenSTL::vector_Vector3d::const_iterator end = points.end();
+    for ( ; it != end ; ++it)
+    {
+      ConcaveVoxel &v = concave_voxel_grid_->getVoxel(*it);
+      Eigen::Vector3d rpoint = xform * *it;
+      double d_req = df_req->getDistance(rpoint.x(), rpoint.y(), rpoint.z());
+      double d_opt = voxel_grid_->getDistanceInterp(rpoint);
+      v.flags_ |= ConcaveVoxel::IN_MESH;
+      v.flags_ |= ConcaveVoxel::IN_HULL;
+      if (d_req < resolution_)
+      {
+        v.flags_ |= ConcaveVoxel::REQUIRED;
+      }
+      else if (d_opt < 0.0)
+      {
+        v.flags_ |= ConcaveVoxel::OPTIONAL;
+      }
+      v.distance_ = d_opt;
+    }
+  }
+
+  PROF_POP();
+  PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_FillConvexGrid2);
+
+  delete body;
+  delete df_req;
+
+  PROF_POP();
+
+  return true;
+}
+
+
+
+void robot_sphere_representation::SphereCalc::solveUsingZeroSpheres()
 {
   clear(0);
   saveCurrentState("ZeroSpheres", true, save_history_);
 }
 
-void robot_sphere_representation::SphereRep::solveUsingClustering()
+void robot_sphere_representation::SphereCalc::solveUsingClustering()
 {
-  PROF_PUSH_SCOPED(SphereRep_solveUsingClustering);
+  PROF_PUSH_SCOPED(SphereCalc_solveUsingClustering);
 
   int nspheres = std::min(nspheres_requested_, required_points_.size());
   nspheres = std::max(1, nspheres);
@@ -1575,9 +1890,9 @@ void robot_sphere_representation::SphereRep::solveUsingClustering()
   checkQuality("Clustering");
 }
 
-double robot_sphere_representation::SphereRep::calcQuality(const Result& result, QualMethod qual_method) const
+double robot_sphere_representation::SphereCalc::calcQuality(const Result& result, QualMethod qual_method) const
 {
-  PROF_PUSH_SCOPED(SphereRep_calcQuality);
+  PROF_PUSH_SCOPED(SphereCalc_calcQuality);
   switch (qual_method)
   {
   case QualMethod::MAX_DIST:
@@ -1594,7 +1909,7 @@ double robot_sphere_representation::SphereRep::calcQuality(const Result& result,
 
 // callback for calcQuality()
 // Check point to see if it is bad, and if so accumulate it into quality
-void robot_sphere_representation::SphereRep::badPointQuality(
+void robot_sphere_representation::SphereCalc::badPointQuality(
               int sphere,
               BadPointMap* bad_points,
               const V3* point,
@@ -1606,17 +1921,17 @@ void robot_sphere_representation::SphereRep::badPointQuality(
 }
 
 // calculate quality of current state by looking at included bad points.
-double robot_sphere_representation::SphereRep::calcQualityByBadCount(const Result& result) const
+double robot_sphere_representation::SphereCalc::calcQualityByBadCount(const Result& result) const
 {
-  PROF_PUSH_SCOPED(SphereRep_calcQuality_BadCount);
+  PROF_PUSH_SCOPED(SphereCalc_calcQuality_BadCount);
 
   int last_bad_cnt = 0;
   BadPointMap bad_points;
 
   for (std::size_t sphere = 0 ; sphere < result.nspheres_ ; ++sphere)
   {
-    const_cast<SphereRep*>(this)->sphereIterate(
-                  boost::bind(&SphereRep::badPointQuality, const_cast<SphereRep*>(this), sphere, &bad_points, _1, _2),
+    const_cast<SphereCalc*>(this)->sphereIterate(
+                  boost::bind(&SphereCalc::badPointQuality, const_cast<SphereCalc*>(this), sphere, &bad_points, _1, _2),
                   result.centers_[sphere],
                   result.radius1_[sphere] - resolution_,
                   result.radius2_[sphere]);
@@ -1630,9 +1945,9 @@ double robot_sphere_representation::SphereRep::calcQualityByBadCount(const Resul
 }
 
 // calculate quality of current state by looking at farthest sphere point from object
-double robot_sphere_representation::SphereRep::calcQualityByMaxDistance(const Result& result) const
+double robot_sphere_representation::SphereCalc::calcQualityByMaxDistance(const Result& result) const
 {
-  PROF_PUSH_SCOPED(SphereRep_calcQuality_MaxDist);
+  PROF_PUSH_SCOPED(SphereCalc_calcQuality_MaxDist);
 
   double quality = 0.0;
   for (std::size_t sphere = 0 ; sphere < result.nspheres_ ; ++sphere)
@@ -1643,9 +1958,9 @@ double robot_sphere_representation::SphereRep::calcQualityByMaxDistance(const Re
 }
 
 // calculate quality of current state by looking at portion of sphere sticking out
-double robot_sphere_representation::SphereRep::calcQualityByRadius(const Result& result) const
+double robot_sphere_representation::SphereCalc::calcQualityByRadius(const Result& result) const
 {
-  PROF_PUSH_SCOPED(SphereRep_calcQuality_Radius);
+  PROF_PUSH_SCOPED(SphereCalc_calcQuality_Radius);
 
   double quality = 0.0;
   for (std::size_t sphere = 0 ; sphere < result.nspheres_ ; ++sphere)
@@ -1658,9 +1973,9 @@ double robot_sphere_representation::SphereRep::calcQualityByRadius(const Result&
 // find quality of current state.
 // Quality is the sum of x for each bad point included in a sphere, where x is
 // the square of the distance from the surface.
-void robot_sphere_representation::SphereRep::checkQuality(const char* algorithm)
+void robot_sphere_representation::SphereCalc::checkQuality(const char* algorithm)
 {
-  PROF_PUSH_SCOPED(SphereRep_checkQuality);
+  PROF_PUSH_SCOPED(SphereCalc_checkQuality);
 
   current_.quality_ = calcQuality(current_, current_.qual_method_);
 
@@ -1680,7 +1995,7 @@ void robot_sphere_representation::SphereRep::checkQuality(const char* algorithm)
   }
 }
 
-void robot_sphere_representation::SphereRep::saveCurrentState(
+void robot_sphere_representation::SphereCalc::saveCurrentState(
                                                     const char *algorithm,
                                                     bool save_best,
                                                     bool save_history)
@@ -1704,14 +2019,14 @@ void robot_sphere_representation::SphereRep::saveCurrentState(
 }
 
 
-bool robot_sphere_representation::SphereRep::checkSuccess()
+bool robot_sphere_representation::SphereCalc::checkSuccess()
 {
   iterations_since_improvement_++;
   if (iterations_since_improvement_ > 10)
   {
     if (step_size_ < resolution_ * 0.1)
     {
-      logInform("SphereRep(%s) %d iterations since improvement.  Quitting.",
+      logInform("SphereCalc(%s) %d iterations since improvement.  Quitting.",
         getName().c_str(),
         iterations_since_improvement_);
       return true;
@@ -1719,7 +2034,7 @@ bool robot_sphere_representation::SphereRep::checkSuccess()
     else
     {
       step_size_ *= 0.25;
-      logInform("SphereRep(%s) %d iterations since improvement. setting step_size=%f",
+      logInform("SphereCalc(%s) %d iterations since improvement. setting step_size=%f",
         getName().c_str(),
         iterations_since_improvement_,
         step_size_);
@@ -1733,12 +2048,12 @@ bool robot_sphere_representation::SphereRep::checkSuccess()
       return false;
   }
 
-  logInform("SphereRep(%s) SUCCESS!", getName().c_str());
+  logInform("SphereCalc(%s) SUCCESS!", getName().c_str());
   return true;
 }
 
 // for GOBBLE
-void robot_sphere_representation::SphereRep::applyCenterMotions()
+void robot_sphere_representation::SphereCalc::applyCenterMotions()
 {
   for (std::size_t sphere = 0 ; sphere < current_.nspheres_ ; ++sphere)
   {
@@ -1747,7 +2062,7 @@ void robot_sphere_representation::SphereRep::applyCenterMotions()
 }
 
 // for GOBBLE
-void robot_sphere_representation::SphereRep::findCenterMotions()
+void robot_sphere_representation::SphereCalc::findCenterMotions()
 {
   for (std::size_t sphere = 0 ; sphere < current_.nspheres_ ; ++sphere)
   {
@@ -1755,7 +2070,7 @@ void robot_sphere_representation::SphereRep::findCenterMotions()
     spheres_[sphere].motion_.setZero();
 
     if (current_.radius1_[sphere] < resolution_)
-      logWarn("SphereRep(%s) Sphere %d has tiny radius1=%f r2=%f",getName().c_str(), sphere, current_.radius1_[sphere], current_.radius2_[sphere]);
+      logWarn("SphereCalc(%s) Sphere %d has tiny radius1=%f r2=%f",getName().c_str(), sphere, current_.radius1_[sphere], current_.radius2_[sphere]);
 
     if (spheres_[sphere].exclusive_distant_good_points_.empty())
     {
@@ -1776,7 +2091,7 @@ void robot_sphere_representation::SphereRep::findCenterMotions()
 }
 
 // for GOBBLE: assign distant good points that are only in one r2 sphere to that sphere
-void robot_sphere_representation::SphereRep::assignExclusiveDistantGoodPoints()
+void robot_sphere_representation::SphereCalc::assignExclusiveDistantGoodPoints()
 {
   for (V3List::const_iterator point = distant_good_points_.begin() ; point != distant_good_points_.end() ; ++point)
   {
@@ -1818,9 +2133,9 @@ void robot_sphere_representation::SphereRep::assignExclusiveDistantGoodPoints()
 }
 
 // sphere radii that include all required points
-void robot_sphere_representation::SphereRep::findRadius2()
+void robot_sphere_representation::SphereCalc::findRadius2()
 {
-  PROF_PUSH_SCOPED(SphereRep_findRadius2);
+  PROF_PUSH_SCOPED(SphereCalc_findRadius2);
   if (0)
     findRadius2BySmallestRadiusChange();
   else
@@ -1834,7 +2149,7 @@ void acorn_breakpoint()
 
 // sphere radii that include all required points
 // Assign points so that we minimize the max R2-R1 for all spheres
-void robot_sphere_representation::SphereRep::findRadius2ByLeastDistance()
+void robot_sphere_representation::SphereCalc::findRadius2ByLeastDistance()
 {
   distant_good_points_.clear();
 
@@ -1910,7 +2225,7 @@ void robot_sphere_representation::SphereRep::findRadius2ByLeastDistance()
 
 // sphere radii that include all required points
 // Assign each point to the sphere which will grow the least by adding that point
-void robot_sphere_representation::SphereRep::findRadius2BySmallestRadiusChange()
+void robot_sphere_representation::SphereCalc::findRadius2BySmallestRadiusChange()
 {
   distant_good_points_.clear();
 
@@ -1952,9 +2267,9 @@ void robot_sphere_representation::SphereRep::findRadius2BySmallestRadiusChange()
 }
 
 // sphere radii that do not include any bad points
-void robot_sphere_representation::SphereRep::findRadius1()
+void robot_sphere_representation::SphereCalc::findRadius1()
 {
-  PROF_PUSH_SCOPED(SphereRep_findRadius1);
+  PROF_PUSH_SCOPED(SphereCalc_findRadius1);
   for (std::size_t sphere = 0 ; sphere < current_.nspheres_ ; ++sphere)
   {
     current_.radius1_[sphere] = findClosestBadPointDistance(current_.centers_[sphere],
@@ -1970,7 +2285,7 @@ void robot_sphere_representation::SphereRep::findRadius1()
 // find distance from an interior (good) point to the nearest exterior (bad) point
 // Always returns a positive number.  If argument is exterior then return value
 // is clamped to resolution/10
-double robot_sphere_representation::SphereRep::findClosestBadPointDistance(
+double robot_sphere_representation::SphereCalc::findClosestBadPointDistance(
         const Eigen::Vector3d& center,
         double& exterior_distance)
 {
@@ -1984,7 +2299,7 @@ double robot_sphere_representation::SphereRep::findClosestBadPointDistance(
 }
 
 #if 0
-Eigen::Vector3d robot_sphere_representation::SphereRep::findClosestBadPoint(
+Eigen::Vector3d robot_sphere_representation::SphereCalc::findClosestBadPoint(
         const Eigen::Vector3d& center)
 {
   V3 closest(0,0,0);
@@ -2012,7 +2327,7 @@ Eigen::Vector3d robot_sphere_representation::SphereRep::findClosestBadPoint(
 }
 #endif
 
-void robot_sphere_representation::SphereRep::sphereIterate(
+void robot_sphere_representation::SphereCalc::sphereIterate(
         boost::function<void (const V3*, const V3i*)> func,
         const Eigen::Vector3d& center,
         double min_radius,
@@ -2061,13 +2376,13 @@ inline const std::string& robot_sphere_representation::Link::getName() const
   return lstate_->getName();
 }
 
-const robot_sphere_representation::SphereRep* robot_sphere_representation::Link::getSphereRep(
+const robot_sphere_representation::SphereCalc* robot_sphere_representation::Link::getSphereCalc(
                                                           std::size_t nspheres,
                                                           GenMethod gen_method,
                                                           double tolerance,
                                                           QualMethod qual_method)
 {
-  if (!sphere_rep_)
+  if (!sphere_calc_)
   {
     V3iSet optional_ipoints;
     std::set_difference(all_points_.begin(),
@@ -2077,7 +2392,7 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
                         std::inserter(optional_ipoints, optional_ipoints.end()),
                         robot_sphere_representation::V3iLess());
 
-    logInform("SphereRep(%s) all_points:%d final_points:%d optional:%d",
+    logInform("SphereCalc(%s) all_points:%d final_points:%d optional:%d",
       getName().c_str(),
       all_points_.size(),
       final_points_.size(),
@@ -2103,22 +2418,22 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Link:
       optional_points[i].z() = robot_->gridToWorld(it->z());
     }
 
-    logInform("SphereRep(%s) points:%d optional_points:%d",
+    logInform("SphereCalc(%s) points:%d optional_points:%d",
       getName().c_str(),
       points.size(),
       optional_points.size());
 
-    sphere_rep_ = new SphereRep(nspheres, robot_->resolution_, points, optional_points, getName(), gen_method, tolerance, qual_method);
+    sphere_calc_ = new SphereCalc(nspheres, robot_->resolution_, points, optional_points, lstate_, getName(), gen_method, tolerance, qual_method);
   }
   else
   {
-    sphere_rep_->setParams(nspheres, gen_method, tolerance, qual_method);
+    sphere_calc_->setParams(nspheres, gen_method, tolerance, qual_method);
   }
 
-  return sphere_rep_;
+  return sphere_calc_;
 }
 
-const robot_sphere_representation::SphereRep* robot_sphere_representation::Robot::getLinkSphereRep(
+const robot_sphere_representation::SphereCalc* robot_sphere_representation::Robot::getLinkSphereCalc(
           const std::string& link_name,
           std::size_t nspheres,
           GenMethod gen_method,
@@ -2129,7 +2444,7 @@ const robot_sphere_representation::SphereRep* robot_sphere_representation::Robot
   if (!link)
     return NULL;
 
-  return link->getSphereRep(nspheres, gen_method, tolerance, qual_method);
+  return link->getSphereCalc(nspheres, gen_method, tolerance, qual_method);
 }
 
 
@@ -2217,7 +2532,7 @@ robot_sphere_representation::Link::Link(Robot *robot,
   , lstate_(robot->kstate_->getLinkState(lmodel->getName()))
   , has_collision_(false)
   , cluster_(NULL)
-  , sphere_rep_(NULL)
+  , sphere_calc_(NULL)
   , body_(NULL)
 {}
 
@@ -2225,7 +2540,7 @@ robot_sphere_representation::Link::~Link()
 {
   delete body_;
   delete cluster_;
-  delete sphere_rep_;
+  delete sphere_calc_;
 }
 
 void robot_sphere_representation::Link::calculatePoints()
@@ -2729,4 +3044,24 @@ robot_sphere_representation::Robot::~Robot()
   for (std::map<std::string, Link*>::iterator it = links_.begin() ; it != links_.end() ; ++it)
     delete it->second;
 }
+
+#if ACORN_USE_DFLINKGRID
+robot_sphere_representation::DFLinkGrid::DFLinkGrid(
+      Eigen::Vector3d origin,
+      Eigen::Vector3d size,
+      double resolution)
+  : DFGrid<DFVoxel>(origin, size, resolution)
+{
+}
+
+void robot_sphere_representation::DFLinkGrid::clear()
+{
+  DFVoxel vox;
+  vox.flag_ = DFVoxel::IN_PARENT | DFVoxel::IN_CHILD;
+  vox.dsq_ = 0;
+  DFGrid<DFVoxel>::clear(vox);
+}
+#endif
+
+
 

@@ -62,15 +62,8 @@ inline void collision_detection::CollisionRobotDistanceField::initQuery(
   work.acm_ = acm;
 
   // debug
-  if (1 || work.req_->verbose)
+  if (work.req_->verbose)
     dumpQuery(work, descrip);
-}
-
-inline void collision_detection::CollisionRobotDistanceField::setCloseDistance(
-      WorkArea& work, 
-      double distance) const
-{
-  work.res_->distance = std::min(work.res_->distance, distance);
 }
 
 inline bool collision_detection::CollisionRobotDistanceField::never_check_link_pair(

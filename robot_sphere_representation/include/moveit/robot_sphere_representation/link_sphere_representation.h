@@ -65,6 +65,7 @@ class BoundingCylinder;
 namespace robot_sphere_representation
 {
 class Link;
+class SphereCalc;
 
 class LinkSphereRepresentation
 {
@@ -120,8 +121,12 @@ public:
   const RobotSphereRepresentation* getRobot() const { return robot_; }
   RobotSphereRepresentation* getRobot() { return robot_; }
 
-  const Link* getSphereRepLink() const;
-  Link* getSphereRepLink();
+  const Link* getSphereCalcLink() const;
+  Link* getSphereCalcLink();
+
+  // get sphere rep given current params.  Create if necessary.
+  // May return NULL.
+  const SphereCalc* getSphereCalc() const;
 
   // Actually generate the spheres.  This is not needed as it is called from
   // getSpheres() when required.  However, calling it will ensure that a future
@@ -131,8 +136,8 @@ public:
   // function is just updating them.
   void genSpheres() const;
 
-  // called by RobotSphereRepresentation to update sphere_rep_link_
-  void updateSphereRepLink() const;
+  // called by RobotSphereRepresentation to update sphere_calc_link_
+  void updateSphereCalcLink() const;
 
   // indicate that the spheres must be recalculated.
   void invalidateSpheres() { dirty_ = true; }
@@ -147,8 +152,8 @@ private:
   // copy spheres from srdf.
   void useSrdfSpheres(const srdf::Model *srdf = NULL) const;
 
-  // Use SphereRep methods to generate spheres
-  void genSpheresUsingSphereRep() const;
+  // Use SphereCalc methods to generate spheres
+  void genSpheresUsingSphereCalc() const;
 
 
 
@@ -173,21 +178,21 @@ private:
   mutable boost::shared_ptr<const bodies::Body> body_const_;
 
   // Used to calculate spheres for most of the GenMethods
-  mutable Link *sphere_rep_link_;
+  mutable Link *sphere_calc_link_;
 };
 
 }
 
-inline const robot_sphere_representation::Link* robot_sphere_representation::LinkSphereRepresentation::getSphereRepLink() const
+inline const robot_sphere_representation::Link* robot_sphere_representation::LinkSphereRepresentation::getSphereCalcLink() const
 {
-  robot_->ensureSphereRepRobot();
-  return sphere_rep_link_;
+  robot_->ensureSphereCalcRobot();
+  return sphere_calc_link_;
 }
 
-inline robot_sphere_representation::Link* robot_sphere_representation::LinkSphereRepresentation::getSphereRepLink()
+inline robot_sphere_representation::Link* robot_sphere_representation::LinkSphereRepresentation::getSphereCalcLink()
 {
-  robot_->ensureSphereRepRobot();
-  return sphere_rep_link_;
+  robot_->ensureSphereCalcRobot();
+  return sphere_calc_link_;
 }
 
 

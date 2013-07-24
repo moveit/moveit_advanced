@@ -105,6 +105,15 @@ void collision_detection::StaticDistanceField::initialize(
   AABB aabb;
   aabb.add(points);
 
+  logInform("    space_around_body = %f",space_around_body);
+  logInform("    DF: min=(%7.3f %7.3f %7.3f)  max=(%7.3f %7.3f %7.3f) (pre-space)",
+                              aabb.min_.x(),
+                              aabb.min_.y(),
+                              aabb.min_.z(),
+                              aabb.max_.x(),
+                              aabb.max_.y(),
+                              aabb.max_.z());
+
   aabb.min_ -= Eigen::Vector3d(space_around_body, space_around_body, space_around_body);
   aabb.max_ += Eigen::Vector3d(space_around_body, space_around_body, space_around_body);
 

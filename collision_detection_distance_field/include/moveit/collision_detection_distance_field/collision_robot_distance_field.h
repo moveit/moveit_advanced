@@ -111,16 +111,63 @@ public:
 
 public: /* Special features unique to DistanceField collision */
 
+  // set max distance we want to know about.
+  // The distance*() queries and other queries with
+  // CollisionRequest::distance==true will only return distances up to this
+  // value.
+  void setMaxDistance(double distance);
+
   // Set what method to use.  Mainly for debugging.
   void getMethods(std::vector<std::string>& methods) const;
   void setMethod(const std::string& method);
 
 public: /* DEBUGGING functions */
 
-  // return the collision spheres for a link in link's collision geometry frame.
+  /// return the collision spheres for a link in link's collision geometry frame.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
   void getLinkSpheres(const std::string& link_name,
                       EigenSTL::vector_Vector3d& centers,
                       std::vector<double>& radii) const;
+
+  /// return the collision spheres for a link in link's collision geometry frame.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
+  void getLinkBoundingSphere(const std::string& link_name,
+                      Eigen::Vector3d& center,
+                      double& radii) const;
+
+  /// return the static distance field associated with a link.  Only valid as
+  // long as the CollisionRobotDistanceField exists and does not have its field
+  // regenerated.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
+  const StaticDistanceField* getStaticDistanceField(
+                      const std::string& link_name) const;
+
+  /// Get a list of points showing the distance field.
+  // All points between min_dist and max_dist from the surface of
+  // the link are returned.
+  //
+  // If resolution_relative is true then min_dist/max_dist are a multiple of
+  // the distance field resolution.  Otherwise they are in meters.
+  //
+  // Points are in link collision frame.
+  //
+  // FOR DEBUG. DO NOT RELY ON THIS INTERFACE.
+  // Not guaranteed to be fast or stable.
+  void getStaticDistanceFieldPoints(
+                      const std::string& link_name,
+                      EigenSTL::vector_Vector3d& points,
+                      double min_dist = -1.0,
+                      double max_dist = 0.0,
+                      bool resolution_relative = true) const;
+
+
+
 
   // This is just like a call to checkSelfCollision() but all contacts are
   // returned in df_contacts.
@@ -132,28 +179,8 @@ public: /* DEBUGGING functions */
                       CollisionResult &res,
                       const robot_state::RobotState &state,
                       const AllowedCollisionMatrix *acm,
-                      std::vector<DFContact>* df_contacts) const;
-
-  // return the static distance field associated with a link.  Only valid as
-  // long as the CollisionRobotDistanceField exists and does not have its field
-  // regenerated.
-  const StaticDistanceField* getStaticDistanceField(
-                      const std::string& link_name) const;
-
-  // Get a list of points showing the distance field.
-  // All points between min_dist and max_dist from the surface of
-  // the link are returned.
-  //
-  // If resolution_relative is true then min_dist/max_dist are a multiple of
-  // the distance field resolution.  Otherwise they are in meters.
-  //
-  // Points are in link collision frame.
-  void getStaticDistanceFieldPoints(
-                      const std::string& link_name,
-                      EigenSTL::vector_Vector3d& points,
-                      double min_dist = -1.0,
-                      double max_dist = 0.0,
-                      bool resolution_relative = true) const;
+                      std::vector<DFContact>* df_contacts = NULL,
+                      DFContact *df_distance = NULL) const;
 
 
 protected:
@@ -209,6 +236,7 @@ private:
   struct WorkArea
   {
   public:
+    WorkArea();
     ~WorkArea();
 
 
@@ -231,6 +259,9 @@ private:
 
     // if this is non-NULL it will get ALL contacts detected
     std::vector<DFContact>* df_contacts_;
+
+    // if this is non-null it will contain info about the closest (or deepest) contact
+    DFContact *df_distance_;
   };
 
 
@@ -295,9 +326,6 @@ private:
   // true if this link pair should never be checked for collision because it
   // appears in an SRDF DisabledCollisionPair.
   bool never_check_link_pair(const DFLink *link_a, const DFLink *link_b) const;
-
-  // accumulate distance into work.res_.distance
-  void setCloseDistance(WorkArea& work, double distance) const;
 
   // initialize query
   void initQuery(WorkArea& work,
@@ -384,6 +412,19 @@ private:
   // initialize IntraDF data structures
   void initLinkDF();
 
+  // Fill in <contact> with info about a collision.
+  // If <df_contact> is not NULL fill it in too.
+  void createContact(
+      WorkArea& work,
+      Contact &contact,                 // this gets filled in.
+      DFContact *df_contact,            // this gets filled in if not NULL
+      const DFLink& link_a,                       // the link with the distance field
+      const DFLink& link_b,                       // the link with the sphere
+      const robot_state::LinkState& lsa,          // LinkState for link_a
+      const DistPosEntry& df_entry_a,             // distance field entry
+      double dist,                                // collision distance (aka -depth)
+      const Eigen::Vector3d& sphere_center_b_in_link_a_coord_frame,  // the sphere center in link_a's coord frame
+      double radius_b) const;                     // sphere radius
 
   //###########################################################################
   //############################### DATA ######################################
@@ -393,9 +434,13 @@ private:
   // Configuration - set in params.cpp
   //===========================================================================
 
+  // Distance queries will return this value or smaller.
   // This is used to decide how big to make the distance fields.
-  // It is roughly the max distance that will be returned by distance*() queries.
   double MAX_DISTANCE_;
+
+  // This is the value for MAX_DISTANCE_ that was used for initialization.
+  // MAX_DISTANCE_ can be less then this but nmot more than this.
+  double MAX_DISTANCE_FOR_INIT_;
 
   // This is the resolution used for self collision detection.  The accuracy of
   // collision checks will be this plus the tolerance used to generate

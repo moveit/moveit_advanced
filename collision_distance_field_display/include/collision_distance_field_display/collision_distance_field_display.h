@@ -65,11 +65,15 @@ namespace robot_sphere_representation
 class RobotSphereRepresentation;
 }
 
+namespace mesh_ros
+{
+class RvizMeshShape;
+}
+
 namespace moveit_rviz_plugin
 {
-
 class PerLinkObjList;
-class SpheresDisplay;
+class ShapesDisplay;
 
 // Visualise collision distance field info.
 class CollisionDistanceFieldDisplay: public PlanningSceneDisplay
@@ -84,12 +88,12 @@ public:
   robot_state::RobotStateConstPtr getRobotState() const;
 
   const boost::shared_ptr<PerLinkObjList>& getLinkObjects() { return per_link_objects_; }
-  const boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation>& getSphereRep() { return robot_sphere_rep_; }
+  const boost::shared_ptr<robot_sphere_representation::RobotSphereRepresentation>& getRobotSphereRepresentation() { return robot_sphere_rep_; }
 
   const collision_detection::CollisionRobotDistanceField *getCollisionRobotDistanceField() const;
   const collision_detection::CollisionWorldDistanceField *getCollisionWorldDistanceField() const;
 
-  // Update global and per-link property values to match actual values in SphereRep.
+  // Update global and per-link property values to match actual values in RobotSphereRepresentation.
   void updateLinkSphereGenPropertyValues();
   void updateAllSphereGenPropertyValues();
 
@@ -111,6 +115,11 @@ public:
                        const collision_detection::StaticDistanceField *df,
                        Ogre::SceneNode *node = NULL,
                        const Eigen::Affine3d& transform_to_node = Eigen::Affine3d::Identity()) const;
+
+  // debug iteration property value
+  int getDebugIteration() const;
+
+  rviz::DisplayContext* getDisplayContext() { return context_; }
 
 protected:
   virtual void onInitialize();
@@ -167,7 +176,7 @@ private:
   void saveSpheresToSrdf();
 
   // Add per link data displays.
-  void addPerLinkData(rviz::Property* df_collision_property, rviz::Property* parent_property);
+  void addPerLinkData();
   void addSphereGenProperties(rviz::Property* parent_property);
 
   // for drawing the robot
@@ -196,17 +205,22 @@ private:
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
   rviz::ColorProperty* colliding_link_color_property_;
-  rviz::BoolProperty* show_contact_points_property_;
+  rviz::BoolProperty* contact_points_enable_property_;
   rviz::ColorProperty* contact_points_color_property_;
   rviz::FloatProperty* contact_points_size_property_;
-  rviz::BoolProperty* show_colliding_spheres_property_;
+  rviz::BoolProperty* colliding_spheres_enable_property_;
   rviz::ColorProperty* colliding_sphere_color_property_;
   rviz::FloatProperty* colliding_sphere_alpha_property_;
+  rviz::BoolProperty* closest_distance_enable_property_;
+  rviz::FloatProperty* closest_distance_value_property_;
+  rviz::ColorProperty* closest_distance_color_property_;
+  rviz::FloatProperty* closest_distance_alpha_property_;
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
   rviz::FloatProperty* robot_alpha_property_;
   rviz::Property* collision_detection_category_;
   rviz::Property* sphere_gen_category_;
+  rviz::Property* mesh_vis_category_;
   rviz::BoolProperty* save_to_srdf_property_;
   rviz::EnumProperty* sphere_gen_method_property_;
   rviz::EnumProperty* sphere_qual_method_property_;
@@ -220,6 +234,7 @@ private:
   rviz::ColorProperty* df_point_examine_color_;
   rviz::ColorProperty* df_point_examine_near_color_;
   rviz::FloatProperty* df_point_examine_size_;
+  rviz::IntProperty* debug_iteration_;
 
   // per link visible objects to display
   boost::shared_ptr<PerLinkObjList> per_link_objects_;
@@ -232,8 +247,11 @@ private:
   bool saving_spheres_to_srdf_; // true to trigger saving spheres to SRDF
 
   // for displaying contact points and colliding spheres 
-  boost::shared_ptr<SpheresDisplay> contact_points_display_;
-  boost::shared_ptr<SpheresDisplay> colliding_spheres_display_;
+  boost::shared_ptr<ShapesDisplay> contact_points_display_;
+  boost::shared_ptr<ShapesDisplay> colliding_spheres_display_;
+  boost::shared_ptr<ShapesDisplay> distance_display_;
+
+  boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_shape_;
 };
 
 }

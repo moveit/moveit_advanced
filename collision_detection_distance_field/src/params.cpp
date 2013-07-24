@@ -72,10 +72,21 @@ void collision_detection::CollisionRobotDistanceField::initParams()
 {
   // The distance() queries will only be accurate up to this distance apart.
   MAX_DISTANCE_ = 0.25;
+  MAX_DISTANCE_FOR_INIT_ = 0.25;
 
   SELF_COLLISION_RESOLUTION_ = 0.03;
 
   method_ = METHOD_INTRA_DF;
+}
+
+void collision_detection::CollisionRobotDistanceField::setMaxDistance(double distance)
+{
+  MAX_DISTANCE_ = distance;
+  if (MAX_DISTANCE_ > MAX_DISTANCE_FOR_INIT_)
+  {
+    MAX_DISTANCE_FOR_INIT_ = MAX_DISTANCE_;
+    initLinks();
+  }
 }
 
 void collision_detection::CollisionRobotDistanceField::getMethods(std::vector<std::string>& methods) const

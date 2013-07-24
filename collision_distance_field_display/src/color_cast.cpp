@@ -43,11 +43,6 @@
 #include <rviz/properties/color_property.h>
 #include <rviz/properties/float_property.h>
 
-Eigen::Vector4f color_cast::getColorf(const Eigen::Vector4f& colorf)
-{
-  return colorf;
-}
-
 Eigen::Vector4f color_cast::getColorf(const std_msgs::ColorRGBA& colorRGBA)
 {
   return Eigen::Vector4f(colorRGBA.r, colorRGBA.g, colorRGBA.b, colorRGBA.a);
@@ -152,4 +147,74 @@ Ogre::ColourValue color_cast::getOColor(const Ogre::ColourValue& oc)
 Ogre::ColourValue color_cast::getOColor(rviz::ColorProperty *color_prop, rviz::FloatProperty *alpha_prop)
 {
   return getOColor(getColorf(color_prop, alpha_prop));
+}
+
+color_cast::Color::Color(const std_msgs::ColorRGBA& color)
+  : color_(color.r, color.g, color.b, color.a)
+{}
+
+color_cast::Color::Color(const QColor& color)
+  : color_(color.redF(), color.greenF(), color.blueF(), color.alphaF())
+{}
+
+color_cast::Color::Color(const Ogre::ColourValue& color)
+  : color_(color.r, color.g, color.b, color.a)
+{}
+
+color_cast::Color::Color(rviz::ColorProperty *color_prop, rviz::FloatProperty *alpha_prop)
+  : color_(1,1,1,1)
+{
+  if (alpha_prop)
+  {
+    double a = alpha_prop->getFloat();
+    if (a>1.0) a=1.0;
+    if (a<0.0) a=0.0;
+    color_.w() = a;
+  }
+  if (color_prop)
+  {
+    Ogre::ColourValue oc = color_prop->getOgreColor();
+    color_.x() = oc.r;
+    color_.y() = oc.g;
+    color_.z() = oc.b;
+  }
+}
+
+std_msgs::ColorRGBA color_cast::Color::getColorRGBA() const
+{
+  std_msgs::ColorRGBA result;
+  result.r = color_.x();
+  result.g = color_.y();
+  result.b = color_.z();
+  result.a = color_.w();
+  return result;
+}
+
+QColor color_cast::Color::getQColor() const
+{
+  int r = color_.x() * 255.0;
+  int g = color_.y() * 255.0;
+  int b = color_.z() * 255.0;
+  int a = color_.w() * 255.0;
+  return QColor(
+            std::min(255, std::max(0, r)),
+            std::min(255, std::max(0, g)),
+            std::min(255, std::max(0, b)),
+            std::min(255, std::max(0, a)));
+}
+
+Ogre::ColourValue color_cast::Color::getOColor() const
+{
+  return Ogre::ColourValue(color_.x(), color_.y(), color_.z(), color_.w());
+}
+
+const color_cast::Color& color_cast::Color::getDefault()
+{
+  static Color default_color; // opaque white using default constructor
+  return default_color;
+}
+
+bool color_cast::Color::isDefault() const
+{
+  return this == &getDefault();
 }

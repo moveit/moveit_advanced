@@ -17,6 +17,8 @@ find_package(
     geometry_msgs
     moveit_core
     moveit_msgs
+    robot_sphere_representation
+    rostime
     shape_msgs
     shape_tools
     visualization_msgs

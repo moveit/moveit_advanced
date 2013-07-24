@@ -46,7 +46,7 @@ moveit_rviz_plugin::DFLink::DFLink(
     CollisionDistanceFieldDisplay *display)
   : RobotLink(robot, link, parent_joint_name, visual, collision)
   , sample_prop_(NULL)
-  , sphere_rep_(NULL)
+  , link_sphere_rep_(NULL)
   , display_(display)
   , inUpdatePropertyValues(false)
 {
@@ -60,7 +60,7 @@ moveit_rviz_plugin::DFLink::DFLink(
                             this );
   sample_prop_->hide();
 
-  sphere_rep_ = display_->getSphereRep()->getLink(getName());
+  link_sphere_rep_ = display_->getRobotSphereRepresentation()->getLink(getName());
 
   addSphereGenProperties(link_property_);
 
@@ -101,6 +101,20 @@ void moveit_rviz_plugin::DFLink::getLinkSpheres(
   }
 }
 
+void moveit_rviz_plugin::DFLink::getLinkBoundingSphere(
+      Eigen::Vector3d& center, 
+      double& radius) const
+{
+  const collision_detection::CollisionRobotDistanceField *crobot_df = display_->getCollisionRobotDistanceField();
+  if (crobot_df)
+    crobot_df->getLinkBoundingSphere( getName(), center, radius );
+  else
+  {
+    center = Eigen::Vector3d(0,0,0);
+    radius = 0;
+  }
+}
+
 
 
 moveit_rviz_plugin::DFLinkFactory::DFLinkFactory(CollisionDistanceFieldDisplay *display)
@@ -119,3 +133,22 @@ rviz::RobotLink* moveit_rviz_plugin::DFLinkFactory::createLink(
 }
 
 
+const robot_model::RobotModelConstPtr& moveit_rviz_plugin::DFLink::getRobotModel() const
+{
+  return getDisplay()->getRobotModel();
+}
+
+robot_state::RobotStateConstPtr moveit_rviz_plugin::DFLink::getRobotState() const
+{
+  return getDisplay()->getRobotState();
+}
+
+const robot_model::LinkModel *moveit_rviz_plugin::DFLink::getLinkModel() const
+{
+  return getRobotModel()->getLinkModel(getName());
+}
+
+const robot_state::LinkState *moveit_rviz_plugin::DFLink::getLinkState() const
+{
+  return getRobotState()->getLinkState(getName());
+}

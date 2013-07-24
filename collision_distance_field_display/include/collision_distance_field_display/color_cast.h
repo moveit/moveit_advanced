@@ -81,7 +81,60 @@ namespace color_cast
   Ogre::ColourValue getOColor(const QColor& qcolor);
   Ogre::ColourValue getOColor(const Ogre::ColourValue& oc);
   Ogre::ColourValue getOColor(rviz::ColorProperty *color_prop = NULL, rviz::FloatProperty *alpha_prop = NULL);
+
+  class Color
+  {
+  public:
+    Color(float r, float g, float b, float a = 1.0);
+    Color(const Eigen::Vector4f& color);
+    Color(const Eigen::Vector3f& color);
+    Color(const Eigen::Vector4d& color);
+    Color(const Eigen::Vector3d& color);
+    Color(const std_msgs::ColorRGBA& color);
+    Color(const QColor& color);
+    Color(const Ogre::ColourValue& color);
+    Color(rviz::ColorProperty *color_prop = NULL, rviz::FloatProperty *alpha_prop = NULL);
+
+    // Get the default color.  Always white.  Use isDefault() to check for default.
+    static const Color& getDefault();
+
+    // true if this is the default color
+    bool isDefault() const;
+
+    const Eigen::Vector4f& getColorf() const { return color_; }
+    std_msgs::ColorRGBA getColorRGBA() const;
+    QColor getQColor() const;
+    Ogre::ColourValue getOColor() const;
+
+    float r() const { return color_.x(); }
+    float g() const { return color_.y(); }
+    float b() const { return color_.z(); }
+    float a() const { return color_.w(); }
+
+  private:
+    Eigen::Vector4f color_;
+  };
 }
+
+inline color_cast::Color::Color(const Eigen::Vector4f& color)
+  : color_(color)
+{}
+
+inline color_cast::Color::Color(float r, float g, float b, float a)
+  : color_(r,g,b,a)
+{}
+
+inline color_cast::Color::Color(const Eigen::Vector3f& color)
+  : color_(color.x(), color.y(), color.z(), 1.0)
+{}
+
+inline color_cast::Color::Color(const Eigen::Vector4d& color)
+  : color_(color.x(), color.y(), color.z(), color.w())
+{}
+
+inline color_cast::Color::Color(const Eigen::Vector3d& color)
+  : color_(color.x(), color.y(), color.z(), 1.0)
+{}
 
 #endif
 

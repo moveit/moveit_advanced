@@ -36,7 +36,7 @@
 
 #include <moveit/collision_detection_distance_field/collision_robot_distance_field.h>
 #include "collision_robot_distance_field_inline.h"
-#include <geometric_shapes/shape_operations.h>
+#include <moveit/robot_sphere_representation/body_bounding_sphere.h>
 #include <console_bridge/console.h>
 #include <cassert>
 
@@ -69,6 +69,24 @@ void collision_detection::CollisionRobotDistanceField::getLinkSpheres(
       centers.push_back(sphere_centers_[i]);
       radii.push_back(sphere_radii_[i]);
     }
+  }
+}
+
+void collision_detection::CollisionRobotDistanceField::getLinkBoundingSphere(
+      const std::string& link_name,
+      Eigen::Vector3d& center,
+      double& radius) const
+{
+  int link_idx = linkNameToIndex(link_name);
+  if (link_idx >= 0)
+  {
+    center = bounding_sphere_centers_[link_idx];
+    radius = bounding_sphere_radii_[link_idx];
+  }
+  else
+  {
+    center = Eigen::Vector3d(0,0,0);
+    radius = 0;
   }
 }
 
@@ -144,7 +162,7 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
 
     double bounding_radius;
     Eigen::Vector3d bounding_center;
-    shapes::computeShapeBoundingSphere(shape.get(), bounding_center, bounding_radius);
+    robot_sphere_representation::findTightBoundingSphere(*shape, bounding_center, bounding_radius);
     if (bounding_radius <= std::numeric_limits<double>::epsilon())
       continue;
 
