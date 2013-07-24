@@ -1,0 +1,34 @@
+<launch>
+  <!-- Launch RVIZ with pr2 rosparams
+       ARGUMENTS:
+		    rviz_config_args   - which rviz config to use (preceded by -d)
+        rviz_debug         - true to debug rviz
+        debug              - true to debug everything
+        gdb_launch_prefix1 - rviz launch prefix
+  -->
+
+
+  <arg name="rviz_config_args" default="-d $(find collision_distance_field_display)/config/rviz_default.rviz"/>
+  <arg name="rviz_debug" default="false"/>
+  <arg name="debug" default="false"/>
+
+  <arg unless="$(arg rviz_debug)" name="gdb_launch_prefix1" default=""/>
+  <arg     if="$(arg rviz_debug)" name="gdb_launch_prefix1" default="/usr/bin/xterm -j -sb -cr yellow -hc red +vb -si -sk -bg blueviolet -fg white -title 'RVIZ_GDB' -xrm 'xterm.*.iconName: RVIZ_GDB' -xrm 'xterm.*.iconName: RVIZ_GDB' -e gdb --args" />
+  <arg unless="$(arg debug)" name="gdb_launch_prefix2" default=""/>
+  <arg     if="$(arg debug)" name="gdb_launch_prefix2" default="/usr/bin/xterm -j -sb -cr yellow -hc red +vb -si -sk -bg blueviolet -fg white -title 'RVIZ_GDB' -xrm 'xterm.*.iconName: RVIZ_GDB' -xrm 'xterm.*.iconName: RVIZ_GDB' -e gdb --args" />
+
+  <!-- URDF - pr2_description is the one to use  -->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find pr2_description)/robots/pr2.urdf.xacro'" /> 
+  <!-- SRDF - use from pr2_moveit_config.  The one in pr2_description is broken  -->
+  <!-- <param name="robot_description_semantic" textfile="$(find pr2_moveit_config)/config/pr2.srdf" /> -->
+  <param name="robot_description_semantic" textfile="$(find collision_distance_field_display)/config/pr2_spheres.srdf" />
+
+  <node name="rviz" pkg="rviz" type="rviz" launch-prefix="$(arg gdb_launch_prefix1) $(arg gdb_launch_prefix2)" args="$(arg rviz_config_args)" respawn="false" output="screen">
+    <rosparam command="load" file="$(find pr2_moveit_config)/config/kinematics.yaml"/>
+  </node>
+
+</launch>
+
+
+
+
