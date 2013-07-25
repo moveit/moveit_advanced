@@ -182,18 +182,16 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "Contact Points Color",
                                       QColor( 140, 0, 255 ),
                                       "Color to draw collision contact points.",
-                                      collision_detection_category_,
+                                      contact_points_enable_property_,
                                       SLOT( showCollidingSpheresChanged() ),
                                       this);
   contact_points_size_property_ = new rviz::FloatProperty(
                                       "Contact Points Size",
                                       0.02,
                                       "Size of collision contact points (diameter of sphere marker).",
-                                      collision_detection_category_,
+                                      contact_points_enable_property_,
                                       SLOT( showCollidingSpheresChanged() ),
                                       this);
-  contact_points_color_property_->setHidden(!contact_points_enable_property_->getBool());
-  contact_points_size_property_->setHidden(!contact_points_enable_property_->getBool());
 
   colliding_spheres_enable_property_ = new rviz::BoolProperty(
                                       "Show Colliding Spheres",
@@ -206,18 +204,16 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "Colliding Sphere Color",
                                       QColor( 255, 0, 0 ),
                                       "Color to draw spheres that are colliding with something.",
-                                      collision_detection_category_,
+                                      colliding_spheres_enable_property_,
                                       SLOT( showCollidingSpheresChanged() ),
                                       this);
   colliding_sphere_alpha_property_ = new rviz::FloatProperty(
                                       "Colliding Sphere Alpha",
                                       0.3,
                                       "0 is fully transparent, 1.0 is fully opaque.",
-                                      collision_detection_category_,
+                                      colliding_spheres_enable_property_,
                                       SLOT( showCollidingSpheresChanged() ),
                                       this);
-  colliding_sphere_color_property_->setHidden(!colliding_spheres_enable_property_->getBool());
-  colliding_sphere_alpha_property_->setHidden(!colliding_spheres_enable_property_->getBool());
 
   closest_distance_enable_property_ = new rviz::BoolProperty(
                                       "Show Distance",
@@ -230,27 +226,31 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
                                       "Distance",
                                       0.0,
                                       "Distance in meters to closest collision.",
-                                      collision_detection_category_,
+                                      closest_distance_enable_property_,
                                       SLOT( showCollidingSpheresChanged() ),
                                       this);
   closest_distance_value_property_->setReadOnly(true);
-  closest_distance_color_property_ = new rviz::ColorProperty(
-                                      "Distance Color",
-                                      QColor( 128, 255, 128 ),
-                                      "Color to draw sphere and arrow for Show Distance.",
-                                      collision_detection_category_,
+  closest_distance_color_nocollide_property_ = new rviz::ColorProperty(
+                                      "Distance Color - no collision",
+                                      QColor( 252, 255, 38 ),
+                                      "Color to draw sphere and arrow for Show Distance when not in collision.",
+                                      closest_distance_enable_property_,
+                                      SLOT( showCollidingSpheresChanged() ),
+                                      this);
+  closest_distance_color_collide_property_ = new rviz::ColorProperty(
+                                      "Distance Color - colliding",
+                                      QColor( 255, 20, 17 ),
+                                      "Color to draw sphere and arrow for Show Distance when in collision.",
+                                      closest_distance_enable_property_,
                                       SLOT( showCollidingSpheresChanged() ),
                                       this);
   closest_distance_alpha_property_ = new rviz::FloatProperty(
                                       "Distance Alpha",
                                       0.5,
                                       "0 is fully transparent, 1.0 is fully opaque.",
-                                      collision_detection_category_,
+                                      closest_distance_enable_property_,
                                       SLOT( showCollidingSpheresChanged() ),
                                       this);
-  closest_distance_value_property_->setHidden(!closest_distance_enable_property_->getBool());
-  closest_distance_color_property_->setHidden(!closest_distance_enable_property_->getBool());
-  closest_distance_alpha_property_->setHidden(!closest_distance_enable_property_->getBool());
 
   df_point_examine_enable_ = new rviz::BoolProperty(
                                       "Examine DF Point",
@@ -402,13 +402,6 @@ int moveit_rviz_plugin::CollisionDistanceFieldDisplay::getDebugIteration() const
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollidingSpheresChanged()
 {
-  colliding_sphere_color_property_->setHidden(!colliding_spheres_enable_property_->getBool());
-  colliding_sphere_alpha_property_->setHidden(!colliding_spheres_enable_property_->getBool());
-  contact_points_color_property_->setHidden(!contact_points_enable_property_->getBool());
-  contact_points_size_property_->setHidden(!contact_points_enable_property_->getBool());
-  closest_distance_value_property_->setHidden(!closest_distance_enable_property_->getBool());
-  closest_distance_color_property_->setHidden(!closest_distance_enable_property_->getBool());
-  closest_distance_alpha_property_->setHidden(!closest_distance_enable_property_->getBool());
   robot_visual_dirty_ = true;
 }
 
@@ -753,22 +746,20 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
       if (!df_distance.body_name_1.empty() || !df_distance.body_name_2.empty())
       {
-        Eigen::Vector4f color = color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_);
-        distance_display_.reset(new ShapesDisplay(planning_scene_node_,
-                                                  color_cast::getColorf(closest_distance_color_property_, closest_distance_alpha_property_)));
+        Eigen::Vector4f color = df_distance.depth > 0.0 ?
+                                  color_cast::getColorf(closest_distance_color_collide_property_, closest_distance_alpha_property_) :
+                                  color_cast::getColorf(closest_distance_color_nocollide_property_, closest_distance_alpha_property_);
+        distance_display_.reset(new ShapesDisplay(planning_scene_node_, color));
         if (df_distance.sphere_radius_1 > 0.0)
         {
+          
           distance_display_->addSphere(df_distance.sphere_center_1, df_distance.sphere_radius_1);
-          distance_display_->addArrow(df_distance.pos,
-                                      df_distance.sphere_center_1,
-                                      df_distance.depth > 0.0 ? Eigen::Vector4f(1,0,0,color.w()) : color);
+          distance_display_->addArrow(df_distance.pos, df_distance.sphere_center_1);
         }
         if (df_distance.sphere_radius_2 > 0.0)
         {
           distance_display_->addSphere(df_distance.sphere_center_2, df_distance.sphere_radius_2);
-          distance_display_->addArrow(df_distance.pos,
-                                      df_distance.sphere_center_2,
-                                      df_distance.depth > 0.0 ? Eigen::Vector4f(1,0,0,color.w()) : color);
+          distance_display_->addArrow(df_distance.pos, df_distance.sphere_center_2);
         }
       }
     }

@@ -219,7 +219,8 @@ private:
   rviz::FloatProperty* colliding_sphere_alpha_property_;
   rviz::BoolProperty* closest_distance_enable_property_;
   rviz::FloatProperty* closest_distance_value_property_;
-  rviz::ColorProperty* closest_distance_color_property_;
+  rviz::ColorProperty* closest_distance_color_nocollide_property_;
+  rviz::ColorProperty* closest_distance_color_collide_property_;
   rviz::FloatProperty* closest_distance_alpha_property_;
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;
