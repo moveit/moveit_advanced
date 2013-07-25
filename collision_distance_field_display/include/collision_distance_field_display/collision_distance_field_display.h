@@ -172,10 +172,24 @@ private:
   // Creates and/or updates the robot_interaction markers.
   void updateRobotMarkers();
 
+  // get list of links that are in collision
   void getCollidingLinks(planning_scene_monitor::LockedPlanningSceneRO& ps,
                          std::vector<std::string> &links,
                          const robot_state::RobotState &kstate,
                          const collision_detection::AllowedCollisionMatrix& acm) const;
+
+  // draw contact points and normals
+  void showContactPoints(const robot_state::RobotState& state,
+                         planning_scene_monitor::LockedPlanningSceneRO& ps);
+
+  // draw contact points and normals (when using distance field collision
+  void showContactPointsDF(const collision_detection::CollisionRobotDistanceField *crobot,
+                           const robot_state::RobotState& state,
+                           planning_scene_monitor::LockedPlanningSceneRO& ps);
+
+  // draw collision distance arrow
+  void showCollisionDistance(const robot_state::RobotState& state,
+                             planning_scene_monitor::LockedPlanningSceneRO& ps);
 
   // save 
   void saveSpheresToSrdf();
@@ -214,6 +228,7 @@ private:
   rviz::BoolProperty* contact_points_enable_property_;
   rviz::ColorProperty* contact_points_color_property_;
   rviz::FloatProperty* contact_points_size_property_;
+  rviz::FloatProperty* contact_normal_length_property_;
   rviz::BoolProperty* colliding_spheres_enable_property_;
   rviz::ColorProperty* colliding_sphere_color_property_;
   rviz::FloatProperty* colliding_sphere_alpha_property_;
