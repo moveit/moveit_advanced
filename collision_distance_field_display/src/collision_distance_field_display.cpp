@@ -113,6 +113,13 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   collision_method_property_->addOption(COLLISION_METHOD_STRING_FCL.c_str(), CD_FCL);
   collision_method_property_->addOption(COLLISION_METHOD_STRING_DISTANCE_FIELD.c_str(), CD_DISTANCE_FIELD);
   collision_method_property_->setValue(COLLISION_METHOD_STRING_FCL.c_str());
+  collision_df_use_spheres_ = new rviz::BoolProperty(
+                                      "Use Sphere-Sphere check",
+                                      false,
+                                      "When using DistanceField collision, do self collision checks using sphere-sphere instead of sphere-df.",
+                                      robot_state_category_,
+                                      SLOT( changedCollisionMethod() ),
+                                      this );
   active_group_property_ = new rviz::EditableEnumProperty(
                                       "Active Group",
                                       "",
@@ -381,66 +388,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::changedCollisionMethod()
     // failed.  Set property string to actual active detector
     collision_method_property_->setStdString(getPlanningSceneRO()->getActiveCollisionDetectorName());
   }
-
-#if 0
-/////////// TODO: REMOVE THIS DEBUG TEST CODE
-
-  mesh_core::Mesh mesh;
-#if 0
-  mesh.add( Eigen::Vector3d(0,0,0),
-            Eigen::Vector3d(1,1,0),
-            Eigen::Vector3d(1,0,0));
-#endif
-  mesh.add( Eigen::Vector3d(0,0,0),
-            Eigen::Vector3d(0,1,0),
-            Eigen::Vector3d(1,1,0));
-  mesh.add( Eigen::Vector3d(0,0,1),
-            Eigen::Vector3d(1,0,1),
-            Eigen::Vector3d(1,1,1));
-#if 0
-  mesh.add( Eigen::Vector3d(0,0,1),
-            Eigen::Vector3d(1,1,1),
-            Eigen::Vector3d(0,1,1));
-#else
-  // reverse winding
-  mesh.add( Eigen::Vector3d(0,0,1),
-            Eigen::Vector3d(0,1,1),
-            Eigen::Vector3d(1,1,1));
-#endif
-  mesh.add( Eigen::Vector3d(0,0,0),
-            Eigen::Vector3d(0,0,1),
-            Eigen::Vector3d(0,1,1));
-  mesh.add( Eigen::Vector3d(0,0,0),
-            Eigen::Vector3d(0,1,1),
-            Eigen::Vector3d(0,1,0));
-#if 0
-  mesh.add( Eigen::Vector3d(1,0,0),
-            Eigen::Vector3d(1,1,0),
-            Eigen::Vector3d(1,1,1));
-#endif
-  mesh.add( Eigen::Vector3d(1,0,0),
-            Eigen::Vector3d(1,1,1),
-            Eigen::Vector3d(1,0,1));
-  mesh.add( Eigen::Vector3d(0,0,0),
-            Eigen::Vector3d(1,0,0),
-            Eigen::Vector3d(1,0,1));
-  mesh.add( Eigen::Vector3d(0,0,0),
-            Eigen::Vector3d(1,0,1),
-            Eigen::Vector3d(0,0,1));
-  mesh.add( Eigen::Vector3d(0,1,0),
-            Eigen::Vector3d(0,1,1),
-            Eigen::Vector3d(1,1,1));
-#if 0
-  mesh.add( Eigen::Vector3d(0,1,0),
-            Eigen::Vector3d(1,1,1),
-            Eigen::Vector3d(1,1,0));
-#endif
-
-  mesh.fixWindings();
-  mesh.fillGaps();
-
-  mesh_shape_.reset(new mesh_ros::RvizMeshShape(context_, planning_scene_node_, &mesh, Eigen::Vector4f(0,1,0,1)));
-#endif
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::dfPointExamineChanged()
@@ -686,10 +633,46 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, fl
     publishTF();
 }
 
+void moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollidingLinks(
+      planning_scene_monitor::LockedPlanningSceneRO& ps,
+      std::vector<std::string> &links,
+      const robot_state::RobotState &kstate,
+      const collision_detection::AllowedCollisionMatrix& acm) const
+{
+  collision_detection::CollisionRequest req;
+  collision_detection::CollisionDistanceFieldRequest dfreq;
+  collision_detection::CollisionRequest *preq = &req;
+
+  if (collision_df_use_spheres_->getBool())
+  {
+    preq = &dfreq;
+    dfreq.use_sphere_sphere_for_self_collision = true;
+  }
+
+  preq->contacts = true;
+  preq->max_contacts = getRobotModel()->getLinkModelsWithCollisionGeometry().size() + 1;
+  preq->max_contacts_per_pair = 1;
+  collision_detection::CollisionResult res;
+  ps->checkCollision(*preq, res, kstate, acm);
+  links.clear();
+  for (collision_detection::CollisionResult::ContactMap::const_iterator it = res.contacts.begin() ; it != res.contacts.end() ; ++it)
+  {
+    for (std::size_t j = 0 ; j < it->second.size() ; ++j)
+    {
+      if (it->second[j].body_type_1 == collision_detection::BodyTypes::ROBOT_LINK)
+        links.push_back(it->second[j].body_name_1);
+      if (it->second[j].body_type_2 == collision_detection::BodyTypes::ROBOT_LINK)
+        links.push_back(it->second[j].body_name_2);
+    }
+  }
+}
+
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const robot_state::RobotState& state)
 {
+  planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
+
   std::vector<std::string> collision_links;
-  getPlanningSceneRO()->getCollidingLinks(collision_links, state);
+  getCollidingLinks(ps, collision_links, state, ps->getAllowedCollisionMatrix());
 
   unsetAllColors(&robot_visual_->getRobot());
 
@@ -716,10 +699,11 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
     const collision_detection::CollisionRobotDistanceField *crobot = getCollisionRobotDistanceField();
     if (crobot)
     {
-      collision_detection::CollisionRequest req;
+      collision_detection::CollisionDistanceFieldRequest req;
       collision_detection::CollisionResult res;
       std::vector<collision_detection::DFContact> df_contacts;
-      crobot->getSelfCollisionContacts(req, res, state, &getPlanningSceneRO()->getAllowedCollisionMatrix(), &df_contacts);
+      req.use_sphere_sphere_for_self_collision = collision_df_use_spheres_->getBool();
+      crobot->getSelfCollisionContacts(req, res, state, &ps->getAllowedCollisionMatrix(), &df_contacts);
 
       if (!df_contacts.empty() && colliding_spheres_enable_property_->getBool())
       {
@@ -751,7 +735,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
   if (closest_distance_enable_property_->getBool())
   {
-    planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
     const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot();
     
     double dist = crobot->distanceSelf(state);
@@ -762,10 +745,11 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 
     if (crobot_df)
     {
-      collision_detection::CollisionRequest req;
+      collision_detection::CollisionDistanceFieldRequest req;
       collision_detection::CollisionResult res;
       collision_detection::DFContact df_distance;
-      crobot_df->getSelfCollisionContacts(req, res, state, &getPlanningSceneRO()->getAllowedCollisionMatrix(), NULL, &df_distance);
+      req.use_sphere_sphere_for_self_collision = collision_df_use_spheres_->getBool();
+      crobot_df->getSelfCollisionContacts(req, res, state, &ps->getAllowedCollisionMatrix(), NULL, &df_distance);
 
       if (!df_distance.body_name_1.empty() || !df_distance.body_name_2.empty())
       {

@@ -172,6 +172,11 @@ private:
   // Creates and/or updates the robot_interaction markers.
   void updateRobotMarkers();
 
+  void getCollidingLinks(planning_scene_monitor::LockedPlanningSceneRO& ps,
+                         std::vector<std::string> &links,
+                         const robot_state::RobotState &kstate,
+                         const collision_detection::AllowedCollisionMatrix& acm) const;
+
   // save 
   void saveSpheresToSrdf();
 
@@ -201,6 +206,7 @@ private:
   rviz::BoolProperty* show_robot_visual_property_;
   rviz::BoolProperty* show_robot_collision_property_;
   rviz::EnumProperty* collision_method_property_;
+  rviz::BoolProperty* collision_df_use_spheres_;
   rviz::EditableEnumProperty* active_group_property_;
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
