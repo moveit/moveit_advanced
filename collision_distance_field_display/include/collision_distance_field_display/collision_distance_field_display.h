@@ -172,6 +172,25 @@ private:
   // Creates and/or updates the robot_interaction markers.
   void updateRobotMarkers();
 
+  // get list of links that are in collision
+  void getCollidingLinks(planning_scene_monitor::LockedPlanningSceneRO& ps,
+                         std::vector<std::string> &links,
+                         const robot_state::RobotState &kstate,
+                         const collision_detection::AllowedCollisionMatrix& acm) const;
+
+  // draw contact points and normals
+  void showContactPoints(const robot_state::RobotState& state,
+                         planning_scene_monitor::LockedPlanningSceneRO& ps);
+
+  // draw contact points and normals (when using distance field collision
+  void showContactPointsDF(const collision_detection::CollisionRobotDistanceField *crobot,
+                           const robot_state::RobotState& state,
+                           planning_scene_monitor::LockedPlanningSceneRO& ps);
+
+  // draw collision distance arrow
+  void showCollisionDistance(const robot_state::RobotState& state,
+                             planning_scene_monitor::LockedPlanningSceneRO& ps);
+
   // save 
   void saveSpheresToSrdf();
 
@@ -201,6 +220,7 @@ private:
   rviz::BoolProperty* show_robot_visual_property_;
   rviz::BoolProperty* show_robot_collision_property_;
   rviz::EnumProperty* collision_method_property_;
+  rviz::BoolProperty* collision_df_use_spheres_;
   rviz::EditableEnumProperty* active_group_property_;
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
@@ -208,12 +228,14 @@ private:
   rviz::BoolProperty* contact_points_enable_property_;
   rviz::ColorProperty* contact_points_color_property_;
   rviz::FloatProperty* contact_points_size_property_;
+  rviz::FloatProperty* contact_normal_length_property_;
   rviz::BoolProperty* colliding_spheres_enable_property_;
   rviz::ColorProperty* colliding_sphere_color_property_;
   rviz::FloatProperty* colliding_sphere_alpha_property_;
   rviz::BoolProperty* closest_distance_enable_property_;
   rviz::FloatProperty* closest_distance_value_property_;
-  rviz::ColorProperty* closest_distance_color_property_;
+  rviz::ColorProperty* closest_distance_color_nocollide_property_;
+  rviz::ColorProperty* closest_distance_color_collide_property_;
   rviz::FloatProperty* closest_distance_alpha_property_;
   rviz::ColorProperty* joint_violation_link_color_property_;
   rviz::ColorProperty* attached_object_color_property_;

@@ -76,6 +76,8 @@ void collision_detection::StaticDistanceField::initialize(
       bool save_points)
 {
   points_.clear();
+  inv_twice_resolution_ = 1.0 / (2.0 * resolution);
+
 
   logInform("    create points at res=%f",resolution);
   EigenSTL::vector_Vector3d points;
@@ -180,7 +182,6 @@ void collision_detection::StaticDistanceField::initialize(
     getNumCells(distance_field::DIM_X) *
     getNumCells(distance_field::DIM_Y) *
     getNumCells(distance_field::DIM_Z));
-
 
   int pdf_x,pdf_y,pdf_z;
   int sdf_x,sdf_y,sdf_z;
@@ -318,3 +319,18 @@ void collision_detection::StaticDistanceField::initialize(
     std::swap(points, points_);
 }
 
+void collision_detection::StaticDistanceField::getCellGradient(
+      int cell_id,
+      Eigen::Vector3d& gradient) const
+{
+    if (cell_id + this->stride2_ + this->stride1_ + 1 >= num_cells_total_ ||
+      cell_id - this->stride2_ - this->stride1_ - 1 < 0)
+  {
+    gradient = Eigen::Vector3d(1,0,0);
+    return;
+  }
+
+  gradient.x() = (getCell(cell_id + stride1_).distance_ - getCell(cell_id - stride1_).distance_) * inv_twice_resolution_;
+  gradient.y() = (getCell(cell_id + stride2_).distance_ - getCell(cell_id - stride2_).distance_) * inv_twice_resolution_;
+  gradient.z() = (getCell(cell_id +        1).distance_ - getCell(cell_id -        1).distance_) * inv_twice_resolution_;
+}
