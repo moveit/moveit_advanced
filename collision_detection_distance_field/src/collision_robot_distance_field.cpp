@@ -40,15 +40,13 @@
 inline void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
     WorkArea& work) const
 {
-  switch(method_)
+  if (work.use_sphere_sphere_for_self_collision_)
   {
-  case METHOD_SPHERES:
     checkSelfCollisionUsingSpheres(work);
-    break;
-  case METHOD_INTRA_DF:
-  default:
+  }
+  else
+  {
     checkSelfCollisionUsingIntraDF(work);
-    break;
   }
 }
 
@@ -188,6 +186,19 @@ double collision_detection::CollisionRobotDistanceField::distanceOther(
   return 0.0;
 }
 
+collision_detection::CollisionDistanceFieldRequest::CollisionDistanceFieldRequest(
+      const CollisionRequest& req)
+    : CollisionRequest(req)
+    , use_sphere_sphere_for_self_collision(false)
+{
+  const CollisionDistanceFieldRequest *dfreq = dynamic_cast<const CollisionDistanceFieldRequest*>(&req);
+  if (dfreq)
+  {
+    use_sphere_sphere_for_self_collision = dfreq->use_sphere_sphere_for_self_collision;
+  }
+}
+
+
 void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
     const CollisionRequest &req, 
     CollisionResult &res,
@@ -196,7 +207,7 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
     std::vector<DFContact>* df_contacts,
     DFContact *df_distance) const
 {
-  CollisionRequest req2 = req;
+  CollisionDistanceFieldRequest req2(req);
   WorkArea& work = getWorkArea();
   initQuery(work, "getSelfCollisionContacts", &req2, &res, &state, NULL, NULL, NULL, NULL, acm);
 

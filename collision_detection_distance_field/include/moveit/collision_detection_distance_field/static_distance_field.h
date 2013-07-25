@@ -100,11 +100,13 @@ public:
   //   body - describes the occupied cells
   //   resolution - the distance field resolution
   //   space_around_body - how much extra space to include in the distance field outside the body.
+  //   save_points - for debugging the points used can be retrieved with getPoints if this is set to true.
   void initialize(const bodies::Body& body,
                   double resolution,
                   double space_around_body,
                   bool save_points = false);
 
+  // retrieve points used to initialize the distance field
   const EigenSTL::vector_Vector3d& getPoints() const { return points_; }
 
   // find all points on a regular grid that are inside the body
@@ -112,9 +114,13 @@ public:
                                        double resolution,
                                        EigenSTL::vector_Vector3d& points);
 
+  // get gradient given a cell id.  Returns bogus value on border.
+  void getCellGradient(int cell_id, Eigen::Vector3d& gradient) const;
+
 
 private:
   EigenSTL::vector_Vector3d points_;
+  double inv_twice_resolution_;
 };
 
 }
@@ -182,6 +188,5 @@ inline T& collision_detection::VoxelCellGrid<T>::getCell(int cell_id)
 {
   return isCellIdValid(cell_id) ? this->data_[cell_id] : this->default_object_;
 }
-
 
 #endif

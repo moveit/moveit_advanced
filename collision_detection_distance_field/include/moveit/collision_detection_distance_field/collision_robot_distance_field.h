@@ -198,13 +198,6 @@ private:
   typedef uint16_t SphereIndex;
   typedef uint16_t LinkIndex;
 
-  // what method to use to check self collisions
-  enum Method
-  {
-    METHOD_SPHERES,
-    METHOD_INTRA_DF,
-  };
-
   // per link internal info for IntraDF self collision checking
   struct DFLink
   {
@@ -246,6 +239,7 @@ private:
 
     // copies of collision query parameters
     const CollisionRequest *req_;
+    bool use_sphere_sphere_for_self_collision_;
     CollisionResult *res_;
     const robot_state::RobotState *state1_;
     const robot_state::RobotState *state2_;
@@ -446,10 +440,6 @@ private:
   // collision checks will be this plus the tolerance used to generate
   // collision spheres.
   double SELF_COLLISION_RESOLUTION_;
-
-  // what method to use for collision detection.
-  // TODO: replace this with a heuristic and/or make it configurable.
-  Method method_;
 
   //===========================================================================
   // Work area
