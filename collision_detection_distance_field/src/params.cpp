@@ -75,8 +75,6 @@ void collision_detection::CollisionRobotDistanceField::initParams()
   MAX_DISTANCE_FOR_INIT_ = 0.25;
 
   SELF_COLLISION_RESOLUTION_ = 0.03;
-
-  method_ = METHOD_INTRA_DF;
 }
 
 void collision_detection::CollisionRobotDistanceField::setMaxDistance(double distance)
@@ -88,26 +86,6 @@ void collision_detection::CollisionRobotDistanceField::setMaxDistance(double dis
     initLinks();
   }
 }
-
-void collision_detection::CollisionRobotDistanceField::getMethods(std::vector<std::string>& methods) const
-{
-  methods.clear();
-  methods.push_back("INTRA_DF");
-  methods.push_back("SPHERES");
-}
-
-void collision_detection::CollisionRobotDistanceField::setMethod(const std::string& method)
-{
-  if (method == "INTRA_DF")
-    method_ = METHOD_INTRA_DF;
-  else if (method == "SPHERES")
-    method_ = METHOD_SPHERES;
-  else
-  {
-    logError("CollisionRobotDistanceField::setMethod() - bad method %s",method.c_str());
-  }
-}
-
 
 void collision_detection::CollisionRobotDistanceField::updatedPaddingOrScaling(
     const std::vector<std::string> &links)

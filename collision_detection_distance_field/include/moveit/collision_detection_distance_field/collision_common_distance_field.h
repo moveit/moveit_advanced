@@ -71,6 +71,19 @@ struct DFContact : public Contact
 };
 
 
+/** \brief Representation of a collision checking request for distance field collision detection. */
+struct CollisionDistanceFieldRequest : public CollisionRequest
+{
+  CollisionDistanceFieldRequest()
+    : use_sphere_sphere_for_self_collision(false)
+  {}
+  CollisionDistanceFieldRequest(const CollisionRequest& req);
+
+  /** \brief If true, self collision checking is done with sphere-sphere checks (not with distance fields).
+   * This will be slightly slower and the results will be different. */
+  bool use_sphere_sphere_for_self_collision;
+};
+
 extern const AllowedCollisionMatrix empty_acm;
 
 }
