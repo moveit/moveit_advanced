@@ -228,7 +228,9 @@ void collision_detection::CollisionRobotDistanceField::createContact(
   contact.pos = lsa.getGlobalCollisionBodyTransform() * pos;
 
   Eigen::Vector3d center = lsa.getGlobalCollisionBodyTransform() * sphere_center_b_in_link_a_coord_frame;
-  contact.normal = center - pos;
+  Eigen::Vector3d normal;
+  link_a.df_.getCellGradient(df_entry_a.cell_id_, normal);
+  contact.normal = lsa.getGlobalCollisionBodyTransform().linear() * normal;
   if (contact.normal.squaredNorm() > std::numeric_limits<double>::epsilon())
   {
     contact.normal.normalize();

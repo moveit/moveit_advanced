@@ -61,6 +61,13 @@ inline void collision_detection::CollisionRobotDistanceField::initQuery(
   work.other_state2_ = other_state2;
   work.acm_ = acm;
 
+  work.use_sphere_sphere_for_self_collision_ = false;
+  const CollisionDistanceFieldRequest *dfreq = dynamic_cast<const CollisionDistanceFieldRequest*>(req);
+  if (dfreq)
+  {
+    work.use_sphere_sphere_for_self_collision_ = dfreq->use_sphere_sphere_for_self_collision;
+  }
+
   // debug
   if (work.req_->verbose)
     dumpQuery(work, descrip);
