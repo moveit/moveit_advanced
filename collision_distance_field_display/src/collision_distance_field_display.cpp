@@ -668,9 +668,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollidingLinks(
   preq->max_contacts_per_pair = 1;
   collision_detection::CollisionResult res;
 
-preq->distance = true;
-int cnt = 0;
-
   ps->getCollisionWorld()->checkCollision(*preq, res, *crobot, kstate, acm);
 
 
@@ -683,14 +680,8 @@ int cnt = 0;
         links.push_back(it->second[j].body_name_1);
       if (it->second[j].body_type_2 == collision_detection::BodyTypes::ROBOT_LINK)
         links.push_back(it->second[j].body_name_2);
-cnt++;
     }
   }
-logInform("getCollidingLinks()        res=%d  dist=%f  contacts=%d=%d",
-  res.collision?1:0,
-  res.distance,
-  int(res.contact_count),
-  cnt);
 }
 
 int do_dist_check=0;
@@ -704,9 +695,6 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPointsDF(
   collision_detection::CollisionResult res;
   std::vector<collision_detection::DFContact> df_contacts;
   req.use_sphere_sphere_for_self_collision = collision_df_use_spheres_->getBool();
-req.distance = do_dist_check ? true : false;
-res.distance = -1.0;
-int cnt=0;
   crobot->getSelfCollisionContacts(req, res, state, &ps->getAllowedCollisionMatrix(), &df_contacts);
 
   if (!df_contacts.empty() && colliding_spheres_enable_property_->getBool())
@@ -736,24 +724,8 @@ int cnt=0;
         contact_points_display_->addSphere(df_contacts[i].pos, contact_marker_radius);
       if (normal_length > contact_marker_radius)
         contact_points_display_->addArrow(df_contacts[i].pos, df_contacts[i].pos + (normal_length * df_contacts[i].normal));
-cnt++;
     }
   }
-
-logInform("getSelfCollisionContacts() res=%d  dist=%f  contacts=%d=%d   do_dist_check=%d",
-  res.collision?1:0,
-  res.distance,
-  int(res.contact_count),
-  cnt,
-  do_dist_check);
-
-if (!do_dist_check)
-{
-  do_dist_check=1;
-  showContactPointsDF(ps,crobot,state);
-  do_dist_check=0;
-}
-
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPoints(
