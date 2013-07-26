@@ -254,8 +254,20 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
     WorkArea& work,
     const DFLink * const *link_list) const
 {
+  static const bool LOOP_DEBUG = false;
+
   work.res_->distance = MAX_DISTANCE_;
-  std::size_t remaining_contact_cnt = work.req_->contacts ? work.req_->max_contacts : 0;
+  bool save_contacts = work.req_->contacts ? work.req_->max_contacts > work.res_->contact_count : false;
+  bool need_contacts = save_contacts || work.df_distance_ || work.df_contacts_;
+
+  const robot_model::JointModelGroup* group = NULL;
+  bool a_in_group = true;
+  if (!work.req_->group_name.empty())
+  {
+    group = kmodel_->getJointModelGroup(work.req_->group_name);
+  }
+
+  // TODO: isLinkUpdated for group
 
   for (const DFLink * const *p_link_a = link_list ; p_link_a[1] ; ++p_link_a)
   {
@@ -264,6 +276,11 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
     
     Eigen::Affine3d pf_to_linka = lsa->getGlobalCollisionBodyTransform().inverse(Eigen::Isometry);
 
+    if (group)
+    {
+      a_in_group = group->isLinkUpdated(lsa->getName());
+    }
+
     for (const DFLink * const *p_link_b = p_link_a + 1 ; *p_link_b ; ++p_link_b)
     {
       const DFLink *link_b = *p_link_b;
@@ -271,31 +288,41 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
       if (never_check_link_pair(link_a, link_b))
         continue;
 
+      robot_state::LinkState *lsb = work.state1_->getLinkStateVector()[link_b->index_in_model_];
+
+      if (!a_in_group)
+      {
+        if (!group->isLinkUpdated(lsa->getName()))
+          continue;
+      }
+
       double padding = link_a->df_.getResolution() + link_a->padding_ + link_b->padding_;
 
-      robot_state::LinkState *lsb = work.state1_->getLinkStateVector()[link_b->index_in_model_];
       Eigen::Affine3d linkb_to_linka = pf_to_linka * lsb->getGlobalCollisionBodyTransform();
 
       Eigen::Vector3d bsphere_center = linkb_to_linka * bounding_sphere_centers_[link_b->index_in_link_order_];
 
       const DistPosEntry& bs_entry = link_a->df_(bsphere_center);
-      double dist = bs_entry.distance_ - bounding_sphere_radii_[link_b->index_in_link_order_] - padding;
+      double bs_dist = bs_entry.distance_ - bounding_sphere_radii_[link_b->index_in_link_order_] - padding;
 
-      if (dist > 0)
+      if (bs_dist > 0)
       {
-        if (!work.req_->distance || dist > work.res_->distance)
+        if (!work.req_->distance || bs_dist > work.res_->distance)
           continue;
       }
 
-      if (0)
+      if (LOOP_DEBUG)
       {
-        logInform(" BSphere %s - %s pad=%f + %f + %f = %f",
+        logInform(" BSphere %s - %s pad=%f + %f + %f = %f     df=%f radius=%f bs_dist=%f",
           link_a->name_->c_str(),
           link_b->name_->c_str(),
           link_a->df_.getResolution(),
           link_a->padding_,
           link_b->padding_,
-          padding);
+          padding,
+          bs_entry.distance_,
+          bounding_sphere_radii_[link_b->index_in_link_order_],
+          bs_dist);
       }
       
 
@@ -328,25 +355,34 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
       }
 
       std::vector<Contact>* pair_contacts = NULL;
-      std::size_t remaining_pair_contact_cnt = std::min(work.req_->max_contacts_per_pair, remaining_contact_cnt);
+      double pair_contact_dist = std::numeric_limits<double>::max();
 
       for (int i = link_b->sphere_idx_begin_ ; i != link_b->sphere_idx_end_ ; ++i)
       {
         Eigen::Vector3d center = linkb_to_linka * sphere_centers_[i];
 
         const DistPosEntry& entry = link_a->df_(center);
-        dist = entry.distance_ - sphere_radii_[i] - padding;
+        double dist = entry.distance_ - sphere_radii_[i] - padding;
 
-        if (0)
+        if (LOOP_DEBUG)
         {
-          logInform("    sph[%3d] d=%f r=%f d-r-pad=%f",
-            i,entry.distance_,sphere_radii_[i],dist);
+          logInform("    sph[%3d] d=%f r=%f d-r-pad=%f = dist     use_dist=%f",
+            i,entry.distance_,sphere_radii_[i],dist, std::max(dist, bs_dist));
         }
 
-        if (dist > 0)
+        if (dist >= pair_contact_dist)
+          continue;
+
+        // If dist is smaller than bounding sphere dist then use bounding sphere dist.
+        // This can happen when the collision sphere extends beyond the bounding sphere.
+        double use_dist = std::max(dist, bs_dist);
+
+        if (use_dist > 0)
         {
-          if (!work.req_->distance || dist > work.res_->distance)
+          if (!work.req_->distance || use_dist >= work.res_->distance)
             continue;
+
+          // we are recording distance and this is the closest distance we have seen.
 
           if (acm_condition)
           {
@@ -358,14 +394,12 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
                           *link_b,
                           *lsa,
                           entry,
-                          dist,
+                          use_dist,
                           center,
                           sphere_radii_[i]);
             if (acm_condition(contact))
               continue;
           }
-
-          work.res_->distance = dist;
 
           // record info about closest distance
           if (work.df_distance_)
@@ -378,15 +412,21 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
                           *link_b,
                           *lsa,
                           entry,
-                          dist,
+                          use_dist,
                           center,
                           sphere_radii_[i]);
           }
 
+          work.res_->distance = use_dist;
+          pair_contact_dist = dist;
+
+          if (LOOP_DEBUG)
+            logInform("      use_dist=%f   (BEST DIST SO FAR +a)",use_dist);
+
           continue;
         }
 
-        if (acm_condition || work.req_->contacts)
+        if (need_contacts || acm_condition)
         {
           Contact contact;
           DFContact df_contact0;
@@ -406,51 +446,62 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
                         *link_b,
                         *lsa,
                         entry,
-                        dist,
+                        use_dist,
                         center,
                         sphere_radii_[i]);
 
-          if (acm_condition && acm_condition(contact))
+          if (acm_condition)
           {
-            if (df_contact)
-              df_contact->eliminated_by_acm_function = true;
-            continue;
+            if (acm_condition && acm_condition(contact))
+            {
+              if (df_contact)
+                df_contact->eliminated_by_acm_function = true;
+              continue;
+            }
+
+            // early exit if no other info needed
+            if (!work.req_->distance &&
+                !work.req_->contacts)
+            {
+              work.res_->collision = true;
+              return;
+            }
           }
 
           // contact occurred
           work.res_->collision = true;
-          if (dist < work.res_->distance)
+          pair_contact_dist = dist;
+          if (use_dist < work.res_->distance)
           {
-            work.res_->distance = dist;
+            work.res_->distance = use_dist;
             if (work.df_distance_)
               *work.df_distance_ = *df_contact;
+            if (LOOP_DEBUG)
+              logInform("      use_dist=%f   (BEST DIST SO FAR -b)",use_dist);
           }
 
-          if (remaining_pair_contact_cnt)
+          if (pair_contacts)
           {
-            if (!pair_contacts)
-            {
-              pair_contacts = &work.res_->contacts[std::make_pair(*link_a->name_, *link_b->name_)];
-              pair_contacts->push_back(contact);
-            }
-            else
-            {
-              pair_contacts->push_back(contact);
-              if (pair_contacts->back().depth > pair_contacts->front().depth)
-                std::swap(pair_contacts->back(), pair_contacts->front());
-            }
-
+            // replace contact with deeper contact
+            std::swap(contact, pair_contacts->front());
+          }
+          else if (save_contacts)
+          {
+            pair_contacts = &work.res_->contacts[std::make_pair(*link_a->name_, *link_b->name_)];
+            pair_contacts->push_back(contact);
             work.res_->contact_count++;
-            remaining_contact_cnt--;
-            remaining_pair_contact_cnt--;
-
-            if (remaining_contact_cnt == 0 && !work.req_->distance)
-              return;
-          }
-          else if (pair_contacts)
-          {
-            if (contact.depth > pair_contacts->front().depth)
-              std::swap(contact, pair_contacts->front());
+            save_contacts = work.req_->max_contacts > work.res_->contact_count;
+            if (!save_contacts)
+            {
+              need_contacts = work.df_distance_ || work.df_contacts_;
+              if (!need_contacts && !work.req_->distance)
+              {
+                // exit after this pair
+                static DFLink *end_list[2] = { NULL, NULL };
+                p_link_a = end_list;
+                p_link_b = end_list;
+              }
+            }
           }
         }
         else
@@ -459,7 +510,13 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
           work.res_->collision = true;
           if (!work.req_->distance)
             return;
-          work.res_->distance = std::min(work.res_->distance, dist);
+
+          if (LOOP_DEBUG && use_dist < work.res_->distance)
+            logInform("      use_dist=%f   (BEST DIST SO FAR -b)",use_dist);
+
+          work.res_->distance = std::min(work.res_->distance, use_dist);
+          pair_contact_dist = dist;
+
         }
       }
     }
