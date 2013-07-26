@@ -113,6 +113,13 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   collision_method_property_->addOption(COLLISION_METHOD_STRING_FCL.c_str(), CD_FCL);
   collision_method_property_->addOption(COLLISION_METHOD_STRING_DISTANCE_FIELD.c_str(), CD_DISTANCE_FIELD);
   collision_method_property_->setValue(COLLISION_METHOD_STRING_FCL.c_str());
+  collision_use_padded_robot_property_ = new rviz::BoolProperty(
+                                      "Use Padded Robot",
+                                      false,
+                                      "Use padded robot for collision checks.",
+                                      robot_state_category_,
+                                      SLOT( changedCollisionMethod() ),
+                                      this );
   collision_df_use_spheres_ = new rviz::BoolProperty(
                                       "Use Sphere-Sphere check",
                                       false,
@@ -589,7 +596,13 @@ robot_state::RobotStateConstPtr moveit_rviz_plugin::CollisionDistanceFieldDispla
 const collision_detection::CollisionRobotDistanceField *moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollisionRobotDistanceField() const
 {
   planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
-  const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot(COLLISION_METHOD_STRING_DISTANCE_FIELD);
+  const collision_detection::CollisionRobot* crobot;
+
+  if (collision_use_padded_robot_property_->getBool())
+    crobot = &*ps->getCollisionRobot(COLLISION_METHOD_STRING_DISTANCE_FIELD);
+  else
+    crobot = &*ps->getCollisionRobotUnpadded(COLLISION_METHOD_STRING_DISTANCE_FIELD);
+
   const collision_detection::CollisionRobotDistanceField* crobot_df =
     dynamic_cast<const collision_detection::CollisionRobotDistanceField*>(crobot);
 
@@ -635,6 +648,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, fl
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollidingLinks(
       planning_scene_monitor::LockedPlanningSceneRO& ps,
+      const collision_detection::CollisionRobot* crobot,
       std::vector<std::string> &links,
       const robot_state::RobotState &kstate,
       const collision_detection::AllowedCollisionMatrix& acm) const
@@ -653,7 +667,13 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollidingLinks(
   preq->max_contacts = getRobotModel()->getLinkModelsWithCollisionGeometry().size() + 1;
   preq->max_contacts_per_pair = 1;
   collision_detection::CollisionResult res;
-  ps->checkCollision(*preq, res, kstate, acm);
+
+preq->distance = true;
+int cnt = 0;
+
+  ps->getCollisionWorld()->checkCollision(*preq, res, *crobot, kstate, acm);
+
+
   links.clear();
   for (collision_detection::CollisionResult::ContactMap::const_iterator it = res.contacts.begin() ; it != res.contacts.end() ; ++it)
   {
@@ -663,19 +683,30 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollidingLinks(
         links.push_back(it->second[j].body_name_1);
       if (it->second[j].body_type_2 == collision_detection::BodyTypes::ROBOT_LINK)
         links.push_back(it->second[j].body_name_2);
+cnt++;
     }
   }
+logInform("getCollidingLinks()        res=%d  dist=%f  contacts=%d=%d",
+  res.collision?1:0,
+  res.distance,
+  int(res.contact_count),
+  cnt);
 }
 
+int do_dist_check=0;
+
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPointsDF(
+      planning_scene_monitor::LockedPlanningSceneRO& ps,
       const collision_detection::CollisionRobotDistanceField *crobot,
-      const robot_state::RobotState& state,
-      planning_scene_monitor::LockedPlanningSceneRO& ps)
+      const robot_state::RobotState& state)
 {
   collision_detection::CollisionDistanceFieldRequest req;
   collision_detection::CollisionResult res;
   std::vector<collision_detection::DFContact> df_contacts;
   req.use_sphere_sphere_for_self_collision = collision_df_use_spheres_->getBool();
+req.distance = do_dist_check ? true : false;
+res.distance = -1.0;
+int cnt=0;
   crobot->getSelfCollisionContacts(req, res, state, &ps->getAllowedCollisionMatrix(), &df_contacts);
 
   if (!df_contacts.empty() && colliding_spheres_enable_property_->getBool())
@@ -705,20 +736,36 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPointsDF(
         contact_points_display_->addSphere(df_contacts[i].pos, contact_marker_radius);
       if (normal_length > contact_marker_radius)
         contact_points_display_->addArrow(df_contacts[i].pos, df_contacts[i].pos + (normal_length * df_contacts[i].normal));
+cnt++;
     }
   }
+
+logInform("getSelfCollisionContacts() res=%d  dist=%f  contacts=%d=%d   do_dist_check=%d",
+  res.collision?1:0,
+  res.distance,
+  int(res.contact_count),
+  cnt,
+  do_dist_check);
+
+if (!do_dist_check)
+{
+  do_dist_check=1;
+  showContactPointsDF(ps,crobot,state);
+  do_dist_check=0;
+}
+
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPoints(
-      const robot_state::RobotState& state,
-      planning_scene_monitor::LockedPlanningSceneRO& ps)
+      planning_scene_monitor::LockedPlanningSceneRO& ps,
+      const collision_detection::CollisionRobot *crobot,
+      const robot_state::RobotState& state)
 {
-  const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot();
   const collision_detection::CollisionRobotDistanceField* crobot_df =
     dynamic_cast<const collision_detection::CollisionRobotDistanceField*>(crobot);
   if (crobot_df)
   {
-    showContactPointsDF(crobot_df, state, ps);
+    showContactPointsDF(ps, crobot_df, state);
     return;
   }
 
@@ -756,11 +803,10 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPoints(
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollisionDistance(
-      const robot_state::RobotState& state,
-      planning_scene_monitor::LockedPlanningSceneRO& ps)
+      planning_scene_monitor::LockedPlanningSceneRO& ps,
+      const collision_detection::CollisionRobot *crobot,
+      const robot_state::RobotState& state)
 {
-  const collision_detection::CollisionRobot* crobot = &*ps->getCollisionRobot();
-  
   double dist = crobot->distanceSelf(state);
   closest_distance_value_property_->setValue(dist);
 
@@ -800,8 +846,15 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
 {
   planning_scene_monitor::LockedPlanningSceneRO ps = getPlanningSceneRO();
 
+
+  const collision_detection::CollisionRobot* crobot;
+  if (collision_use_padded_robot_property_->getBool())
+    crobot = &*ps->getCollisionRobot();
+  else
+    crobot = &*ps->getCollisionRobotUnpadded();
+
   std::vector<std::string> collision_links;
-  getCollidingLinks(ps, collision_links, state, ps->getAllowedCollisionMatrix());
+  getCollidingLinks(ps, crobot, collision_links, state, ps->getAllowedCollisionMatrix());
 
   unsetAllColors(&robot_visual_->getRobot());
 
@@ -828,14 +881,13 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
   if (colliding_spheres_enable_property_->getBool() ||
        contact_points_enable_property_->getBool())
   {
-    showContactPoints(state, ps);
+    showContactPoints(ps, crobot, state);
   }
 
   distance_display_.reset();
-
   if (closest_distance_enable_property_->getBool())
   {
-    showCollisionDistance(state, ps);
+    showCollisionDistance(ps, crobot, state);
   }
 }
 
