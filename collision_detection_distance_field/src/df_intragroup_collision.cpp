@@ -260,6 +260,13 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
   bool save_contacts = work.req_->contacts ? work.req_->max_contacts > work.res_->contact_count : false;
   bool need_contacts = save_contacts || work.df_distance_ || work.df_contacts_;
 
+  const robot_model::JointModelGroup* group = NULL;
+  bool a_in_group = true;
+  if (!work.req_->group_name.empty())
+  {
+    group = kmodel_->getJointModelGroup(work.req_->group_name);
+  }
+
   // TODO: isLinkUpdated for group
 
   for (const DFLink * const *p_link_a = link_list ; p_link_a[1] ; ++p_link_a)
@@ -269,6 +276,11 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
     
     Eigen::Affine3d pf_to_linka = lsa->getGlobalCollisionBodyTransform().inverse(Eigen::Isometry);
 
+    if (group)
+    {
+      a_in_group = group->isLinkUpdated(lsa->getName());
+    }
+
     for (const DFLink * const *p_link_b = p_link_a + 1 ; *p_link_b ; ++p_link_b)
     {
       const DFLink *link_b = *p_link_b;
@@ -276,9 +288,16 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
       if (never_check_link_pair(link_a, link_b))
         continue;
 
+      robot_state::LinkState *lsb = work.state1_->getLinkStateVector()[link_b->index_in_model_];
+
+      if (!a_in_group)
+      {
+        if (!group->isLinkUpdated(lsa->getName()))
+          continue;
+      }
+
       double padding = link_a->df_.getResolution() + link_a->padding_ + link_b->padding_;
 
-      robot_state::LinkState *lsb = work.state1_->getLinkStateVector()[link_b->index_in_model_];
       Eigen::Affine3d linkb_to_linka = pf_to_linka * lsb->getGlobalCollisionBodyTransform();
 
       Eigen::Vector3d bsphere_center = linkb_to_linka * bounding_sphere_centers_[link_b->index_in_link_order_];
