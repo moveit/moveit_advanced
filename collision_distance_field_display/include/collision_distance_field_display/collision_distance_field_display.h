@@ -176,22 +176,25 @@ private:
 
   // get list of links that are in collision
   void getCollidingLinks(planning_scene_monitor::LockedPlanningSceneRO& ps,
+                         const collision_detection::CollisionRobot* crobot,
                          std::vector<std::string> &links,
                          const robot_state::RobotState &kstate,
                          const collision_detection::AllowedCollisionMatrix& acm) const;
 
   // draw contact points and normals
-  void showContactPoints(const robot_state::RobotState& state,
-                         planning_scene_monitor::LockedPlanningSceneRO& ps);
+  void showContactPoints(planning_scene_monitor::LockedPlanningSceneRO& ps,
+                         const collision_detection::CollisionRobot* crobot,
+                         const robot_state::RobotState& state);
 
   // draw contact points and normals (when using distance field collision
-  void showContactPointsDF(const collision_detection::CollisionRobotDistanceField *crobot,
-                           const robot_state::RobotState& state,
-                           planning_scene_monitor::LockedPlanningSceneRO& ps);
+  void showContactPointsDF(planning_scene_monitor::LockedPlanningSceneRO& ps,
+                           const collision_detection::CollisionRobotDistanceField *crobot,
+                           const robot_state::RobotState& state);
 
   // draw collision distance arrow
-  void showCollisionDistance(const robot_state::RobotState& state,
-                             planning_scene_monitor::LockedPlanningSceneRO& ps);
+  void showCollisionDistance(planning_scene_monitor::LockedPlanningSceneRO& ps,
+                             const collision_detection::CollisionRobot* crobot,
+                             const robot_state::RobotState& state);
 
   // save 
   void saveSpheresToSrdf();
@@ -223,6 +226,7 @@ private:
   rviz::BoolProperty* show_robot_collision_property_;
   rviz::EnumProperty* collision_method_property_;
   rviz::BoolProperty* collision_df_use_spheres_;
+  rviz::BoolProperty* collision_use_padded_robot_property_;
   rviz::EditableEnumProperty* active_group_property_;
   rviz::BoolProperty* collision_aware_ik_property_;
   rviz::BoolProperty* publish_tf_property_;
