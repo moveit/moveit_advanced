@@ -34,6 +34,8 @@
 
 #include <moveit/planning_scene_rviz_plugin/planning_scene_display.h>
 
+#include <moveit/contact_planner/contact_planner.h>
+
 #ifndef Q_MOC_RUN
 #include <tf/transform_broadcaster.h>
 #include <moveit/robot_interaction/robot_interaction.h>
@@ -274,6 +276,10 @@ private:
   boost::shared_ptr<ShapesDisplay> distance_display_;
 
   boost::shared_ptr<mesh_ros::RvizMeshShape> mesh_shape_;
+  boost::shared_ptr<moveit::contact_planner::ContactPlanner> contact_planner_;
+  ros::Publisher robot_state_publisher_;
+  ros::NodeHandle node_handle_;
+  
 };
 
 }

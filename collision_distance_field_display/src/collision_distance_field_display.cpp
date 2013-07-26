@@ -59,6 +59,11 @@
 #include <mesh_core/mesh.h>
 #include <mesh_ros/mesh_rviz.h>
 
+// Robot state publishing
+#include <moveit/robot_state/conversions.h>
+#include <moveit_msgs/DisplayRobotState.h>
+
+
 enum {
   CD_UNKNOWN,
   CD_FCL,
@@ -337,6 +342,9 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
 
   robot_state_category_->expand();
 
+  contact_planner_.reset(new moveit::contact_planner::ContactPlanner(500));
+  robot_state_publisher_ = node_handle_.advertise<moveit_msgs::DisplayRobotState>("display_robot_state", 1);
+  
 }
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
@@ -753,6 +761,23 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPoints(
         contact_points_display_->addArrow(cit->pos, cit->pos + (normal_length * cit->normal));
     }
   }
+
+  robot_trajectory::RobotTrajectory trajectory(getRobotModel(), "right_arm");  
+  contact_planner_->moveOutOfContact(* (const planning_scene::PlanningSceneConstPtr) ps, ps->getCurrentState(), "right_arm", trajectory);
+  
+  /* Visualize the result*/
+  std::size_t waypoint_count = trajectory.getWayPointCount();
+  ROS_INFO("Result has %d waypoints", (int) waypoint_count);
+  
+  for(std::size_t i=0; i < waypoint_count; ++i)
+  {    
+    moveit_msgs::DisplayRobotState msg;
+    robot_state::RobotState state = trajectory.getWayPoint(i);    
+    robot_state::robotStateToRobotStateMsg(state, msg.state);
+    robot_state_publisher_.publish(msg);
+    sleep(1.0);    
+  }  
+
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollisionDistance(

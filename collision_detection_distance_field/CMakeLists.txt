@@ -5,6 +5,8 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+set(CMAKE_BUILD_TYPE Debug)
+
 find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread iostreams)
 find_package(
