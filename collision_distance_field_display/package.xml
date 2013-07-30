@@ -34,6 +34,7 @@
   <build_depend>roscpp</build_depend>
   <build_depend>rviz</build_depend>
   <build_depend>tf</build_depend>
+  <build_depend>contact_planner</build_depend>
   
   <run_depend>collision_detection_distance_field</run_depend>
   <run_depend>geometric_shapes</run_depend>
@@ -49,6 +50,7 @@
   <run_depend>roscpp</run_depend>
   <run_depend>rviz</run_depend>
   <run_depend>tf</run_depend>
+  <run_depend>contact_planner</run_depend>
 
 
   <export>

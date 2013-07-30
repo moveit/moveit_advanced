@@ -80,7 +80,6 @@ class ObjectDetector:
         goal = ObjectRecognitionGoal()
         rospy.loginfo("Triggering detection inside object detector")
         self._action_client.send_goal(goal, done_cb=self.on_action_result)
-        self._action_client.wait_for_result()
 
     def wait_for_detection(self):
         if self._action_client is not None:
