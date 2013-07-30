@@ -283,6 +283,9 @@ private:
   boost::shared_ptr<moveit::contact_planner::ContactPlanner> contact_planner_;
   ros::Publisher robot_state_publisher_;
   ros::NodeHandle node_handle_;
+  boost::shared_ptr<robot_trajectory::RobotTrajectory> robot_trajectory_;
+  bool publish_robot_trajectory_;
+  
   
 };
 

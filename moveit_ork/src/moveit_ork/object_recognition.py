@@ -80,6 +80,7 @@ class ObjectDetector:
         goal = ObjectRecognitionGoal()
         rospy.loginfo("Triggering detection inside object detector")
         self._action_client.send_goal(goal, done_cb=self.on_action_result)
+        self._action_client.wait_for_result()
 
     def wait_for_detection(self):
         if self._action_client is not None:
@@ -108,12 +109,9 @@ class ObjectBroadcaster:
         self._last_broadcast_time = rospy.Time.now()
 
     def broadcast_one(self, ob):
-        rospy.loginfo("Got object of type %s because confidence %s < %s" % (ob.type.key, str(ob.confidence), str(self._min_confidence)))
+        rospy.loginfo("Got object of type %s with confidence %s" % (ob.type.key, str(ob.confidence)))
         if ob.confidence < self._min_confidence:
             rospy.loginfo("Not publishing object of type %s because confidence %s < %s" % (ob.type.key, str(ob.confidence), str(self._min_confidence)))
-            return
-
-        if ob.type.key != '18691':
             return
 
         info = None

@@ -88,6 +88,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
   , requested_nspheres_property_(NULL)
   , unsetting_property_(false)
   , saving_spheres_to_srdf_(false)
+  , publish_robot_trajectory_(false)
 {
   robot_state_category_ = new rviz::Property(
                                       "Robot State",
@@ -349,7 +350,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
 
   robot_state_category_->expand();
 
-  contact_planner_.reset(new moveit::contact_planner::ContactPlanner(500));
+  contact_planner_.reset(new moveit::contact_planner::ContactPlanner(5));
   robot_state_publisher_ = node_handle_.advertise<moveit_msgs::DisplayRobotState>("display_robot_state", 1);
   
 }
@@ -652,6 +653,27 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::update(float wall_dt, fl
 
   if (publish_tf_property_->getBool())
     publishTF();
+
+  if (publish_robot_trajectory_)
+  {
+    if(robot_trajectory_)
+    {    /* Visualize the result*/
+      std::size_t waypoint_count = robot_trajectory_->getWayPointCount();
+      ROS_DEBUG("Move out of contact trajectory result has %d waypoints", (int) waypoint_count);      
+
+      moveit_msgs::DisplayRobotState msg;
+      
+      for(std::size_t i=0; i < waypoint_count; ++i)
+      {    
+        robot_state::RobotState dstate = robot_trajectory_->getWayPoint(i);    
+        robot_state::robotStateToRobotStateMsg(dstate, msg.state);
+        robot_state_publisher_.publish(msg);
+        sleep(1.0/(waypoint_count+1.0));      
+      }  
+      publish_robot_trajectory_ = false;    
+    }    
+  }
+  
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::getCollidingLinks(
@@ -781,22 +803,10 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showContactPoints(
     }
   }
 
-  robot_trajectory::RobotTrajectory trajectory(getRobotModel(), "right_arm");  
-  contact_planner_->moveOutOfContact(* (const planning_scene::PlanningSceneConstPtr) ps, ps->getCurrentState(), "right_arm", trajectory);
+  robot_trajectory_.reset(new robot_trajectory::RobotTrajectory(getRobotModel(), "right_arm"));  
+  contact_planner_->moveOutOfContact(* (const planning_scene::PlanningSceneConstPtr) ps, state, "right_arm", *robot_trajectory_);  
+  publish_robot_trajectory_ = true;
   
-  /* Visualize the result*/
-  std::size_t waypoint_count = trajectory.getWayPointCount();
-  ROS_INFO("Result has %d waypoints", (int) waypoint_count);
-  
-  for(std::size_t i=0; i < waypoint_count; ++i)
-  {    
-    moveit_msgs::DisplayRobotState msg;
-    robot_state::RobotState state = trajectory.getWayPoint(i);    
-    robot_state::robotStateToRobotStateMsg(state, msg.state);
-    robot_state_publisher_.publish(msg);
-    sleep(1.0);    
-  }  
-
 }
 
 void moveit_rviz_plugin::CollisionDistanceFieldDisplay::showCollisionDistance(
