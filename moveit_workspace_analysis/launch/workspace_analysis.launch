@@ -4,22 +4,22 @@
   <node name="moveit_workspace_analysis" pkg="moveit_workspace_analysis" type="workspace_analysis_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find atlas_moveit_config)/config/kinematics.yaml"/>
 
-    <param name="min_x" value="-30.0" />
-    <param name="max_x" value="30.0" />
-    <param name="res_x" value="3.0" />
+    <param name="min_x" value="-3.0" />
+    <param name="max_x" value="3.0" />
+    <param name="res_x" value="0.5" />
 
-    <param name="min_y" value="-30.0" />
-    <param name="max_y" value="30.0" />
-    <param name="res_y" value="3.0" />
+    <param name="min_y" value="-20.0" />
+    <param name="max_y" value="20.0" />
+    <param name="res_y" value="0.5" />
 
-    <param name="min_z" value="-30.0" />
-    <param name="max_z" value="30.0" />
-    <param name="res_z" value="3.0" />
+    <param name="min_z" value="4.0" />
+    <param name="max_z" value="18.0" />
+    <param name="res_z" value="0.5" />
 
     <param name="group_name" value="arm" />
 
     <param name="joint_limits_penalty_multiplier" value="0.0" />
 
-    <param name="filename" value="$(env ROS_LOG_DIR)/workspace_analysis_results.txt" />
+    <param name="filename" value="$(env ROS_LOG_DIR)/workspace_analysis_results_dense.txt" />
   </node>
 </launch>

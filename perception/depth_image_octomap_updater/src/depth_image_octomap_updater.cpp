@@ -55,8 +55,8 @@ DepthImageOctomapUpdater::DepthImageOctomapUpdater() :
   queue_size_(5),
   near_clipping_plane_distance_(0.3),
   far_clipping_plane_distance_(5.0),
-  shadow_threshold_(0.5),
-  padding_scale_(3.0),
+  shadow_threshold_(0.04),
+  padding_scale_(0.0),
   padding_offset_(0.02),
   skip_vertical_pixels_(4),
   skip_horizontal_pixels_(6),
@@ -90,6 +90,8 @@ bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
     readXmlParam(params, "padding_offset", &padding_offset_);
     readXmlParam(params, "skip_vertical_pixels", &skip_vertical_pixels_);
     readXmlParam(params, "skip_horizontal_pixels", &skip_horizontal_pixels_);
+
+    ROS_DEBUG("Shadow threshold: %f", shadow_threshold_);
     if (params.hasMember("filtered_cloud_topic"))
       filtered_cloud_topic_ = static_cast<const std::string&>(params["filtered_cloud_topic"]);
   }
@@ -115,7 +117,7 @@ bool DepthImageOctomapUpdater::initialize()
   mesh_filter_->setPaddingOffset(padding_offset_);
   mesh_filter_->setPaddingScale(padding_scale_);
   mesh_filter_->setTransformCallback(boost::bind(&DepthImageOctomapUpdater::getShapeTransform, this, _1, _2));
-
+  ROS_DEBUG("Shadow threshold: %f", shadow_threshold_);
   return true;
 }
 
@@ -130,7 +132,7 @@ void DepthImageOctomapUpdater::start()
     pub_filtered_depth_image_ = filtered_depth_transport_.advertiseCamera("filtered_depth", 1);
 
   pub_filtered_label_image_ = filtered_label_transport_.advertiseCamera("filtered_label", 1);
-
+  
   sub_depth_image_ = input_depth_transport_.subscribeCamera(image_topic_, queue_size_, &DepthImageOctomapUpdater::depthImageCallback, this, hints);
 }
 
@@ -142,6 +144,9 @@ void DepthImageOctomapUpdater::stop()
 void DepthImageOctomapUpdater::stopHelper()
 {   
   sub_depth_image_.shutdown();
+  pub_filtered_label_image_.shutdown();
+  pub_filtered_depth_image_.shutdown();
+  pub_model_depth_image_.shutdown();  
 }
 
 mesh_filter::MeshHandle DepthImageOctomapUpdater::excludeShape(const shapes::ShapeConstPtr &shape)
@@ -197,8 +202,9 @@ static const bool HOST_IS_BIG_ENDIAN = host_is_big_endian();
 
 void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstPtr& depth_msg, const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
-  ROS_DEBUG("Received a new depth image message (frame = '%s', encoding='%s')", depth_msg->header.frame_id.c_str(), depth_msg->encoding.c_str());
 
+  ROS_DEBUG("Received a new depth image message (frame = '%s', encoding='%s')", depth_msg->header.frame_id.c_str(), depth_msg->encoding.c_str());
+  
   ros::WallTime start = ros::WallTime::now();
   
   // measure the frequency at which we receive updates

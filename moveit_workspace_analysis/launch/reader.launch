@@ -1,5 +1,6 @@
-<launch>
-  <node name="moveit_workspace_reader" pkg="moveit_workspace_analysis" type="workspace_reader_node" respawn="false" output="screen">
-    <param name="filename" value="$(env ROS_LOG_DIR)/workspace_analysis_results.txt" />
+<launch> 
+  <param name="robot_description_semantic" textfile="$(find atlas_moveit_config)/config/atlas.srdf" />
+ <node name="moveit_workspace_reader" pkg="moveit_workspace_analysis" type="workspace_reader_node" respawn="false" output="screen">
+    <param name="filename" value="$(env ROS_LOG_DIR)/workspace_analysis_results_dense.txt" />
   </node>
 </launch>

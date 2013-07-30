@@ -34,6 +34,7 @@ find_package(catkin REQUIRED COMPONENTS
   robot_sphere_representation
   roscpp
   rosconsole
+  contact_planner
 )
 
 set(LIBNAME collision_distance_field_display)
@@ -71,7 +72,6 @@ include_directories(
 
 link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
-
 
 qt4_wrap_cpp(
   MOC_SOURCES

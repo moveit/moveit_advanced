@@ -108,6 +108,8 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
                                                    double z_resolution) const
 {
   WorkspaceMetrics metrics;
+  std::vector<unsigned int> unreachable_points;
+  
   if(!joint_state_group || !planning_scene_)
   {
     ROS_ERROR("Joint state group and planning scene should not be null");
@@ -122,14 +124,21 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   {   
     if(!ros::ok() || canceled_)
       return metrics;    
-    bool found_ik = joint_state_group->setFromIK(points[i], 1, 0.01, state_validity_callback_fn_);
+    bool found_ik = joint_state_group->setFromIK(points[i], 10, 0.01, state_validity_callback_fn_);
     if(found_ik)
     {
-      ROS_DEBUG("Found IK: %d", (int) i);      
+      ROS_INFO("Found IK: %d", (int) i);      
       metrics.points_.push_back(points[i]);      
       updateMetrics(joint_state_group, metrics);      
     }
+    else
+      unreachable_points.push_back(i);    
   }
+
+  // Push back the unreachable points at the end
+  for(std::size_t i=0; i < unreachable_points.size(); ++i)
+    metrics.points_.push_back(points[unreachable_points[i]]);  
+
   return metrics;  
 }
 
@@ -208,7 +217,7 @@ void WorkspaceAnalysis::updateMetrics(robot_state::JointStateGroup *joint_state_
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
 {
   ROS_DEBUG("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());  
-  if(points_.size() != manipulability_.size() || points_.size() != joint_values_.size() || points_.size() != min_distance_joint_limits_.size())
+  if(manipulability_.size() != joint_values_.size() || manipulability_.size() != min_distance_joint_limits_.size())
   {
     ROS_ERROR("Workspace metrics not fully formed");
     return false;
@@ -229,12 +238,19 @@ bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::strin
       file << group_name_ << std::endl;
       file << frame_id_ << std::endl;
     }    
+
     for(std::size_t i=0; i < points_.size(); ++i)
     {
-      if(joint_values_[i].empty())
-        continue;      
       file << points_[i].position.x << delimiter << points_[i].position.y << delimiter << points_[i].position.z << delimiter;
-      file << points_[i].orientation.x << delimiter << points_[i].orientation.y  << delimiter << points_[i].orientation.z << delimiter << points_[i].orientation.w << delimiter;
+      file << points_[i].orientation.x << delimiter << points_[i].orientation.y  << delimiter << points_[i].orientation.z << delimiter << points_[i].orientation.w;
+      if(i >= joint_values_.size() || joint_values_[i].empty())
+      {
+        file << std::endl;        
+        continue;      
+      }      
+      else
+        file << delimiter;
+      
       for(std::size_t j=0; j < joint_values_[i].size(); ++j)
         file << joint_values_[i][j] << delimiter;        
       file << manipulability_[i] << delimiter << min_distance_joint_limits_[i] << delimiter << min_distance_joint_limit_index_[i] << std::endl;
@@ -296,6 +312,9 @@ bool WorkspaceMetrics::readFromFile(const std::string &filename, unsigned int nu
     pose.orientation.w = record[6];    
     points_.push_back(pose);
 
+    if(record.size() <= 7)
+      continue;
+    
     for(std::size_t i = 0; i < num_joints; ++i)
       joint_values[i] = record[7+i];
     joint_values_.push_back(joint_values);
@@ -309,7 +328,7 @@ bool WorkspaceMetrics::readFromFile(const std::string &filename, unsigned int nu
   return true;   
 }
 
-visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsigned int id, const std::string &ns) const
+visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsigned int id, const std::string &ns, bool unreachable) const
 {
   visualization_msgs::Marker marker;  
   marker.type = marker.SPHERE_LIST;
@@ -321,26 +340,43 @@ visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsi
   marker.id = id;
   marker.ns = ns;  
 
-  double max_manip(-1.0), min_manip(std::numeric_limits<double>::max());
-  
-  for(std::size_t i=0; i < points_.size(); ++i)
+  if(!unreachable)  
   {
-    if(manipulability_[i] > max_manip)
-      max_manip = manipulability_[i];
-    if(manipulability_[i] < min_manip)
-      min_manip = manipulability_[i];    
+    double max_manip(-1.0), min_manip(std::numeric_limits<double>::max());
+    for(std::size_t i=0; i < manipulability_.size(); ++i)
+    {
+      if(manipulability_[i] > max_manip)
+        max_manip = manipulability_[i];
+      if(manipulability_[i] < min_manip)
+        min_manip = manipulability_[i];    
+    }
+    for(std::size_t i = 0; i < manipulability_.size(); ++i)
+    {
+      marker.points.push_back(points_[i].position);
+      std_msgs::ColorRGBA color;
+      color.a = 1.0;
+      color.g = 0.0;
+      color.r = manipulability_[i]/max_manip;
+      color.b = 1 - manipulability_[i]/max_manip;      
+      marker.colors.push_back(color);      
+    }    
   }
-  
-  for(std::size_t i = 0; i < points_.size(); ++i)
+  else
   {
-    marker.points.push_back(points_[i].position);
-    std_msgs::ColorRGBA color;
-    color.a = 1.0;
-    color.g = 0.0;
-    color.r = manipulability_[i]/max_manip;
-    color.b = 1 - manipulability_[i]/max_manip;      
-    marker.colors.push_back(color);      
-  }    
+    if(manipulability_.size() < points_.size())
+    {
+      for(std::size_t i = manipulability_.size(); i < points_.size(); ++i)
+      {
+        marker.points.push_back(points_[i].position);
+        std_msgs::ColorRGBA color;
+        color.a = 1.0;
+        color.g = 1.0;
+        color.r = 0.0;
+        color.b = 0.0;      
+        marker.colors.push_back(color);      
+      }        
+    }    
+  }
   return marker;  
 }
 

@@ -46,6 +46,8 @@ int main(int argc, char **argv)
 
   /*Get some ROS params */
   ros::NodeHandle node_handle("~");  
+  ros::NodeHandle root_handle;  
+
   std::string filename;
   if (!node_handle.getParam("filename", filename))
     ROS_FATAL("No filename to read from");  
@@ -66,11 +68,17 @@ int main(int argc, char **argv)
     if(!metrics.writeToFile(filename_new))
       ROS_INFO("Could not write to file");
   */
-  ros::Publisher display_publisher = node_handle.advertise<visualization_msgs::Marker>("workspace", 1, true);  
-  visualization_msgs::Marker marker = metrics.getMarker(0.25, 0, "me");
-  marker.header.frame_id = metrics.frame_id_;  
-  marker.header.stamp = ros::Time::now();  
-  display_publisher.publish(marker);
+  ros::Publisher display_publisher = root_handle.advertise<visualization_msgs::Marker>("reachable", 1, true);  
+  ros::Publisher display_publisher_2 = root_handle.advertise<visualization_msgs::Marker>("unreachable", 1, true);  
+  visualization_msgs::Marker marker_reachable = metrics.getMarker(0.25, 0, "");
+  visualization_msgs::Marker marker_unreachable = metrics.getMarker(0.25, 0, "", true);
+  marker_reachable.header.frame_id = metrics.frame_id_;  
+  marker_reachable.header.stamp = ros::Time::now();  
+  marker_unreachable.header.frame_id = metrics.frame_id_;  
+  marker_unreachable.header.stamp = ros::Time::now();  
+
+  display_publisher.publish(marker_reachable);
+  display_publisher_2.publish(marker_unreachable);
   sleep(20.0);  
   
   ros::shutdown();

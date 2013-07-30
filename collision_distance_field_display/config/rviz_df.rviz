@@ -10,6 +10,7 @@ Panels:
         - /CollisionDistanceField1/Robot State1
         - /CollisionDistanceField1/Robot State1/Collision Detection Info1
         - /TF1/Tree1
+        - /RobotState1
       Splitter Ratio: 0.561321
     Tree Height: 1158
   - Class: rviz/Selection
@@ -58,14 +59,10 @@ Visualization Manager:
       Planning Scene Topic: planning_scene
       Robot Description: robot_description
       Robot State:
-        Active Group: right_arm
+        Active Group: arms
         Attached Object Color: 204; 51; 204
         Colliding Link Color: 255; 148; 16
         Collision Detection Info:
-          Colliding Sphere Alpha: 0.3
-          Colliding Sphere Color: 255; 0; 0
-          Contact Points Color: 140; 0; 255
-          Contact Points Size: 0.02
           Examine DF Point:
             Examine DF Nearby Point Color: 0; 128; 0
             Examine DF Point Color: 0; 255; 0
@@ -74,19 +71,41 @@ Visualization Manager:
             X index of point: 0
             Y index of point: 0
             Z index of point: 0
-          Show Colliding Spheres: false
-          Show Contact Points: false
+          Show Colliding Spheres:
+            Colliding Sphere Alpha: 0.3
+            Colliding Sphere Color: 255; 0; 0
+            Value: false
+          Show Contact Points:
+            Contact Normal Length: 0.04
+            Contact Points Color: 140; 0; 255
+            Contact Points Size: 0.02
+            Value: true
+          Show Distance:
+            Distance Alpha: 0.5
+            Distance Color - colliding: 255; 20; 17
+            Distance Color - no collision: 252; 255; 38
+            Value: true
+          Show Link Bounding Sphere:
+            Alpha for Show Link Bounding Sphere: 0.5
+            Color for Show Link Bounding Sphere: 128; 128; 255
+            Pointsize for Show Link Bounding Sphere: 0.005
+            Value: false
+          Show Link Collision Spheres:
+            Alpha for Show Link Collision Spheres: 0.5
+            Color for Show Link Collision Spheres: 0; 0; 255
+            Pointsize for Show Link Collision Spheres: 0.005
+            Value: true
           Show Points in link used to generate Static Distance Field:
             Alpha for Show Points in link used to generate Static Distance Field: 1
             Color for Show Points in link used to generate Static Distance Field: 255; 0; 0
             Pointsize for Show Points in link used to generate Static Distance Field: 0.006
             Value: false
-          Show Static Distance Field Points:
-            Alpha for Show Static Distance Field Points: 1
-            Color for Show Static Distance Field Points: 255; 255; 0
-            Pointsize for Show Static Distance Field Points: 0.005
-            Value: false
-        Collision Method: FCL
+          Show Static Distance Field:
+            Alpha for Show Static Distance Field: 1
+            Color for Show Static Distance Field: 255; 255; 0
+            Pointsize for Show Static Distance Field: 0.005
+            Value: true
+        Collision Method: DistanceField
         Collision aware IK: false
         Joint Violation Link Color: 255; 0; 255
         Links:
@@ -97,1416 +116,2525 @@ Visualization Manager:
           Link Tree Style: Links in Alphabetic Order
           base_bellow_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           base_footprint:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           base_laser_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           base_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           bl_caster_l_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           bl_caster_r_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           bl_caster_rotation_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           br_caster_l_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           br_caster_r_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           br_caster_rotation_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           double_stereo_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           fl_caster_l_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           fl_caster_r_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           fl_caster_rotation_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           fr_caster_l_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           fr_caster_r_wheel_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           fr_caster_rotation_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           head_mount_kinect_ir_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           head_mount_kinect_ir_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           head_mount_kinect_rgb_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           head_mount_kinect_rgb_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           head_mount_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           head_mount_prosilica_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           head_mount_prosilica_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           head_pan_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           head_plate_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           head_tilt_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           high_def_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           high_def_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           imu_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_elbow_flex_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_forearm_cam_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_forearm_cam_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_forearm_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_forearm_roll_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_gripper_l_finger_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_gripper_l_finger_tip_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_gripper_l_finger_tip_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_gripper_led_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_gripper_motor_accelerometer_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_gripper_motor_screw_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_gripper_motor_slider_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_gripper_palm_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_gripper_r_finger_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_gripper_r_finger_tip_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_gripper_tool_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_shoulder_lift_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_shoulder_pan_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_torso_lift_side_plate_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           l_upper_arm_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_upper_arm_roll_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_wrist_flex_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           l_wrist_roll_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           laser_tilt_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           laser_tilt_mount_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           narrow_stereo_l_stereo_camera_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           narrow_stereo_l_stereo_camera_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           narrow_stereo_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           narrow_stereo_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           narrow_stereo_r_stereo_camera_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           narrow_stereo_r_stereo_camera_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           projector_wg6802418_child_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           projector_wg6802418_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_elbow_flex_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_forearm_cam_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_forearm_cam_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_forearm_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_forearm_roll_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_gripper_l_finger_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_gripper_l_finger_tip_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_gripper_l_finger_tip_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_gripper_led_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_gripper_motor_accelerometer_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_gripper_motor_screw_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_gripper_motor_slider_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_gripper_palm_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_gripper_r_finger_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_gripper_r_finger_tip_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_gripper_tool_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_shoulder_lift_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_shoulder_pan_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_torso_lift_side_plate_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           r_upper_arm_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_upper_arm_roll_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_wrist_flex_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           r_wrist_roll_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           sensor_mount_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           torso_lift_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
             Value: true
           torso_lift_motor_screw_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           wide_stereo_l_stereo_camera_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           wide_stereo_l_stereo_camera_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           wide_stereo_link:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           wide_stereo_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           wide_stereo_r_stereo_camera_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
           wide_stereo_r_stereo_camera_optical_frame:
             Alpha: 1
+            DebugMesh: false
             Dummy example property: false
             Number of Spheres Requested: 10
             Show Axes: false
-            Show Current SRDF sphere representation: false
-            Show Generated Spheres: false
+            Show Calc DF: false
+            Show Calc Spheres:
+              Iteration: -1
+              Value: false
+            Show Convex points: false
             Show Link Bounding Cylinder: false
+            Show Link Bounding Sphere: false
+            Show Link Collision Spheres: false
+            Show Link Mesh: false
+            Show Link Vertices: false
             Show Points in link used to generate Static Distance Field: false
-            Show Static Distance Field Points: false
+            Show Static Distance Field: false
             Show Trail: false
+            Show plane through link vertices: false
+            Show tight bounding sphere around df points: false
+            Show tight bounding sphere around link vertices: false
             Sphere Gen Method: From SRDF
             Sphere Qual Method: Max distance from link
             Tolerance: 1
+        Mesh Visualization:
+          DebugMesh:
+            Alpha for DebugMesh: 1
+            Color for DebugMesh: 0; 0; 255
+            FirstTri: 0
+            Gap: -1
+            Mesh: -1
+            NTris: -1
+            PointX: 0
+            PointY: 0
+            PointZ: 0
+            Pointsize for DebugMesh: 0.005
+            ShowGapLoopPoint: -2
+            Value: false
+          Show Link Mesh:
+            Alpha for Show Link Mesh: 1
+            BoundingSphereIndex: -1
+            BoundingSphereMaxDepth: 3
+            BoundingSphereTolerance: 0.01
+            ClosestAngle: 0
+            Color for Show Link Mesh: 0; 255; 0
+            DebugShowPoints: false
+            FirstTri: 0
+            NTris: -1
+            PointResolution: 0.1
+            Pointsize for Show Link Mesh: 0.005
+            PrintEarClipDebug: false
+            PrintTree: false
+            ShowAABB: false
+            ShowBoundingSphere: false
+            ShowBoundingSphereSpheresLevel: -2
+            ShowGapLoopPoint: -2
+            ShowPoints: false
+            Value: false
+            WhichGap: -1
+          Show Link Vertices:
+            Alpha for Show Link Vertices: 1
+            Color for Show Link Vertices: 0; 0; 255
+            Pointsize for Show Link Vertices: 0.005
+            Value: false
+          Show plane through link vertices:
+            Alpha for Show plane through link vertices: 0.5
+            Color for Show plane through link vertices: 255; 0; 0
+            Pointsize for Show plane through link vertices: 0.005
+            Value: false
         Publish Robot State on TF: true
         Robot Alpha: 0.5
         Show Robot Collision: true
         Show Robot Visual: false
         Sphere Generation:
+          Debug Iteration: -1
           Number of Spheres Requested: 10
           Save Generated Spheres to SRDF: false
-          Show Current SRDF sphere representation:
-            Alpha for Show Current SRDF sphere representation: 0.5
-            Color for Show Current SRDF sphere representation: 0; 0; 255
-            Pointsize for Show Current SRDF sphere representation: 0.005
+          Show Calc DF:
+            Alpha for Show Calc DF: 1
+            Color for Show Calc DF: 0; 0; 255
+            Pointsize for Show Calc DF: 0.005
             Value: false
-          Show Generated Spheres:
-            Alpha for Show Generated Spheres: 0.5
-            Color for Show Generated Spheres: 100; 100; 255
-            Pointsize for Show Generated Spheres: 0.005
+          Show Calc Spheres:
+            Alpha for Show Calc Spheres: 0.5
+            Color for Show Calc Spheres: 100; 100; 255
+            Iteration: -1
+            Pointsize for Show Calc Spheres: 0.005
+            Value: false
+          Show Convex points:
+            Alpha for Show Convex points: 1
+            Color for Show Convex points: 255; 78; 214
+            Pointsize for Show Convex points: 0.003
             Value: false
           Show Link Bounding Cylinder:
             Alpha for Show Link Bounding Cylinder: 0.5
             Color for Show Link Bounding Cylinder: 128; 0; 255
             Pointsize for Show Link Bounding Cylinder: 0.005
             Value: false
+          Show tight bounding sphere around df points:
+            Alpha for Show tight bounding sphere around df points: 0.5
+            Color for Show tight bounding sphere around df points: 255; 0; 0
+            Pointsize for Show tight bounding sphere around df points: 0.005
+            Value: false
+          Show tight bounding sphere around link vertices:
+            Alpha for Show tight bounding sphere around link vertices: 0.5
+            Color for Show tight bounding sphere around link vertices: 255; 0; 0
+            Pointsize for Show tight bounding sphere around link vertices: 0.005
+            Value: false
           Sphere Gen Method: From SRDF
           Sphere Gen Resolution: 0.03
           Sphere Qual Method: Max distance from link
           Tolerance: 1
+        Use Padded Robot: false
+        Use Sphere-Sphere check: false
       Scene Geometry:
         Scene Alpha: 0.9
         Scene Color: 50; 230; 50
@@ -1529,10 +2657,465 @@ Visualization Manager:
         {}
       Update Interval: 0
       Value: false
+    - Attached Body Color: 150; 50; 150
+      Class: moveit_rviz_plugin/RobotState
+      Collision Enabled: false
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        base_bellow_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_laser_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        bl_caster_l_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        bl_caster_r_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        bl_caster_rotation_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        br_caster_l_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        br_caster_r_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        br_caster_rotation_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        double_stereo_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fl_caster_l_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fl_caster_r_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fl_caster_rotation_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fr_caster_l_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fr_caster_r_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fr_caster_rotation_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head_mount_kinect_ir_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head_mount_kinect_ir_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        head_mount_kinect_rgb_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head_mount_kinect_rgb_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        head_mount_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head_mount_prosilica_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head_mount_prosilica_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        head_pan_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head_plate_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head_tilt_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        high_def_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        high_def_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        imu_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_elbow_flex_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_forearm_cam_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_forearm_cam_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_forearm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_forearm_roll_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_gripper_l_finger_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_gripper_l_finger_tip_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_gripper_l_finger_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_gripper_led_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_gripper_motor_accelerometer_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_gripper_motor_screw_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_gripper_motor_slider_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_gripper_palm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_gripper_r_finger_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_gripper_r_finger_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_gripper_tool_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_shoulder_lift_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_shoulder_pan_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_torso_lift_side_plate_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        l_upper_arm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_upper_arm_roll_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_wrist_flex_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_wrist_roll_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        laser_tilt_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        laser_tilt_mount_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        narrow_stereo_l_stereo_camera_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        narrow_stereo_l_stereo_camera_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        narrow_stereo_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        narrow_stereo_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        narrow_stereo_r_stereo_camera_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        narrow_stereo_r_stereo_camera_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        projector_wg6802418_child_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        projector_wg6802418_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_elbow_flex_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_forearm_cam_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_forearm_cam_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_forearm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_forearm_roll_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_gripper_l_finger_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_gripper_l_finger_tip_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_gripper_l_finger_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_gripper_led_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_gripper_motor_accelerometer_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_gripper_motor_screw_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_gripper_motor_slider_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_gripper_palm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_gripper_r_finger_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_gripper_r_finger_tip_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_gripper_tool_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_shoulder_lift_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_shoulder_pan_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_torso_lift_side_plate_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_upper_arm_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_upper_arm_roll_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_wrist_flex_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_wrist_roll_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        sensor_mount_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_lift_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        torso_lift_motor_screw_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        wide_stereo_l_stereo_camera_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        wide_stereo_l_stereo_camera_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        wide_stereo_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        wide_stereo_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        wide_stereo_r_stereo_camera_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        wide_stereo_r_stereo_camera_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+      Name: RobotState
+      Robot Alpha: 1
+      Robot Description: robot_description
+      Robot State Topic: /display_robot_state
+      Show All Links: true
+      Show Highlights: true
+      Value: true
+      Visual Enabled: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: /odom_combined
+    Fixed Frame: odom_combined
+    Frame Rate: 30
   Name: root
   Tools:
     - Class: rviz/Interact
@@ -1552,17 +3135,17 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.66642
+      Distance: 3.76352
       Focal Point:
-        X: 0.43875
-        Y: 0.162111
-        Z: 0.979636
+        X: -0.00435371
+        Y: -0.0748972
+        Z: 1.22688
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.1454
+      Pitch: 1.2148
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.650405
+      Yaw: 0.889164
     Saved: ~
 Window Geometry:
   Displays:

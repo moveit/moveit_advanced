@@ -292,7 +292,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
 
       if (!a_in_group)
       {
-        if (!group->isLinkUpdated(lsa->getName()))
+        if (!group->isLinkUpdated(lsb->getName()))
           continue;
       }
 
