@@ -348,7 +348,7 @@ moveit_rviz_plugin::CollisionDistanceFieldDisplay::CollisionDistanceFieldDisplay
 
 moveit_rviz_plugin::CollisionDistanceFieldDisplay::~CollisionDistanceFieldDisplay()
 {
-  background_process_.setJobUpdateEvent(BackgroundProcessing::JobUpdateCallback());
+  background_process_.setJobUpdateEvent(moveit::tools::BackgroundProcessing::JobUpdateCallback());
   clearJobs();
 
   robot_visual_.reset();
