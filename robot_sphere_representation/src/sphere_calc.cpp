@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -136,7 +136,7 @@ private:
     ros::Time begin_;
     Category cat_;
   };
-  
+
   Bucket buckets_[COUNT];
   std::vector<StackEntry> stack_;
   std::vector<Category>order_list_;
@@ -328,7 +328,7 @@ void robot_sphere_representation::PointCluster::findClusters()
   centers_.resize(nclusters_);
   for (std::size_t i = 0; i < nclusters_ ; ++i)
     centers_[i] = points_[i];
-  
+
 
   assignClusters();
   moveCenters();
@@ -344,7 +344,7 @@ void robot_sphere_representation::PointCluster::findClusters()
     cnt++;
   }
   while(old_clusters != clusters_ && cnt < 1000);
-  
+
   logInform("Found %d clusters in %d iterations", (int)nclusters_, cnt);
   for (std::size_t i = 0; i < nclusters_ ; ++i)
     logInform("center[%d] = (%7.3f, %7.3f, %7.3f)", (int)i, centers_[i].x(), centers_[i].y(), centers_[i].z());
@@ -446,7 +446,7 @@ public:
     vorigin_(origin_x, origin_y, origin_z)
   {}
 
-  
+
   double getDistanceNoCheck(const V3i& point) const;
   double getDistance(const V3i& point) const;
   double getDistanceQuick(const V3& point) const;
@@ -487,7 +487,7 @@ double robot_sphere_representation::SphereCalc::Grid::getDistanceInterp(const V3
   o_floor.x() = std::floor(offset.x());
   o_floor.y() = std::floor(offset.y());
   o_floor.z() = std::floor(offset.z());
-  
+
   int x = int(o_floor.x());
   int y = int(o_floor.y());
   int z = int(o_floor.z());
@@ -499,7 +499,7 @@ double robot_sphere_representation::SphereCalc::Grid::getDistanceInterp(const V3
 
   V3 o_pfrac = offset - o_floor;
   V3 o_nfrac = 1.0 - o_pfrac.array();
-  
+
   return
     (getCell(x+0, y+0, z+0).distance_ * o_nfrac.x() *  o_nfrac.y() * o_nfrac.z()) +
     (getCell(x+1, y+0, z+0).distance_ * o_pfrac.x() *  o_nfrac.y() * o_nfrac.z()) +
@@ -509,7 +509,7 @@ double robot_sphere_representation::SphereCalc::Grid::getDistanceInterp(const V3
     (getCell(x+1, y+0, z+1).distance_ * o_pfrac.x() *  o_nfrac.y() * o_pfrac.z()) +
     (getCell(x+0, y+1, z+1).distance_ * o_nfrac.x() *  o_pfrac.y() * o_pfrac.z()) +
     (getCell(x+1, y+1, z+1).distance_ * o_pfrac.x() *  o_pfrac.y() * o_pfrac.z());
-  
+
 }
 
 struct robot_sphere_representation::SphereCalc::ConcaveVoxel
@@ -543,7 +543,7 @@ public:
     // , vorigin_(origin_x, origin_y, origin_z)
   {}
 
-  
+
   ConcaveVoxel& getVoxel(const V3i& point)
   {
     return getCell(point.x(), point.y(), point.z());
@@ -727,7 +727,7 @@ void robot_sphere_representation::SphereCalc::thinInternalPoints()
         surf_list.push_back(ip);
     }
   }
-  
+
   // check for nearby points
   for (V3iList::const_iterator p = surf_list.begin() ; p != surf_list.end() ; ++p)
   {
@@ -774,7 +774,7 @@ void robot_sphere_representation::SphereCalc::thinInternalPoints()
         mask |= bits[idx];
       }
     }
-      
+
     if (cnt >= 24)
       continue;     // internal point or inside of a curve
     else if (cnt >= 17)
@@ -865,7 +865,7 @@ void robot_sphere_representation::SphereCalc::thinInternalPoints()
   thinned_required_points_.clear();
   thinned_required_points_.reserve(thinned_points.size());
   for (V3iSet::const_iterator p = thinned_points.begin() ; p != thinned_points.end() ; ++p)
-  { 
+  {
     V3 wp;
     df_->gridToWorld(p->x(), p->y(), p->z(), wp.x(), wp.y(), wp.z());
     thinned_required_points_.push_back(wp);
@@ -1247,7 +1247,7 @@ void robot_sphere_representation::SphereCalc::solveUsingGreedy(int max_spheres)
         if ((*center - *point).squaredNorm() <= dsq)
           cnt++;
       }
-      
+
       if (cnt > best_cnt ||
           (cnt == best_cnt && d > best_d))
       {
@@ -1727,7 +1727,7 @@ bool robot_sphere_representation::SphereCalc::calcConcaveVoxelGrid()
 
   const robot_model::LinkModel* lm = link_state_->getLinkModel();
   const shapes::ShapeConstPtr& shape = lm->getShape();
-  
+
   if (!shape)
     return false;
 
@@ -1765,7 +1765,7 @@ bool robot_sphere_representation::SphereCalc::calcConcaveVoxelGrid()
   }
 
   Eigen::Vector3d size = aabb.max_ - aabb.min_;
-  
+
 
   // create a distance field for required points.
   // Points in mesh outside this are considered optional.
@@ -1787,7 +1787,7 @@ bool robot_sphere_representation::SphereCalc::calcConcaveVoxelGrid()
                                   aabb.min_.y(),
                                   aabb.min_.z(),
                                   ConcaveVoxel()));
-                                    
+
   PROF_POP();
   PROF_PUSH_SCOPED(SphereCalc_calcConcaveVoxelGrid_GatherPoints);
 
@@ -2173,7 +2173,7 @@ void robot_sphere_representation::SphereCalc::findRadius2ByLeastDistance()
       {
         break;
       }
-      
+
 
       double d = std::sqrt(dsq) - current_.radius1_[sphere] + spheres_[sphere].center_exterior_distance_;
       if (d < best_d)
@@ -2349,7 +2349,7 @@ void robot_sphere_representation::SphereCalc::sphereIterate(
   V3 max = center + radv;
   min = min.array().max(grid_aabb_.min_.array());
   max = max.array().min(grid_aabb_.max_.array());
-  
+
   if (!df_->worldToGrid(min.x(), min.y(), min.z(), imin.x(), imin.y(), imin.z()))
     abort();
   if (!df_->worldToGrid(max.x(), max.y(), max.z(), imax.x(), imax.y(), imax.z()))
@@ -2460,7 +2460,7 @@ void robot_sphere_representation::Link::clusterPoints(std::size_t nclusters)
 
   delete cluster_;
   cluster_ = new robot_sphere_representation::PointCluster(nclusters, points);
-} 
+}
 
 EigenSTL::vector_Vector3d robot_sphere_representation::Link::getClusterPoints(
                                                           std::size_t nclusters,
@@ -2472,7 +2472,7 @@ EigenSTL::vector_Vector3d robot_sphere_representation::Link::getClusterPoints(
   cluster_->setNClusters(nclusters);
 
   return cluster_->getClusterPoints(cluster_idx);
-} 
+}
 
 void robot_sphere_representation::Robot::getLinkClusterPointsMarker(
           const std::string& link_name,
@@ -2564,7 +2564,7 @@ void robot_sphere_representation::Link::calculatePoints()
   }
 
   has_collision_ = !all_points_.empty();
-} 
+}
 
 Eigen::Vector3d robot_sphere_representation::Link::transformRobotToLink(
       Eigen::Vector3d p)
@@ -2800,7 +2800,7 @@ void robot_sphere_representation::Robot::RemoveChildOccludedLinksPost(const robo
   Link *link = getLink(link_model.getName());
   if (link && link->has_collision_)
   {
-    TraverseLinkTree(*kmodel_->getRootLink(), 
+    TraverseLinkTree(*kmodel_->getRootLink(),
                      -1,
                      boost::bind(&Robot::RemoveChildOccludedLinks2Pre, this, _1, link),
                      TraverseLinkTreeNullPost);
@@ -2836,7 +2836,7 @@ void robot_sphere_representation::Robot::RemoveChildOccludedLinks()
 {
   logInform("BEGIN TRAVERSING LINKS for RemoveChildOccludedLinks");
   PROF_PUSH_SCOPED(RemoveChildOccludedLinks);
-  TraverseLinkTree(*kmodel_->getRootLink(), 
+  TraverseLinkTree(*kmodel_->getRootLink(),
                    -1,
                    TraverseLinkTreeNullPre,
                    boost::bind(&Robot::RemoveChildOccludedLinksPost, this, _1));
@@ -2877,7 +2877,7 @@ bool robot_sphere_representation::Robot::CullLinksPre(const robot_model::LinkMod
         continue;
 
       V3iSet points2;
-      
+
       std::set_difference(link->post_cull_points_.begin(),
                           link->post_cull_points_.end(),
                           parent->all_points_.begin(),
@@ -2917,7 +2917,7 @@ void robot_sphere_representation::Robot::CullLinks()
 {
   logInform("BEGIN TRAVERSING LINKS for CullLinks");
   PROF_PUSH_SCOPED(CullLinks);
-  TraverseLinkTree(*kmodel_->getRootLink(), 
+  TraverseLinkTree(*kmodel_->getRootLink(),
                    -1,
                    boost::bind(&Robot::CullLinksPre, this, _1),
                    TraverseLinkTreeNullPost);
@@ -2977,7 +2977,7 @@ void robot_sphere_representation::Robot::GenerateFinalPoints()
 {
   logInform("BEGIN TRAVERSING LINKS for GenerateFinalPoints");
   PROF_PUSH_SCOPED(GenerateFinalPoints);
-  TraverseLinkTree(*kmodel_->getRootLink(), 
+  TraverseLinkTree(*kmodel_->getRootLink(),
                    -1,
                    boost::bind(&Robot::GenerateFinalPointsPre, this, _1),
                    TraverseLinkTreeNullPre);
@@ -3001,7 +3001,7 @@ bool robot_sphere_representation::Robot::RemoveTempPointsPre(const robot_model::
 void robot_sphere_representation::Robot::RemoveTempPoints()
 {
   PROF_PUSH_SCOPED(RemoveTempPoints);
-  TraverseLinkTree(*kmodel_->getRootLink(), 
+  TraverseLinkTree(*kmodel_->getRootLink(),
                    -1,
                    boost::bind(&Robot::RemoveTempPointsPre, this, _1),
                    TraverseLinkTreeNullPost);
@@ -3034,7 +3034,7 @@ robot_sphere_representation::Robot::Robot(
 
   GenerateFinalPoints();
   RemoveTempPoints();
-  
+
   PROF_PRINT_CLEAR();
   logInform("Done generating CollisionRobotDF2 init data...");
 }
@@ -3062,6 +3062,3 @@ void robot_sphere_representation::DFLinkGrid::clear()
   DFGrid<DFVoxel>::clear(vox);
 }
 #endif
-
-
-

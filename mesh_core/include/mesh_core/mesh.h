@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -78,7 +78,7 @@
 
 
 
-  
+
 namespace mesh_core
 {
 class Plane;
@@ -177,12 +177,12 @@ public:
   // This is an optimization and is completely optional.
   void reserve(int ntris, int nverts = 0);
 
-  /// add a triangle defined by 3 vertices. 
+  /// add a triangle defined by 3 vertices.
   void add(const Eigen::Vector3d& a,
            const Eigen::Vector3d& b,
            const Eigen::Vector3d& c);
 
-  /// add a triangle defined by 3 vertices. 
+  /// add a triangle defined by 3 vertices.
   // Each vertex is a pointer to 3 // doubles.
   void add(double *a,
            double *b,
@@ -212,7 +212,7 @@ public:
   void addSphere(const Eigen::Vector3d& center,
                  double radius,
                  double max_error);
-  
+
   // set a different epsilon.  Does not affect existing vertices.
   void setEpsilon(double epsilon);
 
@@ -338,7 +338,7 @@ public:
 
   // find point on surface of mesh closest to given point.
   // return closest_point which is on mesh surface.
-  // return index of triangle 
+  // return index of triangle
   // return distance from point to closest_point.
   //
   // Mesh must not be empty.  If it is -1.0 is returned.
@@ -380,7 +380,7 @@ public:
 
     // number of tris just before filling gap
     int pre_gap_tri_cnt_;
-    
+
     // tris neighboring gap
     std::vector<int> neigbor_tris_;
   };
@@ -423,7 +423,7 @@ private:
   }
 
 
-  /// add a triangle defined by 3 existing vertices. 
+  /// add a triangle defined by 3 existing vertices.
   void add(int a,
            int b,
            int c);
@@ -446,7 +446,7 @@ private:
 
   // set the adjacent_tris_ and adjacent_tris_back_dir_ fields in all triangles.
   void setAdjacentTriangles();
-  
+
   // assign each triangle to a submesh.
   // Each submesh is connected to all other triangles in the same submesh, but
   // not connected to triangles in other submeshes.
@@ -580,7 +580,7 @@ private:
   // pair<a,b> always has a<b
   std::map<std::pair<int,int>,int> edge_map_;
 
-  // extra info per vertex. 
+  // extra info per vertex.
   // Note that the position of the vertex is in verts_
   std::vector<Vertex> vert_info_;
 
@@ -642,12 +642,12 @@ inline void mesh_core::Mesh::setDebugValues(
 
 #if !MESH_CORE__MESH__ENABLE_DEBUG
 inline void mesh_core::Mesh::assertValidTri(
-      const Triangle& tri, 
+      const Triangle& tri,
       const char *msg) const
 {}
 
 inline void mesh_core::Mesh::assertValidTri_PreAdjacentValid(
-      const Triangle& tri, 
+      const Triangle& tri,
       const char *msg) const
 {}
 
@@ -658,4 +658,3 @@ inline void mesh_core::Mesh::assertValidEdge(
 #endif
 
 #endif
-

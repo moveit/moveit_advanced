@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -161,7 +161,7 @@ void mesh_core::Plane::leastSquaresFast(
   m.setZero();
   b.setZero();
   c.setZero();
-  
+
   EigenSTL::vector_Vector3d::const_iterator p = points.begin();
   EigenSTL::vector_Vector3d::const_iterator end = points.end();
   for ( ; p != end ; ++p)
@@ -185,7 +185,7 @@ void mesh_core::Plane::leastSquaresFast(
   normal_ = m.colPivHouseholderQr().solve(b);
   if (normal_.squaredNorm() > std::numeric_limits<double>::epsilon())
     normal_.normalize();
-  
+
   d_ = -c.dot(normal_);
 
   if (average)
@@ -463,7 +463,7 @@ bool mesh_core::LineSegment2D::intersect(
     }
     if (tb > 1.0 || tb < 0.0)
       return false;
-    
+
     if (b.inv_dx_ == 0.0)
     {
       if (intersection.y() != a.pt_[0].y())
@@ -479,7 +479,7 @@ bool mesh_core::LineSegment2D::intersect(
       if (ta > 1.0 || ta < 0.0)
         return false;
     }
-    
+
     if (acorn_debug_ear_state)
     {
       logInform("     INTERSECTS");
@@ -514,7 +514,7 @@ bool mesh_core::LineSegment2D::intersect(
     }
     if (ta > 1.0 || ta < 0.0)
       return false;
-    
+
     double tb = (intersection.x() - b.pt_[0].x()) * b.inv_dx_;
     if (acorn_debug_ear_state)
     {
@@ -522,7 +522,7 @@ bool mesh_core::LineSegment2D::intersect(
     }
     if (tb > 1.0 || tb < 0.0)
       return false;
-    
+
     if (acorn_debug_ear_state)
     {
       logInform("     INTERSECTS");
@@ -584,7 +584,7 @@ double mesh_core::closestPointOnTriangle(
   Eigen::Vector3d ap = point - tri_a;
   double dist = norm.dot(ap);
   double abs_dist = std::abs(dist);
-  
+
   if (abs_dist >= max_dist)
     return abs_dist;
 
@@ -632,7 +632,7 @@ double mesh_core::closestPointOnTriangle(
     }
     return closestPointOnLine(tri_a, tri_b, point, closest_point);
   }
-  
+
   Eigen::Vector3d ac_norm = ac.cross(norm);
   if (acorn_closest_debug)
   {
@@ -651,7 +651,7 @@ double mesh_core::closestPointOnTriangle(
     }
     return closestPointOnLine(tri_a, tri_c, point, closest_point);
   }
-  
+
   Eigen::Vector3d bc = tri_c - tri_b;
   Eigen::Vector3d bc_norm = bc.cross(norm);
   if (acorn_closest_debug)
@@ -671,7 +671,7 @@ double mesh_core::closestPointOnTriangle(
     }
     return closestPointOnLine(tri_b, tri_c, point, closest_point);
   }
-  
+
   return abs_dist;
 }
 
@@ -757,6 +757,3 @@ std::string mesh_core::PlaneProjection::str(
   getFrame(frame);
   return mesh_core::str(frame, pfx, sfx, field_width, field_prec);
 }
-
-
-

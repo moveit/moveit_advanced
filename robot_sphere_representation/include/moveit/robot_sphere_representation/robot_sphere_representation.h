@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -136,7 +136,7 @@ private:
 
   std::map<std::string, LinkSphereRepresentation*> links_;
 
-  // resolution for SphereCalc distance field 
+  // resolution for SphereCalc distance field
   double resolution_;
 
   mutable boost::shared_ptr<Robot> sphere_calc_robot_;
@@ -159,4 +159,3 @@ inline robot_sphere_representation::Robot* robot_sphere_representation::RobotSph
 
 
 #endif
-

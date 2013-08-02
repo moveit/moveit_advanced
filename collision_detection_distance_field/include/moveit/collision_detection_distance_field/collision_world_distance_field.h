@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -41,18 +41,18 @@
 
 namespace collision_detection
 {
-  
+
 class CollisionWorldDistanceField : public CollisionWorld
 {
 public:
-  
+
   CollisionWorldDistanceField();
   explicit CollisionWorldDistanceField(const WorldPtr& world);
   CollisionWorldDistanceField(const CollisionWorldDistanceField &other,
                               const WorldPtr& world);
   virtual ~CollisionWorldDistanceField();
 
-  
+
   virtual void checkRobotCollision(const CollisionRequest &req,
                                    CollisionResult &res,
                                    const CollisionRobot &robot,
@@ -82,22 +82,22 @@ public:
                                    const AllowedCollisionMatrix &acm) const;
 
   virtual double distanceRobot(const CollisionRobot &robot,
-                               const robot_state::RobotState &state) const;  
+                               const robot_state::RobotState &state) const;
   virtual double distanceRobot(const CollisionRobot &robot,
                                const robot_state::RobotState &state,
                                const AllowedCollisionMatrix &acm) const;
   virtual double distanceWorld(const CollisionWorld &world) const;
   virtual double distanceWorld(const CollisionWorld &world,
                                const AllowedCollisionMatrix &acm) const;
-  
+
   virtual void setWorld(const WorldPtr& world);
-  
-  
+
+
 protected:
   void notifyObjectChange(const ObjectConstPtr& obj, World::Action action);
   World::ObserverHandle observer_handle_;
 };
-  
+
 }
 
 #endif

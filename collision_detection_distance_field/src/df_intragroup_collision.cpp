@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -102,7 +102,7 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
 
   links_.resize(link_order_.size());
   all_links_.resize(link_order_.size() + 1);
-  all_links_[link_order_.size()] = NULL; 
+  all_links_[link_order_.size()] = NULL;
 
   // Just used to assert that the collision transform is isometric (rotation
   // and translation only).
@@ -273,7 +273,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
   {
     const DFLink *link_a = *p_link_a;
     robot_state::LinkState *lsa = work.state1_->getLinkStateVector()[link_a->index_in_model_];
-    
+
     Eigen::Affine3d pf_to_linka = lsa->getGlobalCollisionBodyTransform().inverse(Eigen::Isometry);
 
     if (group)
@@ -324,7 +324,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
           bounding_sphere_radii_[link_b->index_in_link_order_],
           bs_dist);
       }
-      
+
 
       collision_detection::DecideContactFn acm_condition;
 
@@ -530,4 +530,3 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
 {
   checkSelfCollisionUsingIntraDFLoop(work, &all_links_.front());
 }
-

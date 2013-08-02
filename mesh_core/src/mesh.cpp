@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -610,7 +610,7 @@ if (slope < 0.0)
   ACORN_ASSERT(best_eidx >= 0);
   if (best_eidx < 0)
     return true;
-  
+
   // of triangles touching that edge find one whose normal is closest to x axis
   double best_xabs = -1.0;
   double best_x = 0.0;
@@ -674,7 +674,7 @@ void mesh_core::Mesh::fixSubmeshWindings(
 
   FlipInfo *tail = &list[0];
   FlipInfo *head = &list[1];
-  
+
   // go through all tris in the same submesh and make them consistent with the
   // first_tri
   do
@@ -690,7 +690,7 @@ void mesh_core::Mesh::fixSubmeshWindings(
       flipWinding(*info.tri);
       flip_cnt++;
     }
-    
+
     for (int dir = 0 ; dir < 3 ; ++dir)
     {
       int adj_idx = tri.edges_[dir].adjacent_tri_;
@@ -934,7 +934,7 @@ void mesh_core::Mesh::fillGap(const Edge& first_edge)
   bool save_acorn_debug_ear_state = acorn_debug_ear_state;
   debug_this_gap_ = (debug_ && debug_this_node_ && debug_gap_id_ != -1 && debug_gap_id_ == gap_debug_.size());
   acorn_debug_ear_state = debug_this_gap_;
-  
+
 
   ACORN_ASSERT(first_edge.tris_.size() == 1);
 
@@ -961,7 +961,7 @@ void mesh_core::Mesh::fillGap(const Edge& first_edge)
   loop[0].correct_winding_ = true;
   loop[0].tri_idx_ = first_et.tri_idx_;
 
-  // follow edge in triangle's increasing-dir order 
+  // follow edge in triangle's increasing-dir order
   if (first_tri.verts_[first_et.tri_dir_] == first_edge.verts_[0])
   {
     loop[0].vert_idx_ = first_edge.verts_[0];
@@ -1059,7 +1059,7 @@ void mesh_core::Mesh::fillGap(const Edge& first_edge)
     {
       // this is not necessarily an error.  Just means complex cracks.
       logInform("Found %d gap edges at vtx %d",
-        int(new_edges.size()), 
+        int(new_edges.size()),
         current_vtx);
 
 
@@ -1500,7 +1500,7 @@ void mesh_core::Mesh::generatePolygon(
       return;
     }
   }
-  
+
   // check for self intersections
   {
     GapPoint* intersect_a = NULL;
@@ -1553,7 +1553,7 @@ void mesh_core::Mesh::generatePolygon(
       GapPoint* start = NULL;
       int best_cnt = -1;
       int cnt = 0;
-      
+
       bool done = false;
       for (p = intersect_a ; !done ; p = p->next_)
       {
@@ -1631,7 +1631,7 @@ void mesh_core::Mesh::generatePolygon(
     }
     while (p != point0);
   }
-  
+
   // find winding direction
   // use cross product sign at extreme (xmin) point, guaranteed to be convex unless colinear.
   // point.cross_ and direction have same sign if corner is convex.
@@ -2035,7 +2035,7 @@ if (ab==1)
         v[vcnt++] = verts_[tri->verts_[cur]];
         cur = (cur + 1) % 3;
       }
-      
+
       ACORN_ASSERT(vcnt >= 3 && vcnt <= 4);
 
 if (ab==1)
@@ -2261,7 +2261,7 @@ void mesh_core::Mesh::getBoundingSpheres(
     BoundingSphereParams params;
     params.tolerance_ = tolerance;
     params.max_depth_ = max_depth;
-    
+
     calculateBoundingSpheres(params, tree);
 
     collectBoundingSpheres(tree, sphere_centers, sphere_radii);
@@ -2312,7 +2312,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresTreeSplit(
   a->depth_ = mesh_node->depth_ + 1;
   a->id_ = mesh_node->id_ << 1;
   a->split_method_ = mesh_node->split_method_;
-  
+
   b->mesh_ = mesh_b;
   b->tmp_mesh_ = mesh_b;
   b->parent_ = mesh_node;
@@ -2322,7 +2322,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresTreeSplit(
   b->depth_ = mesh_node->depth_ + 1;
   b->id_ = a->id_ | 1;
   a->split_method_ = mesh_node->split_method_;
-  
+
   ACORN_ASSERT(mesh_node->first_child_ == NULL);
   mesh_node->first_child_ = a;
 
@@ -2405,7 +2405,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_bigAxis(
   Eigen::Vector3d closest_point;
   int closest_tri;
   double closest_dist = findClosestPoint(
-                            center, 
+                            center,
                             closest_point,
                             closest_tri);
 
@@ -2475,7 +2475,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_ortho(
   Eigen::Vector3d closest_point;
   int closest_tri;
   double closest_dist = findClosestPoint(
-                            center, 
+                            center,
                             closest_point,
                             closest_tri);
 
@@ -2582,7 +2582,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_far(
   Eigen::Vector3d closest_point;
   int closest_tri;
   double closest_dist = findClosestPoint(
-                            center, 
+                            center,
                             closest_point,
                             closest_tri);
   if (1) // DEBUG
@@ -2653,7 +2653,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_closeFar(
   Eigen::Vector3d closest_point;
   int closest_tri;
   double closest_dist = findClosestPoint(
-                            center, 
+                            center,
                             closest_point,
                             closest_tri);
 
@@ -2785,7 +2785,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_closeFar(
       // no more points to consider?
       if (tris2.empty())
         break;
-      
+
       // try the next set of adjacent triangles
       std::swap(tris1, tris2);
     }
@@ -2860,7 +2860,7 @@ bool mesh_core::Mesh::calculateBoundingSpheresSplitPlane_closeFar(
 // find point on surface of mesh closest to given point.
 // return closest_point which is on mesh.
 // return distance from point to that point.
-// return index of triangle 
+// return index of triangle
 double mesh_core::Mesh::findClosestPoint(
       const Eigen::Vector3d& point,
       Eigen::Vector3d& closest_point,
@@ -2944,7 +2944,7 @@ void mesh_core::Mesh::addSphere(
     }
     initialized = true;
   }
-  
+
   if (max_error < std::numeric_limits<double>::epsilon() * 10.0)
     max_error = std::numeric_limits<double>::epsilon() * 10.0;
 
@@ -3125,7 +3125,7 @@ void mesh_core::Mesh::getInsidePoints(
       {
         logInform("  eliminate tri[%d] (norm.z = %f)", tri_idx, stri.norm_.z());
       }
-      
+
       continue;
     }
 

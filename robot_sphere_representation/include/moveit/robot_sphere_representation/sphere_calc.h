@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -190,7 +190,7 @@ public:
   // nspheres: requested number of spheres (ignored by some methods)
   // resolution: resolution that was used to generate points and to use for distance field
   // required_points: sample points in the object.  Should be covered by sphere
-  // optional_points: sample points in the object that are also in the parent object 
+  // optional_points: sample points in the object that are also in the parent object
   SphereCalc(std::size_t nspheres,
             double resolution,
             const EigenSTL::vector_Vector3d& required_points,
@@ -307,16 +307,16 @@ private:
   V3 df_aabb_size_;
   AABBi df_body_aabb_;   // just the shape, in grid coords
   boost::shared_ptr<distance_field::PropagationDistanceField> df_;
-  
+
 
   class Grid;
   class Voxel;
   boost::shared_ptr<Grid> voxel_grid_;
-  
+
   class ConcaveGrid;
   class ConcaveVoxel;
   boost::shared_ptr<ConcaveGrid> concave_voxel_grid_;
-  
+
 
   V3List required_points_;
   V3List optional_points_;
@@ -405,7 +405,7 @@ public:
   // transform points from robot frame to link collision frame
   Eigen::Vector3d transformRobotToLink(Eigen::Vector3d p);
   void transformRobotToLink(EigenSTL::vector_Vector3d::iterator begin,
-                            EigenSTL::vector_Vector3d::iterator end); 
+                            EigenSTL::vector_Vector3d::iterator end);
 
   bool hasCollision()
   {
@@ -519,7 +519,7 @@ private:
 
   boost::shared_ptr<const robot_model::RobotModel> kmodel_;
   boost::shared_ptr<robot_state::RobotState> kstate_;
-  
+
   std::map<std::string, Link*> links_;
   double resolution_;
   double oo_resolution_;
@@ -557,7 +557,7 @@ public:
   double getResolution() const { return resolution_; }
 
   void clear(const T& val);
-         
+
 private:
   int index(const Eigen::Vector3i& grid) const;
 
@@ -598,7 +598,7 @@ public:
   DFLinkGrid(const Eigen::Vector3d& origin,
              const Eigen::Vector3d& size,
              double resolution);
-  
+
   // clear all values to empty
   void clear();
 
@@ -646,7 +646,7 @@ inline void robot_sphere_representation::DFGrid<T>::resize(
   origin_minus_ = origin_ - (0.5 * resolution_);
   zstride_ = isize_.x() * isize_.y();
 
-  max_dist_ = 
+  max_dist_ =
 
   total_cells_ = isize_.x() * isize_.y() * isize_.z();
   data_ = new T[total_cells_];

@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -44,7 +44,7 @@
 const srdf::Model::LinkSpheres *collision_detection::CollisionRobotDistanceField::getSrdfLinkSpheres(const std::string& link_name) const
 {
   for (std::vector<srdf::Model::LinkSpheres>::const_iterator lsp = kmodel_->getSRDF()->getLinkSphereApproximations().begin() ;
-       lsp != kmodel_->getSRDF()->getLinkSphereApproximations().end() ; 
+       lsp != kmodel_->getSRDF()->getLinkSphereApproximations().end() ;
        ++lsp)
     if (lsp->link_ == link_name)
       return &*lsp;
@@ -252,7 +252,7 @@ void collision_detection::CollisionRobotDistanceField::initSphereAcm()
   //    sphere_index
   //      other_sphere_index_1
   //      other_sphere_index_2
-  //      ...              
+  //      ...
   //      other_sphere_index_N
   //
   // The last entry (and only the last entry) has a cnt==0
@@ -549,7 +549,7 @@ bool collision_detection::CollisionRobotDistanceField::checkSpherePairAll(
   }
 
   work.res_->collision = true;
-    
+
   if (work.res_->contact_count < max_contacts)
   {
     addSphereContact(work, a_link, b_link, a_center, b_center, a_radius, b_radius, dsq);
@@ -589,4 +589,3 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingSp
     logError("Conditional contacts not supported yet");
   }
 }
-

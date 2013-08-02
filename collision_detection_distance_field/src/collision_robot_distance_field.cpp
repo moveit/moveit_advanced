@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -51,8 +51,8 @@ inline void collision_detection::CollisionRobotDistanceField::checkSelfCollision
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
+    const CollisionRequest &req,
+    CollisionResult &res,
     const robot_state::RobotState &state,
     const AllowedCollisionMatrix &acm) const
 {
@@ -74,29 +74,29 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const robot_state::RobotState &state1, 
-    const robot_state::RobotState &state2, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const robot_state::RobotState &state1,
+    const robot_state::RobotState &state2,
     const AllowedCollisionMatrix &acm) const
 {
   logError("CollisionRobotDistanceField::checkSelfCollision 2a checking not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkSelfCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const robot_state::RobotState &state1, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const robot_state::RobotState &state1,
     const robot_state::RobotState &state2) const
 {
   logError("CollisionRobotDistanceField::checkSelfCollision 2b checking not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
+    const CollisionRequest &req,
+    CollisionResult &res,
     const robot_state::RobotState &state,
-    const CollisionRobot &other_robot, 
+    const CollisionRobot &other_robot,
     const robot_state::RobotState &other_state,
     const AllowedCollisionMatrix &acm) const
 {
@@ -104,22 +104,22 @@ void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
+    const CollisionRequest &req,
+    CollisionResult &res,
     const robot_state::RobotState &state,
-    const CollisionRobot &other_robot, 
+    const CollisionRobot &other_robot,
     const robot_state::RobotState &other_state) const
 {
   logError("CollisionRobotDistanceField::checkSelfCollision 3b not yet implemented");
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const robot_state::RobotState &state1, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const robot_state::RobotState &state1,
     const robot_state::RobotState &state2,
-    const CollisionRobot &other_robot, 
-    const robot_state::RobotState &other_state1, 
+    const CollisionRobot &other_robot,
+    const robot_state::RobotState &other_state1,
     const robot_state::RobotState &other_state2,
     const AllowedCollisionMatrix &acm) const
 {
@@ -127,12 +127,12 @@ void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
 }
 
 void collision_detection::CollisionRobotDistanceField::checkOtherCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const robot_state::RobotState &state1, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const robot_state::RobotState &state1,
     const robot_state::RobotState &state2,
-    const CollisionRobot &other_robot, 
-    const robot_state::RobotState &other_state1, 
+    const CollisionRobot &other_robot,
+    const robot_state::RobotState &other_state1,
     const robot_state::RobotState &other_state2) const
 {
   logError("CollisionRobotDistanceField::checkSelfCollision 4b checking not yet implemented");
@@ -200,9 +200,9 @@ collision_detection::CollisionDistanceFieldRequest::CollisionDistanceFieldReques
 
 
 void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
-    const CollisionRequest &req, 
+    const CollisionRequest &req,
     CollisionResult &res,
-    const robot_state::RobotState &state, 
+    const robot_state::RobotState &state,
     const AllowedCollisionMatrix *acm,
     std::vector<DFContact>* df_contacts,
     DFContact *df_distance) const
@@ -238,5 +238,3 @@ void collision_detection::CollisionRobotDistanceField::getSelfCollisionContacts(
   work.df_contacts_ = NULL;
   work.df_distance_ = NULL;
 }
-
-

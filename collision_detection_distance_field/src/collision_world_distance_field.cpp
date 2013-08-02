@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author Acoern Pooley */
+/* Author: Acoern Pooley */
 
 #include <moveit/collision_detection_distance_field/collision_world_distance_field.h>
 #include <boost/bind.hpp>
@@ -54,7 +54,7 @@ collision_detection::CollisionWorldDistanceField::CollisionWorldDistanceField(
 }
 
 collision_detection::CollisionWorldDistanceField::CollisionWorldDistanceField(
-    const CollisionWorldDistanceField &other, 
+    const CollisionWorldDistanceField &other,
     const WorldPtr& world)
   : CollisionWorld(other, world)
 {
@@ -68,30 +68,30 @@ collision_detection::CollisionWorldDistanceField::~CollisionWorldDistanceField()
 }
 
 void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const CollisionRobot &robot, 
-    const robot_state::RobotState &state, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const CollisionRobot &robot,
+    const robot_state::RobotState &state,
     const AllowedCollisionMatrix &acm) const
 {
   //logError("CollisionWorldDistanceField::checkRobotCollision 1 not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const CollisionRobot &robot, 
-    const robot_state::RobotState &state1, 
-    const robot_state::RobotState &state2, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const CollisionRobot &robot,
+    const robot_state::RobotState &state1,
+    const robot_state::RobotState &state2,
     const AllowedCollisionMatrix &acm) const
 {
   logError("CollisionWorldDistanceField::checkRobotCollision 2 checking not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::checkWorldCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const CollisionWorld &other_world, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const CollisionWorld &other_world,
     const AllowedCollisionMatrix &acm) const
 {
   logError("CollisionWorldDistanceField::checkWorldCollision 1 not yet implemented");
@@ -114,55 +114,55 @@ void collision_detection::CollisionWorldDistanceField::setWorld(
 }
 
 void collision_detection::CollisionWorldDistanceField::notifyObjectChange(
-    const ObjectConstPtr& obj, 
+    const ObjectConstPtr& obj,
     World::Action action)
 {
 }
 
 double collision_detection::CollisionWorldDistanceField::distanceRobot(
-    const CollisionRobot &robot, 
-    const robot_state::RobotState &state, 
+    const CollisionRobot &robot,
+    const robot_state::RobotState &state,
     const AllowedCollisionMatrix &acm) const
 {
   logError("CollisionWorldDistanceField::distanceRobot 1 not yet implemented");
 }
 
 double collision_detection::CollisionWorldDistanceField::distanceWorld(
-    const CollisionWorld &world, 
+    const CollisionWorld &world,
     const AllowedCollisionMatrix &acm) const
 {
   logError("CollisionWorldDistanceField::distanceWorld 2 not yet implemented");
 }
 
 void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const CollisionRobot &robot, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const CollisionRobot &robot,
     const robot_state::RobotState &state) const
 {
   checkRobotCollision(req, res, robot, state, empty_acm);
 }
 
 void collision_detection::CollisionWorldDistanceField::checkRobotCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
-    const CollisionRobot &robot, 
-    const robot_state::RobotState &state1, 
+    const CollisionRequest &req,
+    CollisionResult &res,
+    const CollisionRobot &robot,
+    const robot_state::RobotState &state1,
     const robot_state::RobotState &state2) const
 {
   checkRobotCollision(req, res, robot, state1, state2, empty_acm);
 }
 
 void collision_detection::CollisionWorldDistanceField::checkWorldCollision(
-    const CollisionRequest &req, 
-    CollisionResult &res, 
+    const CollisionRequest &req,
+    CollisionResult &res,
     const CollisionWorld &other_world) const
 {
   checkWorldCollision(req, res, other_world, empty_acm);
 }
 
 double collision_detection::CollisionWorldDistanceField::distanceRobot(
-    const CollisionRobot &robot, 
+    const CollisionRobot &robot,
     const robot_state::RobotState &state) const
 {
   return distanceRobot(robot, state, empty_acm);
@@ -176,4 +176,3 @@ double collision_detection::CollisionWorldDistanceField::distanceWorld(
 
 #include <moveit/collision_detection_distance_field/collision_detector_allocator_distance_field.h>
 const std::string collision_detection::CollisionDetectorAllocatorDistanceField::NAME_("DistanceField");
-

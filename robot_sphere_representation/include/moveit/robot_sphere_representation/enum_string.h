@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -34,7 +34,6 @@
 
 /* Author: Acorn Pooley */
 
-
 #define ENUM_STRING_EXAMPLE_CODE 0
 #if ENUM_STRING_EXAMPLE_CODE
 
@@ -53,7 +52,7 @@
 //        VS(NAME1, "Name 1") \
 //        VS(NAME2, "Name 2") \
 //        VS(NAME3, "Name 3") \
-//    
+//
 //     ENUM_STRING_DECLARE(MyEnum, MyEnum__VALUES);
 //
 // In source file my_enum.cpp:

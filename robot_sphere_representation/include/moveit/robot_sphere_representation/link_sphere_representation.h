@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -130,7 +130,7 @@ public:
 
   // Actually generate the spheres.  This is not needed as it is called from
   // getSpheres() when required.  However, calling it will ensure that a future
-  // call to getSpheres() returns quickly. 
+  // call to getSpheres() returns quickly.
   // This function is const because it only changes mutable data.  Conceptually
   // the spheres themselves are "changed" only when parameters change.  This
   // function is just updating them.
@@ -197,4 +197,3 @@ inline robot_sphere_representation::Link* robot_sphere_representation::LinkSpher
 
 
 #endif
-
