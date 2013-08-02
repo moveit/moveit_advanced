@@ -30,9 +30,9 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*
-*  Author: Sachin Chitta
 *********************************************************************/
+
+/* Author: Sachin Chitta */
 
 #include <moveit/workspace_analysis/workspace_analysis.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
