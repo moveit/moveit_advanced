@@ -1,31 +1,36 @@
-/*
- * Copyright (c) 2013, Willow Garage, Inc.
- * All rights reserved.
+/*********************************************************************
+ * Software License Agreement (BSD License)
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ *  Copyright (c) 2013, Willow Garage, Inc.
+ *  All rights reserved.
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Willow Garage, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Willow Garage nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 /* Author: Acorn Pooley */
 
@@ -282,7 +287,7 @@ namespace moveit_rviz_plugin
     virtual void getGeom(bool& robot_relative, EigenSTL::vector_Vector3d& centers, std::vector<double>& radii)
     {
       robot_relative = true;
-      
+
       robot_sphere_representation::LinkSphereRepresentation* link_sphere_rep = link_->getLinkSphereRepresentation();
       if (!link_sphere_rep)
         return;
@@ -603,7 +608,7 @@ namespace moveit_rviz_plugin
 {
   struct DebugMesh
   {
-    DebugMesh(const mesh_core::Mesh& mesh, 
+    DebugMesh(const mesh_core::Mesh& mesh,
               const std::string& name)
       : mesh_(mesh)
       , name_(name)
@@ -633,7 +638,7 @@ namespace moveit_rviz_plugin
     return findSphereTreeNode(node->first_child_->next_sibling_, id);
   }
   void showSphereTree(
-        const mesh_core::Mesh::BoundingSphereNode *node, 
+        const mesh_core::Mesh::BoundingSphereNode *node,
         const mesh_core::Mesh::BoundingSphereNode *mark,
         char *name = NULL,
         char *prefix = NULL,
@@ -890,8 +895,8 @@ acorn_closest_debug = false;
               }
             }
           }
-          
-          
+
+
 #if 0
           mesh_core::Mesh a(0.00001);
           mesh_core::Mesh b(0.00001);
@@ -908,7 +913,7 @@ acorn_closest_debug = false;
               //shapes_->addPoint(acorn_db_slice_in, Eigen::Vector4f(1,0,0,1));
               //shapes_->addPoint(acorn_db_slice_out, Eigen::Vector4f(0,1,0,1));
               //shapes_->addPoint(acorn_db_slice_clip, Eigen::Vector4f(0,0,1,1));
-      
+
               shapes_->addPoints(acorn_db_slice_pts_clip, Eigen::Vector4f(1,0,1,1));
               shapes_->addPoints(acorn_db_slice_pts_in, Eigen::Vector4f(0,0,1,1));
               shapes_->addPoints(acorn_db_slice_pts_0, Eigen::Vector4f(1,1,1,1));
@@ -922,7 +927,7 @@ acorn_closest_debug = false;
           {
             int tria, trib;
             double dist;
-            
+
             mp->findThinnestFeature(dist, tria, trib, closest_max_angle);
             logInform("Closest dist=%f  tria=%d  trib=%d for max_angle=%4.1f",dist, tria, trib, closest_max_angle);
           }
@@ -937,8 +942,8 @@ acorn_closest_debug = false;
                           0.5,
                           0.05);
             mesh_sphere_.reset(new mesh_ros::RvizMeshShape(
-                                            link_->getDisplay()->getDisplayContext(), 
-                                            getSceneNode(), 
+                                            link_->getDisplay()->getDisplayContext(),
+                                            getSceneNode(),
                                             &sphere_mesh,
                                             base_->getColor()));
           }
@@ -963,8 +968,8 @@ acorn_closest_debug = false;
 
           // draw the mesh
           mesh_shape_.reset(new mesh_ros::RvizMeshShape(
-                                            link_->getDisplay()->getDisplayContext(), 
-                                            getSceneNode(), 
+                                            link_->getDisplay()->getDisplayContext(),
+                                            getSceneNode(),
                                             NULL,
                                             base_->getColor()));
 
@@ -979,8 +984,8 @@ acorn_closest_debug = false;
               ROS_INFO("draw gap %d/%d with %d verts",which_gap, int(gdi_list.size()), int(gdi.verts_.size()));
 
               neigbor_mesh_shape_.reset(new mesh_ros::RvizMeshShape(
-                                            link_->getDisplay()->getDisplayContext(), 
-                                            getSceneNode(), 
+                                            link_->getDisplay()->getDisplayContext(),
+                                            getSceneNode(),
                                             NULL,
                                             Eigen::Vector4f(1,1,0,1)));
               neigbor_mesh_shape_->reset(
@@ -997,7 +1002,7 @@ acorn_closest_debug = false;
                   t,
                   num,
                   (t>=0 && t<num) ? gdi.neigbor_tris_[t] : -1);
-                  
+
               }
 
               mesh_shape_->reset(
@@ -1014,7 +1019,7 @@ acorn_closest_debug = false;
                   t,
                   num,
                   (t>=0 && t<num) ? gdi.gap_tris_[t] : -1);
-                  
+
               }
 
               int showpt = base_->getIntProperty("ShowGapLoopPoint")->getInt();
@@ -1158,7 +1163,7 @@ namespace moveit_rviz_plugin
       DebugMesh& dbmesh = *link_->getDebugMeshes()[meshid];
       logInform("Showing dbmesh[%d] = %s",
         meshid, dbmesh.name_.c_str());
-      
+
       mesh_core::Mesh *mesh = &dbmesh.mesh_;
 
       base_->getIntProperty("NGaps")->setValue(int(mesh->getGapDebugInfo().size()));
@@ -1174,8 +1179,8 @@ namespace moveit_rviz_plugin
 
       // draw the mesh
       mesh_shape_.reset(new mesh_ros::RvizMeshShape(
-                                        link_->getDisplay()->getDisplayContext(), 
-                                        getSceneNode(), 
+                                        link_->getDisplay()->getDisplayContext(),
+                                        getSceneNode(),
                                         NULL,
                                         base_->getColor()));
 
@@ -1190,8 +1195,8 @@ namespace moveit_rviz_plugin
           ROS_INFO("draw gap %d/%d with %d verts",which_gap, int(gdi_list.size()), int(gdi.verts_.size()));
 
           neigbor_mesh_shape_.reset(new mesh_ros::RvizMeshShape(
-                                        link_->getDisplay()->getDisplayContext(), 
-                                        getSceneNode(), 
+                                        link_->getDisplay()->getDisplayContext(),
+                                        getSceneNode(),
                                         NULL,
                                         Eigen::Vector4f(1,1,0,1)));
           neigbor_mesh_shape_->reset(
@@ -1208,7 +1213,7 @@ namespace moveit_rviz_plugin
               t,
               num,
               (t>=0 && t<num) ? gdi.neigbor_tris_[t] : -1);
-              
+
           }
 
           mesh_shape_->reset(
@@ -1225,7 +1230,7 @@ namespace moveit_rviz_plugin
               t,
               num,
               (t>=0 && t<num) ? gdi.gap_tris_[t] : -1);
-              
+
           }
 
           int showpt = base_->getIntProperty("ShowGapLoopPoint")->getInt();
@@ -1301,7 +1306,7 @@ namespace moveit_rviz_plugin
           const Eigen::Affine3d& link_xform = link_->getLinkState()->getGlobalCollisionBodyTransform();
           EigenSTL::vector_Vector3d points;
           mesh_core::appendPointsTransformed(points, link_xform, mesh_shape->vertex_count, mesh_shape->vertices);
-          
+
 
           mesh_core::PlaneProjection proj(points);
           shapes_.reset(new ShapesDisplay(getSceneNode(), base_->getColor(), base_->getSize()));
@@ -1334,19 +1339,19 @@ namespace moveit_rviz_plugin
           if (!parallel)
           {
             Eigen::Vector3d intersection3 = proj.extract(intersection);
-            
+
             shapes_->addSphere(intersection3,
                                0.05,
                                hit ? Eigen::Vector4f(1,0,0,1) : Eigen::Vector4f(0,1,0,1));
           }
-          
+
 
           hit = line1.intersect(line0, intersection, parallel);
 
           if (!parallel)
           {
             Eigen::Vector3d intersection3 = proj.extract(intersection);
-            
+
             shapes_->addBox(intersection3,
                             0.07,
                             hit ? Eigen::Vector4f(1,1,0,1) : Eigen::Vector4f(0,1,1,1));
@@ -1355,7 +1360,7 @@ namespace moveit_rviz_plugin
                         0.07,
                         hit ? Eigen::Vector4f(1,1,0,1) : Eigen::Vector4f(0,1,1,1));
           }
-          
+
 
           Eigen::Vector3d a23 = proj.extract(a2);
           Eigen::Vector3d b23 = proj.extract(b2);
@@ -1409,5 +1414,3 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::addPerLinkData()
   LinkObj_MeshDebug::addSelf(mesh_vis_category_, *per_link_objects_);
   LinkObj_VertPlane::addSelf(mesh_vis_category_, *per_link_objects_);
 }
-
-

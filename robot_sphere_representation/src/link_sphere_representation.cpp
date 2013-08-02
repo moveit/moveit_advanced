@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -46,7 +46,7 @@
 #include <assert.h>
 
 robot_sphere_representation::LinkSphereRepresentation::LinkSphereRepresentation(
-      RobotSphereRepresentation *robot, 
+      RobotSphereRepresentation *robot,
       const robot_model::LinkModel *link_model)
   : robot_(robot)
   , link_model_(link_model)
@@ -109,7 +109,7 @@ void robot_sphere_representation::LinkSphereRepresentation::setQualMethod(QualMe
 }
 
 void robot_sphere_representation::LinkSphereRepresentation::getSpheres(
-        EigenSTL::vector_Vector3d& centers, 
+        EigenSTL::vector_Vector3d& centers,
         std::vector<double>& radii) const
 {
   genSpheres();
@@ -272,5 +272,3 @@ void robot_sphere_representation::LinkSphereRepresentation::genSpheresUsingSpher
   }
   dirty_ = false;
 }
-
-

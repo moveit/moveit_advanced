@@ -1,31 +1,36 @@
-/*
- * Copyright (c) 2013, Willow Garage, Inc.
- * All rights reserved.
+/*********************************************************************
+ * Software License Agreement (BSD License)
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ *  Copyright (c) 2013, Willow Garage, Inc.
+ *  All rights reserved.
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Willow Garage, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Willow Garage nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 /* Author: Acorn Pooley */
 
@@ -177,7 +182,7 @@ void moveit_rviz_plugin::ShapesDisplay::addSpheres(
 }
 
 void moveit_rviz_plugin::ShapesDisplay::addBox(
-    const Eigen::Affine3d& pose, 
+    const Eigen::Affine3d& pose,
     const Eigen::Vector3d& size,
     const color_cast::Color& color)
 {
@@ -203,7 +208,7 @@ void moveit_rviz_plugin::ShapesDisplay::addBox(
 }
 
 void moveit_rviz_plugin::ShapesDisplay::addBox(
-    const Eigen::Affine3d& pose, 
+    const Eigen::Affine3d& pose,
     double size,
     const color_cast::Color& color)
 {
@@ -219,9 +224,9 @@ void moveit_rviz_plugin::ShapesDisplay::addBox(
 }
 
 void moveit_rviz_plugin::ShapesDisplay::addZCylinder(
-    const Eigen::Affine3d& pose, 
-    double radius, 
-    double length, 
+    const Eigen::Affine3d& pose,
+    double radius,
+    double length,
     const color_cast::Color& color)
 {
   const Eigen::Vector4f& colorf = color.isDefault() ? color_ : color.getColorf();
@@ -277,10 +282,10 @@ static void calcOrientationFromEndpoints(
   Eigen::Vector3d tan0 = dir.cross(tmp);
   tan0.normalize();
   Eigen::Vector3d tan1 = tan0.cross(dir);
-  
+
   quat = Ogre::Quaternion(OVec3(tan0), OVec3(dir), OVec3(tan1));
 }
- 
+
 
 void moveit_rviz_plugin::ShapesDisplay::addCylinderOrCone(
     bool cone,
@@ -381,21 +386,21 @@ void moveit_rviz_plugin::ShapesDisplay::addArrow(
   }
 
   addCylinderOrCone(
-        false, 
-        base, 
-        dir, 
-        cyl_len, 
-        cyl_diameter * 0.5, 
-        quat, 
+        false,
+        base,
+        dir,
+        cyl_len,
+        cyl_diameter * 0.5,
+        quat,
         color);
 
   addCylinderOrCone(
         true,
-        base + cyl_len * dir, 
-        dir, 
-        cone_len, 
-        cone_diameter * 0.5, 
-        quat, 
+        base + cyl_len * dir,
+        dir,
+        cone_len,
+        cone_diameter * 0.5,
+        quat,
         color);
 }
 

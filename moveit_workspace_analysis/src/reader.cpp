@@ -1,8 +1,7 @@
 /*********************************************************************
-*
 * Software License Agreement (BSD License)
 *
-*  Copyright (c) 2012, Willow Garage, Inc.
+*  Copyright (c) 2013, Willow Garage, Inc.
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -31,9 +30,9 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*
-* Author: Sachin Chitta
 *********************************************************************/
+
+/* Author: Sachin Chitta */
 
 #include <moveit/workspace_analysis/workspace_analysis.h>
 #include <visualization_msgs/Marker.h>
@@ -45,34 +44,34 @@ int main(int argc, char **argv)
   spinner.start();
 
   /*Get some ROS params */
-  ros::NodeHandle node_handle("~");  
+  ros::NodeHandle node_handle("~");
   std::string filename;
   if (!node_handle.getParam("filename", filename))
-    ROS_FATAL("No filename to read from");  
+    ROS_FATAL("No filename to read from");
 
   moveit_workspace_analysis::WorkspaceMetrics metrics;
 
-  ROS_INFO("Reading from file: %s", filename.c_str());  
- 
+  ROS_INFO("Reading from file: %s", filename.c_str());
+
   if(!filename.empty())
     if(!metrics.readFromFile(filename, 4))
       ROS_INFO("Could not read from file");
     else
       ROS_INFO("Read file");
-  
 
-  /*  std::string filename_new = filename+"1";  
+
+  /*  std::string filename_new = filename+"1";
   if(!filename_new.empty())
     if(!metrics.writeToFile(filename_new))
       ROS_INFO("Could not write to file");
   */
-  ros::Publisher display_publisher = node_handle.advertise<visualization_msgs::Marker>("workspace", 1, true);  
+  ros::Publisher display_publisher = node_handle.advertise<visualization_msgs::Marker>("workspace", 1, true);
   visualization_msgs::Marker marker = metrics.getMarker(0.25, 0, "me");
-  marker.header.frame_id = metrics.frame_id_;  
-  marker.header.stamp = ros::Time::now();  
+  marker.header.frame_id = metrics.frame_id_;
+  marker.header.stamp = ros::Time::now();
   display_publisher.publish(marker);
-  sleep(20.0);  
-  
+  sleep(20.0);
+
   ros::shutdown();
-  return 0;  
+  return 0;
 }

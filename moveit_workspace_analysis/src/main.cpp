@@ -1,8 +1,7 @@
 /*********************************************************************
-*
 * Software License Agreement (BSD License)
 *
-*  Copyright (c) 2012, Willow Garage, Inc.
+*  Copyright (c) 2013, Willow Garage, Inc.
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -31,9 +30,9 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*
-* Author: Sachin Chitta
 *********************************************************************/
+
+/* Author: Sachin Chitta */
 
 #include <moveit/workspace_analysis/workspace_analysis.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
@@ -47,20 +46,20 @@ int main(int argc, char **argv)
   spinner.start();
 
   /*Get some ROS params */
-  ros::NodeHandle node_handle("~");  
+  ros::NodeHandle node_handle("~");
   double res_x, res_y, res_z;
   double min_x, min_y, min_z;
   double max_x, max_y, max_z;
-  double joint_limits_penalty_multiplier;  
-  std::string group_name;  
-  
+  double joint_limits_penalty_multiplier;
+  std::string group_name;
+
   if (!node_handle.getParam("min_x", min_x))
     min_x = 0.0;
   if (!node_handle.getParam("max_x", max_x))
     max_x = 0.0;
   if (!node_handle.getParam("res_x", res_x))
     res_x = 0.1;
-  
+
   if (!node_handle.getParam("min_y", min_y))
     min_y = 0.0;
   if (!node_handle.getParam("max_y", max_y))
@@ -80,13 +79,13 @@ int main(int argc, char **argv)
 
   std::string filename;
   if (!node_handle.getParam("filename", filename))
-    ROS_ERROR("Will not write to file");  
+    ROS_ERROR("Will not write to file");
 
   if (!node_handle.getParam("group_name", group_name))
-    ROS_FATAL("Must have valid group name");  
+    ROS_FATAL("Must have valid group name");
 
   /* Load the robot model */
-  robot_model_loader::RobotModelLoader robot_model_loader("robot_description"); 
+  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
 
   /* Get a shared pointer to the model */
   robot_model::RobotModelPtr robot_model = robot_model_loader.getModel();
@@ -95,12 +94,12 @@ int main(int argc, char **argv)
   robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model));
 
   if(!robot_state->hasJointStateGroup(group_name))
-    ROS_FATAL("Invalid group name: %s", group_name.c_str());  
+    ROS_FATAL("Invalid group name: %s", group_name.c_str());
 
-  robot_state::JointStateGroup* joint_state_group = robot_state->getJointStateGroup(group_name);  
+  robot_state::JointStateGroup* joint_state_group = robot_state->getJointStateGroup(group_name);
 
   /* Construct a planning scene - NOTE: this is for illustration purposes only.
-     The recommended way to construct a planning scene is to use the planning_scene_monitor 
+     The recommended way to construct a planning scene is to use the planning_scene_monitor
      to construct it for you.*/
   planning_scene::PlanningScenePtr planning_scene(new planning_scene::PlanningScene(robot_model));
 
@@ -108,23 +107,22 @@ int main(int argc, char **argv)
   workspace.min_corner.x = min_x;
   workspace.min_corner.y = min_y;
   workspace.min_corner.z = min_z;
-  
+
   workspace.max_corner.x = max_x;
   workspace.max_corner.y = max_y;
   workspace.max_corner.z = max_z;
 
   /* Load the workspace analysis */
-  moveit_workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);  
+  moveit_workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);
 
   /* Compute the metrics */
-  std::vector<geometry_msgs::Quaternion> orientations;  
+  std::vector<geometry_msgs::Quaternion> orientations;
   moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, joint_state_group, res_x, res_y, res_z);
-  
+
   if(!filename.empty())
     if(!metrics.writeToFile(filename,",",false))
       ROS_INFO("Could not write to file");
-  
-  ros::shutdown();
-  return 0;  
-}
 
+  ros::shutdown();
+  return 0;
+}

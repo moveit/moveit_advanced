@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -126,7 +126,7 @@ void collision_detection::StaticDistanceField::initialize(
                               aabb.max_.x(),
                               aabb.max_.y(),
                               aabb.max_.z());
-    
+
   aabb.min_.x() = std::floor(aabb.min_.x() / resolution) * resolution;
   aabb.min_.y() = std::floor(aabb.min_.y() / resolution) * resolution;
   aabb.min_.z() = std::floor(aabb.min_.z() / resolution) * resolution;
@@ -152,7 +152,7 @@ void collision_detection::StaticDistanceField::initialize(
                               int(size.z()/resolution),
                               diagonal);
 
-    
+
   distance_field::PropagationDistanceField df(
                               size.x(),
                               size.y(),
@@ -190,7 +190,7 @@ void collision_detection::StaticDistanceField::initialize(
   worldToGrid(aabb.min_.x(), aabb.min_.y(), aabb.min_.z(), sdf_x,sdf_y,sdf_z);
   df.gridToWorld(pdf_x,pdf_y,pdf_z, pdf_p.x(), pdf_p.y(), pdf_p.z());
   gridToWorld(sdf_x,sdf_y,sdf_z, sdf_p.x(), sdf_p.y(), sdf_p.z());
-  
+
   logInform("    DF: min=(%10.6f %10.6f %10.6f)  quant->%3d %3d %3d  (pdf)",
                               aabb.min_.x(),
                               aabb.min_.y(),
@@ -218,7 +218,7 @@ void collision_detection::StaticDistanceField::initialize(
   worldToGrid(0,0,0, sdf_x,sdf_y,sdf_z);
   df.gridToWorld(pdf_x,pdf_y,pdf_z, pdf_p.x(), pdf_p.y(), pdf_p.z());
   gridToWorld(sdf_x,sdf_y,sdf_z, sdf_p.x(), sdf_p.y(), sdf_p.z());
-  
+
   logInform("    DF: org=(%10.6f %10.6f %10.6f)  quant->%3d %3d %3d  (pdf)",
                               0.0,
                               0.0,
@@ -246,7 +246,7 @@ void collision_detection::StaticDistanceField::initialize(
   worldToGrid(points[0].x(), points[0].y(), points[0].z(), sdf_x,sdf_y,sdf_z);
   df.gridToWorld(pdf_x,pdf_y,pdf_z, pdf_p.x(), pdf_p.y(), pdf_p.z());
   gridToWorld(sdf_x,sdf_y,sdf_z, sdf_p.x(), sdf_p.y(), sdf_p.z());
-  
+
   logInform("    DF: p0 =(%10.6f %10.6f %10.6f)  quant->%3d %3d %3d  (pdf)",
                               points[0].x(),
                               points[0].y(),

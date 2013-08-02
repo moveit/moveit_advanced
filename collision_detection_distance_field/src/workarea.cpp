@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -93,12 +93,12 @@ void collision_detection::CollisionRobotDistanceField::dumpQuery(const WorkArea&
 void collision_detection::DFContact::copyFrom(const Contact& contact)
 {
   pos = contact.pos;
-	normal = contact.normal;
-	depth = contact.depth;
-	body_name_1 = contact.body_name_1;
-	body_type_1 = contact.body_type_1;
-	body_name_2 = contact.body_name_2;
-	body_type_2 = contact.body_type_2;
+    normal = contact.normal;
+    depth = contact.depth;
+    body_name_1 = contact.body_name_1;
+    body_type_1 = contact.body_type_1;
+    body_name_2 = contact.body_name_2;
+    body_type_2 = contact.body_type_2;
 
   sphere_radius_1 = 0;
   sphere_radius_2 = 0;
@@ -110,12 +110,12 @@ void collision_detection::DFContact::copyFrom(const Contact& contact)
 void collision_detection::DFContact::clear()
 {
   pos = Eigen::Vector3d::Zero();
-	normal = Eigen::Vector3d::Zero();
-	depth = std::numeric_limits<double>::max();
-	body_name_1.clear();
-	body_name_2.clear();
-	body_type_1 = BodyTypes::ROBOT_LINK;
-	body_type_2 = BodyTypes::ROBOT_LINK;
+    normal = Eigen::Vector3d::Zero();
+    depth = std::numeric_limits<double>::max();
+    body_name_1.clear();
+    body_name_2.clear();
+    body_type_1 = BodyTypes::ROBOT_LINK;
+    body_type_2 = BodyTypes::ROBOT_LINK;
 
   sphere_radius_1 = 0;
   sphere_radius_2 = 0;
@@ -123,5 +123,3 @@ void collision_detection::DFContact::clear()
   sdf_2 = NULL;
   eliminated_by_acm_function = false;
 }
-
-

@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/** \author Acorn Pooley */
+/* Author: Acorn Pooley */
 
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_state/robot_state.h>
@@ -71,7 +71,7 @@ class CollisionDetectionDistanceFieldTester : public testing::Test{
 
 protected:
 
-  virtual void SetUp() 
+  virtual void SetUp()
   {
     console_bridge::setLogLevel(console_bridge::LOG_INFO);
 
@@ -121,12 +121,12 @@ protected:
 
   boost::shared_ptr<urdf::ModelInterface>  urdf_model_;
   boost::shared_ptr<srdf::Model>           srdf_model_;
-  
+
   robot_model::RobotModelPtr               robot_model_;
-  
+
   boost::shared_ptr<collision_detection::CollisionRobot>        crobot_;
   boost::shared_ptr<collision_detection::CollisionWorld>        cworld_;
-  
+
   collision_detection::AllowedCollisionMatrixPtr acm_;
 
 };

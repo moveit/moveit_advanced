@@ -1,31 +1,36 @@
-/*
- * Copyright (c) 2013, Willow Garage, Inc.
- * All rights reserved.
+/*********************************************************************
+ * Software License Agreement (BSD License)
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ *  Copyright (c) 2013, Willow Garage, Inc.
+ *  All rights reserved.
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Willow Garage, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Willow Garage nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 /* Author: Acorn Pooley */
 
@@ -102,19 +107,19 @@ public:
   // add a box.
   // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addBox(
-    const Eigen::Affine3d& pose, 
+    const Eigen::Affine3d& pose,
     const Eigen::Vector3d& size,
     const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add a cube.
   void addBox(
-    const Eigen::Affine3d& pose, 
+    const Eigen::Affine3d& pose,
     double size,
     const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add a cube unrotated.
   void addBox(
-    const Eigen::Vector3d& position, 
+    const Eigen::Vector3d& position,
     double size,
     const color_cast::Color& color = color_cast::Color::getDefault());
 
@@ -123,9 +128,9 @@ public:
   // add a cylinder.  Endpoints are on z axis.  Center is at origin.
   // color can be an Eigen::Vector4f, QColor, Ogre::ColourValue, std_msgs::ColorRGBA, etc
   void addZCylinder(
-    const Eigen::Affine3d& pose, 
-    double radius, 
-    double length, 
+    const Eigen::Affine3d& pose,
+    double radius,
+    double length,
     const color_cast::Color& color = color_cast::Color::getDefault());
 
   // add a cylinder given 2 endpoints.
@@ -133,7 +138,7 @@ public:
   void addCylinder(
     const Eigen::Vector3d& end0,
     const Eigen::Vector3d& end1,
-    double radius, 
+    double radius,
     const color_cast::Color& color = color_cast::Color::getDefault());
 
   // CONES
@@ -143,7 +148,7 @@ public:
   void addCone(
     const Eigen::Vector3d& base,
     const Eigen::Vector3d& tip,
-    double radius, 
+    double radius,
     const color_cast::Color& color = color_cast::Color::getDefault());
 
   // ARROWS
@@ -192,7 +197,7 @@ private:
     Ogre::SceneNode* node_;
   };
 
-  
+
   Ogre::SceneNode* node_;
   rviz::PointCloud* points_;
   std::vector<Shape> shapes_;
