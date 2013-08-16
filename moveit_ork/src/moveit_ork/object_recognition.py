@@ -42,7 +42,7 @@ from threading import Lock
 from object_recognition_msgs.msg import ObjectRecognitionAction, ObjectRecognitionGoal, RecognizedObjectArray
 from object_recognition_msgs.srv import GetObjectInformation
 
-from moveit_msgs.msg import CollisionObject
+from moveit_msgs.msg import CollisionObject, PlanningScene
 from shape_msgs.msg import SolidPrimitive, Mesh, MeshTriangle
 from geometry_msgs.msg import Point
 from std_msgs.msg import Bool
@@ -88,12 +88,210 @@ class ObjectDetector:
 class ObjectBroadcaster:
     """ Given a detected object, request more information about it and publish the result as a CollisionObject """
 
-    def __init__(self, topic = '/collision_object'):
+    def __init__(self, topic = '/collision_object', diff_topic = '/recognized_object_diff'):
         self._publisher = rospy.Publisher(topic, CollisionObject)
+        self._diff_publisher = rospy.Publisher(diff_topic, PlanningScene)
         self._index = 1
         self._min_confidence = 0.5
         self._lock = Lock()
         self._get_object_info = rospy.ServiceProxy('get_object_info', GetObjectInformation)
+
+    def broadcast_diff(self, objects):
+        planning_scene = PlanningScene()
+        planning_scene.is_diff = True
+        if isinstance(objects, collections.Iterable):
+            for ob in objects:
+                co = self._create_collision_object(ob)
+                planning_scene.world.collision_objects.append(co)
+        else:
+            co = self._create_collision_object(objects)
+            planning_scene.world.collision_objects.append(co)
+        self._diff_publisher.publish(planning_scene)
+
+
+
+    def _create_collision_object(self, ob):
+        if ob.confidence < self._min_confidence:
+            rospy.loginfo("Not publishing object of type %s because confidence %s < %s" % (ob.type.key, str(ob.confidence), str(self._min_confidence)))
+            return
+
+        info = None
+        try:
+            info = self._get_object_info(ob.type).information
+        except rospy.ServiceException, e:
+            rospy.logwarn("Unable to retrieve object information for object of type\n%s" % str(ob.type))
+
+        co = CollisionObject()
+        co.type = ob.type
+        co.operation = CollisionObject.ADD
+        co.header = ob.pose.header
+
+        if info:
+            if len(info.name) > 0:
+                co.id = info.name + '_' + str(self._bump_index())
+            else:
+                co.id = ob.type.key + '_' + str(self._bump_index())
+            if len(info.ground_truth_mesh.triangles) > 0:
+                co.meshes = [info.ground_truth_mesh]
+            else:
+                co.meshes = [ob.bounding_mesh]
+            co.mesh_poses = [ob.pose.pose.pose]            
+        else:
+            rospy.loginfo("Did not find information for object %s:" % (ob.type.key))
+            co.id = ob.type.key + '_' + str(self._bump_index())
+            co.meshes = [ob.bounding_mesh]
+            co.mesh_poses = [ob.pose.pose.pose]
+        if len(co.meshes[0].triangles) > 0:
+            rospy.loginfo("Publishing collision object %s with confidence %s" % (co.id, str(ob.confidence)))
+
+            # hack to turn the mesh into a box (aabb)
+            #co.primitive_poses = co.mesh_poses
+            #co.mesh_poses = []
+            min_x = 1000000
+            min_y = 1000000
+            min_z = 1000000
+            max_x = -1000000
+            max_y = -1000000
+            max_z = -1000000
+            for v in co.meshes[0].vertices:
+                if v.x > max_x:
+                    max_x = v.x
+                if v.y > max_y:
+                    max_y = v.y
+                if v.z > max_z:
+                    max_z = v.z
+                if v.x < min_x:
+                    min_x = v.x
+                if v.y < min_y:
+                    min_y = v.y
+                if v.z < min_z:
+                    min_z = v.z
+
+            box_co = copy.deepcopy(co)
+            box_co.meshes[0].vertices = []
+            box_co.meshes[0].triangles = []
+
+            p = Point ()
+            p.x = min_x;
+            p.y = min_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = min_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = min_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = min_x;
+            p.y = min_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = min_x;
+            p.y = max_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = min_x;
+            p.y = max_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = max_y;
+            p.z = max_z;
+            box_co.meshes[0].vertices.append(p);
+
+            p = Point ()
+            p.x = max_x;
+            p.y = max_y;
+            p.z = min_z;
+            box_co.meshes[0].vertices.append(p);
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 0
+            t.vertex_indices [1] = 1
+            t.vertex_indices [2] = 2
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 2
+            t.vertex_indices [1] = 3
+            t.vertex_indices [2] = 0
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 4
+            t.vertex_indices [1] = 3
+            t.vertex_indices [2] = 2
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 2
+            t.vertex_indices [1] = 6
+            t.vertex_indices [2] = 4
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 7
+            t.vertex_indices [1] = 6
+            t.vertex_indices [2] = 2
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 2
+            t.vertex_indices [1] = 1
+            t.vertex_indices [2] = 7
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 3
+            t.vertex_indices [1] = 4
+            t.vertex_indices [2] = 5
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 5
+            t.vertex_indices [1] = 0
+            t.vertex_indices [2] = 3
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 0
+            t.vertex_indices [1] = 5
+            t.vertex_indices [2] = 7
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 7
+            t.vertex_indices [1] = 1
+            t.vertex_indices [2] = 0
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 7
+            t.vertex_indices [1] = 5
+            t.vertex_indices [2] = 4
+            box_co.meshes[0].triangles.append(t)
+
+            t = MeshTriangle ()
+            t.vertex_indices [0] = 4
+            t.vertex_indices [1] = 6
+            t.vertex_indices [2] = 7
+            box_co.meshes[0].triangles.append(t)
+
+            return box_co
 
     def broadcast_one(self, ob):
         if ob.confidence < self._min_confidence:
@@ -279,12 +477,13 @@ class ObjectBroadcaster:
             self._publisher.publish(box_co)
         
     def broadcast(self, objects):
-        if isinstance(objects, collections.Iterable):
-            self._reset_index()
-            for ob in objects:
-                self.broadcast_one(ob)
-        else:
-            self.broadcast_one(objects)
+        self.broadcast_diff(objects)
+#        if isinstance(objects, collections.Iterable):
+#            self._reset_index()
+#            for ob in objects:
+#                self.broadcast_one(ob)
+#        else:
+#            self.broadcast_one(objects)
 
     def set_minimum_confidence(self, min_confidence):
         self._min_confidence = min_confidence
