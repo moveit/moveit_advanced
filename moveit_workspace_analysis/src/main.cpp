@@ -93,10 +93,10 @@ int main(int argc, char **argv)
   /* Create a robot state*/
   robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model));
 
-  if(!robot_state->hasJointStateGroup(group_name))
+  if(!robot_model->hasJointModelGroup(group_name))
     ROS_FATAL("Invalid group name: %s", group_name.c_str());
 
-  robot_state::JointStateGroup* joint_state_group = robot_state->getJointStateGroup(group_name);
+  const robot_model::JointModelGroup* joint_model_group = robot_model->getJointModelGroup(group_name);
 
   /* Construct a planning scene - NOTE: this is for illustration purposes only.
      The recommended way to construct a planning scene is to use the planning_scene_monitor
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 
   /* Compute the metrics */
   std::vector<geometry_msgs::Quaternion> orientations;
-  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, joint_state_group, res_x, res_y, res_z);
+  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
 
   if(!filename.empty())
     if(!metrics.writeToFile(filename,",",false))

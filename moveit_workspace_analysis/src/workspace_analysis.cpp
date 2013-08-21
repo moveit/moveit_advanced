@@ -122,26 +122,26 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
                                                    double z_resolution) const
 {
   WorkspaceMetrics metrics;
-  if(!joint_state_group || !planning_scene_)
+  if(!joint_model_group || !planning_scene_)
   {
     ROS_ERROR("Joint state group and planning scene should not be null");
     return metrics;
   }
   std::vector<geometry_msgs::Pose> points = sampleUniform(workspace, orientations, x_resolution, y_resolution, z_resolution);
-  metrics.group_name_ = joint_state_group->getName();
-  metrics.robot_name_ = joint_state_group->getRobotState()->getRobotModel()->getName();
-  metrics.frame_id_ =  joint_state_group->getRobotState()->getRobotModel()->getModelFrame();
+  metrics.group_name_ = joint_model_group->getName();
+  metrics.robot_name_ = joint_state->getRobotModel()->getName();
+  metrics.frame_id_ =  joint_state->getRobotModel()->getModelFrame();
 
   for(std::size_t i=0; i < points.size(); ++i)
   {
     if(!ros::ok() || canceled_)
       return metrics;
-    bool found_ik = joint_state_group->setFromIK(points[i], 1, 0.01, state_validity_callback_fn_);
+    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 1, 0.01, state_validity_callback_fn_);
     if(found_ik)
     {
       ROS_DEBUG("Found IK: %d", (int) i);
       metrics.points_.push_back(points[i]);
-      updateMetrics(joint_state_group, metrics);
+      updateMetrics(joint_state, joint_model_group, metrics);
     }
   }
   return metrics;
@@ -155,7 +155,7 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::RobotState *jo
 {
   ros::WallTime start_time = ros::WallTime::now();
   WorkspaceMetrics metrics;
-  if(!joint_state_group || !planning_scene_)
+  if(!joint_model_group || !planning_scene_)
   {
     ROS_ERROR("Joint state group and planning scene should not be null");
     return metrics;
@@ -164,41 +164,40 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::RobotState *jo
   {
     for(std::map<std::string, std::vector<double> >::const_iterator iter=fixed_joint_values.begin(); iter != fixed_joint_values.end(); ++iter)
     {
-      if(!joint_state_group->hasJointState((*iter).first))
+      if(!joint_model_group->hasJointModel((*iter).first))
       {
-        ROS_ERROR("Could not find joint: %s in joint group: %s", (*iter).first.c_str(), joint_state_group->getName().c_str());
+        ROS_ERROR("Could not find joint: %s in joint group: %s", (*iter).first.c_str(), joint_model_group->getName().c_str());
         return metrics;
       }
     }
   }
-  metrics.group_name_ = joint_state_group->getName();
-  metrics.robot_name_ = joint_state_group->getRobotState()->getRobotModel()->getName();
-  metrics.frame_id_ =  joint_state_group->getRobotState()->getRobotModel()->getModelFrame();
+  metrics.group_name_ = joint_model_group->getName();
+  metrics.robot_name_ = joint_state->getRobotModel()->getName();
+  metrics.frame_id_ =  joint_state->getRobotModel()->getModelFrame();
 
   //Find end-effector link
-  std::string link_name = joint_state_group->getJointModelGroup()->getLinkModelNames().back();
-  robot_state::LinkState *link_state = joint_state_group->getRobotState()->getLinkState(link_name);
+  std::string link_name = joint_model_group->getLinkModelNames().back();
+  const robot_state::LinkModel *link_model = joint_state->getLinkModel(link_name);
 
   for(std::size_t i=0; i < max_attempts; ++i)
   {
     if(!ros::ok() || canceled_ || (ros::WallTime::now()-start_time) >= max_duration)
       return metrics;
-    joint_state_group->setToRandomValues();
+    joint_state->setToRandomPositions(joint_model_group);
     if(!fixed_joint_values.empty())
     {
       for(std::map<std::string, std::vector<double> >::const_iterator iter=fixed_joint_values.begin(); iter != fixed_joint_values.end(); ++iter)
       {
-        joint_state_group->getJointState((*iter).first)->setVariableValues((*iter).second);
+        joint_state->setJointPositions((*iter).first, (*iter).second);
       }
-      joint_state_group->updateLinkTransforms();
     }
-    if(planning_scene_->isStateColliding(*joint_state_group->getRobotState(), joint_state_group->getName()))
+    if(planning_scene_->isStateColliding(*joint_state, joint_model_group->getName()))
       continue;
-    const Eigen::Affine3d &link_pose = link_state->getGlobalLinkTransform();
+    const Eigen::Affine3d &link_pose = joint_state->getGlobalLinkTransform(link_model);
     geometry_msgs::Pose pose;
     tf::poseEigenToMsg(link_pose,pose);
     metrics.points_.push_back(pose);
-    updateMetrics(joint_state_group, metrics);
+    updateMetrics(joint_state, joint_model_group, metrics);
   }
   return metrics;
 }
@@ -208,17 +207,17 @@ void WorkspaceAnalysis::updateMetrics(robot_state::RobotState *joint_state,
                                       moveit_workspace_analysis::WorkspaceMetrics &metrics) const
 {
   double manipulability_index;
-  kinematics_metrics_->getManipulabilityIndex(*joint_state_group->getRobotState(),
-                                              joint_state_group->getJointModelGroup(),
+  kinematics_metrics_->getManipulabilityIndex(*joint_state,
+                                              joint_model_group,
                                               manipulability_index,
                                               position_only_ik_);
-  std::pair<double,int> distance = joint_state_group->getMinDistanceToBounds();
+  std::pair<double,const robot_model::JointModel*> distance = joint_state->getMinDistanceToBounds(joint_model_group);
   std::vector<double> joint_values;
-  joint_state_group->getVariableValues(joint_values);
+  joint_state->copyJointGroupPositions(joint_model_group, joint_values);
   metrics.joint_values_.push_back(joint_values);
   metrics.manipulability_.push_back(manipulability_index);
   metrics.min_distance_joint_limits_.push_back(distance.first);
-  metrics.min_distance_joint_limit_index_.push_back(distance.second);
+  metrics.min_distance_joint_limit_index_.push_back(distance.second->getJointIndex());
 }
 
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
