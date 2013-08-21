@@ -44,18 +44,22 @@ namespace moveit_workspace_analysis
 
 WorkspaceAnalysis::WorkspaceAnalysis(const planning_scene::PlanningSceneConstPtr &planning_scene,
                                      bool position_only,
-                                     double joint_limits_penalty_multiplier): planning_scene_(planning_scene), position_only_ik_(position_only), canceled_(false)
+                                     double joint_limits_penalty_multiplier)
+  : planning_scene_(planning_scene)
+  , position_only_ik_(position_only)
+  , canceled_(false)
 {
-  state_validity_callback_fn_ = boost::bind(&WorkspaceAnalysis::isIKSolutionCollisionFree, this, _1, _2);
+  state_validity_callback_fn_ = boost::bind(&WorkspaceAnalysis::isIKSolutionCollisionFree, this, _1, _2, _3);
   kinematics_metrics_.reset(new kinematics_metrics::KinematicsMetrics(planning_scene->getCurrentState().getRobotModel()));
   kinematics_metrics_->setPenaltyMultiplier(joint_limits_penalty_multiplier);
 }
 
-bool WorkspaceAnalysis::isIKSolutionCollisionFree(robot_state::JointStateGroup *joint_state_group,
-                                                  const std::vector<double> &ik_solution)
+bool WorkspaceAnalysis::isIKSolutionCollisionFree(robot_state::RobotState *joint_state,
+                                                  const robot_model::JointModelGroup *joint_model_group, 
+                                                  const double *ik_solution)
 {
-  joint_state_group->setVariableValues(ik_solution);
-  bool result = !planning_scene_->isStateColliding(*joint_state_group->getRobotState(), joint_state_group->getName());
+  joint_state->setJointGroupPositions(joint_model_group, ik_solution);
+  bool result = !planning_scene_->isStateColliding(*joint_state, joint_model_group->getName());
   return result;
 }
 
@@ -111,7 +115,8 @@ std::vector<geometry_msgs::Pose> WorkspaceAnalysis::sampleUniform(const moveit_m
 
 WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
                                                    const std::vector<geometry_msgs::Quaternion> &orientations,
-                                                   robot_state::JointStateGroup *joint_state_group,
+                                                   robot_state::RobotState *joint_state,
+                                                   const robot_model::JointModelGroup *joint_model_group,
                                                    double x_resolution,
                                                    double y_resolution,
                                                    double z_resolution) const
@@ -142,7 +147,8 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   return metrics;
 }
 
-WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::JointStateGroup *joint_state_group,
+WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::RobotState *joint_state,
+                                                     const robot_model::JointModelGroup *joint_model_group,
                                                      unsigned int max_attempts,
                                                      const ros::WallDuration &max_duration,
                                                      const std::map<std::string, std::vector<double> > &fixed_joint_values) const
@@ -197,7 +203,8 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::JointStateGrou
   return metrics;
 }
 
-void WorkspaceAnalysis::updateMetrics(robot_state::JointStateGroup *joint_state_group,
+void WorkspaceAnalysis::updateMetrics(robot_state::RobotState *joint_state,
+                                      const robot_model::JointModelGroup *joint_model_group,
                                       moveit_workspace_analysis::WorkspaceMetrics &metrics) const
 {
   double manipulability_index;

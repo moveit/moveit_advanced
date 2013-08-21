@@ -42,7 +42,6 @@
 // MoveIt!
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_state/robot_state.h>
-#include <moveit/robot_state/joint_state_group.h>
 #include <moveit/kinematics_metrics/kinematics_metrics.h>
 #include <moveit_msgs/WorkspaceParameters.h>
 #include <moveit/planning_scene/planning_scene.h>
@@ -80,12 +79,14 @@ public:
 
   WorkspaceMetrics computeMetrics(const moveit_msgs::WorkspaceParameters &workspace,
                                   const std::vector<geometry_msgs::Quaternion> &orientations,
-                                  robot_state::JointStateGroup *joint_state_group,
+                                  robot_state::RobotState *joint_state,
+                                  const robot_model::JointModelGroup *joint_model_group,
                                   double x_resolution,
                                   double y_resolution,
                                   double z_resolution) const;
 
-  WorkspaceMetrics computeMetricsFK(robot_state::JointStateGroup *joint_state_group,
+  WorkspaceMetrics computeMetricsFK(robot_state::RobotState *joint_state,
+                                    const robot_model::JointModelGroup *joint_model_group,
                                     unsigned int max_attempts,
                                     const ros::WallDuration &max_duration,
                                     const std::map<std::string, std::vector<double> > &fixed_joint_values = std::map<std::string, std::vector<double> >()) const;
@@ -107,11 +108,13 @@ public:
 
 private:
 
-  void updateMetrics(robot_state::JointStateGroup *joint_state_group,
+  void updateMetrics(robot_state::RobotState *joint_state,
+                     const robot_model::JointModelGroup *joint_model_group,
                      moveit_workspace_analysis::WorkspaceMetrics &metrics) const;
 
-  bool isIKSolutionCollisionFree(robot_state::JointStateGroup *joint_state_group,
-                                 const std::vector<double> &ik_solution);
+  bool isIKSolutionCollisionFree(robot_state::RobotState *joint_state,
+                                 const robot_model::JointModelGroup *joint_model_group,
+                                 const double *ik_solution);
 
   std::vector<geometry_msgs::Pose> sampleUniform(const moveit_msgs::WorkspaceParameters &workspace,
                                                  const std::vector<geometry_msgs::Quaternion> &orientations,
@@ -120,7 +123,7 @@ private:
                                                  double z_resolution) const;
   bool position_only_ik_, canceled_;
   kinematics_metrics::KinematicsMetricsPtr kinematics_metrics_;
-  robot_state::StateValidityCallbackFn state_validity_callback_fn_;
+  robot_state::GroupStateValidityCallbackFn state_validity_callback_fn_;
   const planning_scene::PlanningSceneConstPtr planning_scene_;
 };
 
