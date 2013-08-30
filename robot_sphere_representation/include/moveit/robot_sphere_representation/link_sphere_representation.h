@@ -45,10 +45,13 @@
 
 #include <moveit/robot_model/link_model.h>
 
-namespace robot_model
+namespace moveit
+{
+namespace core
 {
 class RobotModel;
 class LinkModel;
+}
 }
 
 namespace srdf
@@ -70,10 +73,10 @@ class SphereCalc;
 class LinkSphereRepresentation
 {
 public:
-  LinkSphereRepresentation(RobotSphereRepresentation *robot, const robot_model::LinkModel *link_model);
+  LinkSphereRepresentation(RobotSphereRepresentation *robot, const moveit::core::LinkModel *link_model);
   ~LinkSphereRepresentation();
 
-  const std::string& getName() const { return link_model_->getName(); }
+  const std::string& getName() const;
 
   // Set what method to use to generate spheres.
   // Spheres are actually generated when they are requested from
@@ -159,7 +162,7 @@ private:
 
 
   RobotSphereRepresentation *robot_;
-  const robot_model::LinkModel *link_model_;
+  const moveit::core::LinkModel *link_model_;
 
   // the spheres that bound this link.
   mutable EigenSTL::vector_Vector3d centers_;

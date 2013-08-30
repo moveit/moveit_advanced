@@ -159,7 +159,7 @@ private:
 
   // true if solution is not in collision.
   // NOTE: this modifies the state that group is a child of.
-  bool isIKSolutionCollisionFree(robot_state::JointStateGroup *group, const std::vector<double> &ik_solution) const;
+  bool isIKSolutionCollisionFree(robot_state::RobotState *state, const robot_model::JointModelGroup *group, const double *ik_solution) const;
 
   // Do not call this directly.  Instead call robotVisualChanged() which causes update() to call this.
   // Updates the state of the robot visual and queues a render.

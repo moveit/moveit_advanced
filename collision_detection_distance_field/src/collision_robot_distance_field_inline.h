@@ -86,16 +86,7 @@ inline const robot_model::LinkModel* collision_detection::CollisionRobotDistance
       int link_index) const
 {
   assert(link_index >= 0 && link_index < link_order_.size());
-  return kmodel_->getLinkModels()[link_order_[link_index]];
-}
-
-// return the LinkState for a link index
-inline robot_state::LinkState* collision_detection::CollisionRobotDistanceField::linkIndexToLinkState(
-      int link_index,
-      const robot_state::RobotState* state) const
-{
-  assert(link_index >= 0 && link_index < link_order_.size());
-  return state->getLinkStateVector()[link_order_[link_index]];
+  return robot_model_->getLinkModels()[link_order_[link_index]];
 }
 
 // return name for a link index

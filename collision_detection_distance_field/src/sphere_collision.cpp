@@ -43,8 +43,8 @@
 
 const srdf::Model::LinkSpheres *collision_detection::CollisionRobotDistanceField::getSrdfLinkSpheres(const std::string& link_name) const
 {
-  for (std::vector<srdf::Model::LinkSpheres>::const_iterator lsp = kmodel_->getSRDF()->getLinkSphereApproximations().begin() ;
-       lsp != kmodel_->getSRDF()->getLinkSphereApproximations().end() ;
+  for (std::vector<srdf::Model::LinkSpheres>::const_iterator lsp = robot_model_->getSRDF()->getLinkSphereApproximations().begin() ;
+       lsp != robot_model_->getSRDF()->getLinkSphereApproximations().end() ;
        ++lsp)
     if (lsp->link_ == link_name)
       return &*lsp;
@@ -93,14 +93,14 @@ void collision_detection::CollisionRobotDistanceField::getLinkBoundingSphere(
 void collision_detection::CollisionRobotDistanceField::initSpheres()
 {
   int sphere_cnt = 0;
-  int link_cnt = kmodel_->getLinkModels().size();
+  int link_cnt = robot_model_->getLinkModels().size();
 
   // count how many spheres we will need
-  for (std::vector<const robot_model::LinkModel*>::const_iterator lm = kmodel_->getLinkModels().begin() ;
-       lm != kmodel_->getLinkModels().end() ;
+  for (std::vector<const robot_model::LinkModel*>::const_iterator lm = robot_model_->getLinkModels().begin() ;
+       lm != robot_model_->getLinkModels().end() ;
        ++lm)
   {
-    if (!(*lm)->getShape())
+    if (!(*lm)->getShapes().empty())
       continue;
 
     const srdf::Model::LinkSpheres *lsp = getSrdfLinkSpheres((*lm)->getName());
@@ -146,8 +146,8 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
   // list is terminated with cnt==0
 
   int link_model_index = 0;
-  for (std::vector<const robot_model::LinkModel*>::const_iterator lm = kmodel_->getLinkModels().begin() ;
-       lm != kmodel_->getLinkModels().end() ;
+  for (std::vector<const robot_model::LinkModel*>::const_iterator lm = robot_model_->getLinkModels().begin() ;
+       lm != robot_model_->getLinkModels().end() ;
        ++lm, ++link_model_index)
   {
     // initialize link to -1.  This will be the value if the link has no collision geometry.
@@ -155,11 +155,13 @@ void collision_detection::CollisionRobotDistanceField::initSpheres()
 
     LinkIndex link_index = link_order_.size();
 
-    // Calculate bounding sphere for entire link
-    const shapes::ShapeConstPtr& shape = (*lm)->getShape();
-    if (!shape)
+    if ((*lm)->getShapes().empty())
       continue;
+    // \todo make this work with multiple shapes 
 
+    // Calculate bounding sphere for entire link
+    const shapes::ShapeConstPtr& shape = (*lm)->getShapes()[0];
+    
     double bounding_radius;
     Eigen::Vector3d bounding_center;
     robot_sphere_representation::findTightBoundingSphere(*shape, bounding_center, bounding_radius);
@@ -317,8 +319,8 @@ bool collision_detection::CollisionRobotDistanceField::avoidCheckingCollision(
     return true;
 
   // check default collision matrix from srdf
-  for (std::vector<srdf::Model::DisabledCollision>::const_iterator it = kmodel_->getSRDF()->getDisabledCollisionPairs().begin() ;
-       it != kmodel_->getSRDF()->getDisabledCollisionPairs().end() ;
+  for (std::vector<srdf::Model::DisabledCollision>::const_iterator it = robot_model_->getSRDF()->getDisabledCollisionPairs().begin() ;
+       it != robot_model_->getSRDF()->getDisabledCollisionPairs().end() ;
        ++it)
   {
     if (link0->getName() == it->link1_)
@@ -349,8 +351,7 @@ void collision_detection::CollisionRobotDistanceField::transformSpheres(
   for (int cnt = *idx_it++ ; cnt ; cnt = *idx_it++)
   {
     int link_idx = *idx_it++;
-    const robot_state::LinkState* link = state.getLinkStateVector()[link_idx];
-    const Eigen::Affine3d& xform = link->getGlobalCollisionBodyTransform();
+    const Eigen::Affine3d& xform = state.getCollisionBodyTransform(robot_model_->getLinkModels()[link_idx], 0);
 
     do
     {

@@ -42,10 +42,13 @@
 #include <vector>
 #include <moveit/robot_sphere_representation/method_enums.h>
 
-namespace robot_model
+namespace moveit
+{
+namespace core
 {
 class RobotModel;
 class LinkModel;
+}
 }
 
 namespace srdf
@@ -62,7 +65,7 @@ class Robot;
 class RobotSphereRepresentation
 {
 public:
-  RobotSphereRepresentation(boost::shared_ptr<const robot_model::RobotModel> robot_model);
+  RobotSphereRepresentation(boost::shared_ptr<const moveit::core::RobotModel> robot_model);
   ~RobotSphereRepresentation();
 
   // Return the list of available sphere generation methods or quality methods.
@@ -111,7 +114,7 @@ public:
   Robot* getSphereCalcRobot();
 
   // access
-  const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const { return robot_model_; }
+  const boost::shared_ptr<const moveit::core::RobotModel>& getRobotModel() const { return robot_model_; }
   const std::map<std::string, LinkSphereRepresentation*>& getLinks() const { return links_; }
   LinkSphereRepresentation* getLink(const std::string& link_name) const;
 
@@ -132,7 +135,7 @@ private:
 
 
 
-  boost::shared_ptr<const robot_model::RobotModel> robot_model_;
+  boost::shared_ptr<const moveit::core::RobotModel> robot_model_;
 
   std::map<std::string, LinkSphereRepresentation*> links_;
 

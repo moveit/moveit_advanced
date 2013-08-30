@@ -106,7 +106,7 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
 
   // Just used to assert that the collision transform is isometric (rotation
   // and translation only).
-  robot_state::RobotState state(kmodel_);
+  robot_state::RobotState state(robot_model_);
   state.setToDefaultValues();
 
   std::vector<bool> valid_links;
@@ -159,7 +159,8 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
     }
 
     // Verify that there is no scaling or shear in the transforms.
-    if (!verifyMatrixIsIsometric(linkIndexToLinkState(i, &state)->getGlobalCollisionBodyTransform(), lm->getName()))
+    // \todo make this work with all shapes
+    if (!verifyMatrixIsIsometric(state.getCollisionBodyTransform(lm, 0), lm->getName()))
     {
       logError("initLinkDF: Link %d '%s' has bad transform.", i, lm->getName().c_str());
       continue;
@@ -167,12 +168,13 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
 
     logInform("Generate DISTANCE FIELD for link %s",lm->getName().c_str());
 
-    const shapes::ShapeConstPtr& shape = lm->getShape();
-    if (!shape)
+    if (lm->getShapes().empty())
     {
       logError("initLinkDF: Link %d '%s' has no shape.", i, lm->getName().c_str());
       continue;
     }
+    // \todo make this work with multiple shapes
+    const shapes::ShapeConstPtr& shape = lm->getShapes()[0];
 
     logInform("    create body");
     bodies::Body *body = bodies::createBodyFromShape(shape.get());
@@ -194,8 +196,8 @@ void collision_detection::CollisionRobotDistanceField::initLinkDF()
 
 
   // check default collision matrix from srdf
-  std::vector<srdf::Model::DisabledCollision>::const_iterator it = kmodel_->getSRDF()->getDisabledCollisionPairs().begin();
-  std::vector<srdf::Model::DisabledCollision>::const_iterator it_end = kmodel_->getSRDF()->getDisabledCollisionPairs().end();
+  std::vector<srdf::Model::DisabledCollision>::const_iterator it = robot_model_->getSRDF()->getDisabledCollisionPairs().begin();
+  std::vector<srdf::Model::DisabledCollision>::const_iterator it_end = robot_model_->getSRDF()->getDisabledCollisionPairs().end();
   for ( ; it != it_end ; ++it)
   {
     int link_idx_a = linkNameToIndex(it->link1_);
@@ -217,7 +219,7 @@ void collision_detection::CollisionRobotDistanceField::createContact(
       DFContact *df_contact,
       const DFLink& link_a,
       const DFLink& link_b,
-      const robot_state::LinkState& lsa,
+      const Eigen::Affine3d &link_a_tf,
       const DistPosEntry& df_entry_a,
       double dist,
       const Eigen::Vector3d& sphere_center_b_in_link_a_coord_frame,
@@ -225,12 +227,12 @@ void collision_detection::CollisionRobotDistanceField::createContact(
 {
   Eigen::Vector3d pos;
   link_a.df_.getCellPosition(df_entry_a.cell_id_, pos);
-  contact.pos = lsa.getGlobalCollisionBodyTransform() * pos;
+  contact.pos = link_a_tf * pos;
 
-  Eigen::Vector3d center = lsa.getGlobalCollisionBodyTransform() * sphere_center_b_in_link_a_coord_frame;
+  Eigen::Vector3d center = link_a_tf * sphere_center_b_in_link_a_coord_frame;
   Eigen::Vector3d normal;
   link_a.df_.getCellGradient(df_entry_a.cell_id_, normal);
-  contact.normal = lsa.getGlobalCollisionBodyTransform().linear() * normal;
+  contact.normal = link_a_tf.linear() * normal;
   if (contact.normal.squaredNorm() > std::numeric_limits<double>::epsilon())
   {
     contact.normal.normalize();
@@ -264,7 +266,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
   bool a_in_group = true;
   if (!work.req_->group_name.empty())
   {
-    group = kmodel_->getJointModelGroup(work.req_->group_name);
+    group = robot_model_->getJointModelGroup(work.req_->group_name);
   }
 
   // TODO: isLinkUpdated for group
@@ -272,13 +274,13 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
   for (const DFLink * const *p_link_a = link_list ; p_link_a[1] ; ++p_link_a)
   {
     const DFLink *link_a = *p_link_a;
-    robot_state::LinkState *lsa = work.state1_->getLinkStateVector()[link_a->index_in_model_];
 
-    Eigen::Affine3d pf_to_linka = lsa->getGlobalCollisionBodyTransform().inverse(Eigen::Isometry);
+    // make this work woth multiple shapes
+    const Eigen::Affine3d &pf_to_linka = work.state1_->getCollisionBodyTransform(link_a->link_model_, 0).inverse(Eigen::Isometry);
 
     if (group)
     {
-      a_in_group = group->isLinkUpdated(lsa->getName());
+      a_in_group = group->isLinkUpdated(link_a->link_model_->getName());
     }
 
     for (const DFLink * const *p_link_b = p_link_a + 1 ; *p_link_b ; ++p_link_b)
@@ -288,17 +290,16 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
       if (never_check_link_pair(link_a, link_b))
         continue;
 
-      robot_state::LinkState *lsb = work.state1_->getLinkStateVector()[link_b->index_in_model_];
-
       if (!a_in_group)
       {
-        if (!group->isLinkUpdated(lsa->getName()))
+        if (!group->isLinkUpdated(link_a->link_model_->getName()))
           continue;
       }
 
       double padding = link_a->df_.getResolution() + link_a->padding_ + link_b->padding_;
 
-      Eigen::Affine3d linkb_to_linka = pf_to_linka * lsb->getGlobalCollisionBodyTransform();
+      // make this work with multiple shapes
+      Eigen::Affine3d linkb_to_linka = pf_to_linka * work.state1_->getCollisionBodyTransform(link_b->link_model_, 0);
 
       Eigen::Vector3d bsphere_center = linkb_to_linka * bounding_sphere_centers_[link_b->index_in_link_order_];
 
@@ -392,7 +393,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
                           NULL,
                           *link_a,
                           *link_b,
-                          *lsa,
+                          work.state1_->getCollisionBodyTransform(link_a->link_model_, 0),
                           entry,
                           use_dist,
                           center,
@@ -410,7 +411,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
                           work.df_distance_,
                           *link_a,
                           *link_b,
-                          *lsa,
+                          work.state1_->getCollisionBodyTransform(link_a->link_model_, 0),
                           entry,
                           use_dist,
                           center,
@@ -444,7 +445,7 @@ void collision_detection::CollisionRobotDistanceField::checkSelfCollisionUsingIn
                         df_contact,
                         *link_a,
                         *link_b,
-                        *lsa,
+                        work.state1_->getCollisionBodyTransform(link_a->link_model_, 0),
                         entry,
                         use_dist,
                         center,

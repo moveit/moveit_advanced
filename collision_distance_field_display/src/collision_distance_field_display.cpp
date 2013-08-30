@@ -464,7 +464,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
   robot_state::RobotStatePtr state(new robot_state::RobotState(getRobotModel()));
   robot_state_handler_.reset(new robot_interaction::RobotInteraction::InteractionHandler("current", *state, planning_scene_monitor_->getTFClient()));
   robot_state_handler_->setUpdateCallback(boost::bind(&CollisionDistanceFieldDisplay::markersMoved, this, _1, _2));
-  robot_state_handler_->setStateValidityCallback(boost::bind(&CollisionDistanceFieldDisplay::isIKSolutionCollisionFree, this, _1, _2));
+  robot_state_handler_->setStateValidityCallback(boost::bind(&CollisionDistanceFieldDisplay::isIKSolutionCollisionFree, this, _1, _2, _3));
 
   if (!active_group_property_->getStdString().empty() &&
       !getRobotModel()->hasJointModelGroup(active_group_property_->getStdString()))
@@ -520,12 +520,12 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::markersMoved(robot_inter
   robotVisualPositionChanged();
 }
 
-bool moveit_rviz_plugin::CollisionDistanceFieldDisplay::isIKSolutionCollisionFree(robot_state::JointStateGroup *group, const std::vector<double> &ik_solution) const
+bool moveit_rviz_plugin::CollisionDistanceFieldDisplay::isIKSolutionCollisionFree(robot_model::RobotState *state, const robot_model::JointModelGroup *group, const double *ik_solution) const
 {
   if (collision_aware_ik_property_->getBool() && planning_scene_monitor_)
   {
-    group->setVariableValues(ik_solution);
-    bool res = !getPlanningSceneRO()->isStateColliding(*group->getRobotState(), group->getName());
+    state->setJointGroupPositions(group, ik_solution);
+    bool res = !getPlanningSceneRO()->isStateColliding(*state, group->getName());
     return res;
   }
   else

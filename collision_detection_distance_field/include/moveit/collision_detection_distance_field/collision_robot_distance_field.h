@@ -202,6 +202,7 @@ private:
   struct DFLink
   {
     const std::string* name_;
+    const robot_model::LinkModel *link_model_;
     LinkIndex index_in_model_;
     LinkIndex index_in_link_order_;
     SphereIndex sphere_idx_begin_;
@@ -269,12 +270,8 @@ private:
   // return the LinkModel for a link index
   const robot_model::LinkModel* linkIndexToLinkModel(int link_index) const;
 
-  // return the LinkState for a link index
-  robot_state::LinkState* linkIndexToLinkState(int link_index, const robot_state::RobotState* state) const;
-
   // return name for a link index
   const std::string& linkIndexToName(int link_index) const;
-
 
 
 
@@ -414,7 +411,7 @@ private:
       DFContact *df_contact,            // this gets filled in if not NULL
       const DFLink& link_a,                       // the link with the distance field
       const DFLink& link_b,                       // the link with the sphere
-      const robot_state::LinkState& lsa,          // LinkState for link_a
+      const Eigen::Affine3d& link_a_tf,           // transform for link_a
       const DistPosEntry& df_entry_a,             // distance field entry
       double dist,                                // collision distance (aka -depth)
       const Eigen::Vector3d& sphere_center_b_in_link_a_coord_frame,  // the sphere center in link_a's coord frame
