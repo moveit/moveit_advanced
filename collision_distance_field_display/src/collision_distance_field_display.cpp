@@ -464,7 +464,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::onRobotModelLoaded()
   robot_state::RobotStatePtr state(new robot_state::RobotState(getRobotModel()));
   robot_state_handler_.reset(new robot_interaction::RobotInteraction::InteractionHandler("current", *state, planning_scene_monitor_->getTFClient()));
   robot_state_handler_->setUpdateCallback(boost::bind(&CollisionDistanceFieldDisplay::markersMoved, this, _1, _2));
-  robot_state_handler_->setStateValidityCallback(boost::bind(&CollisionDistanceFieldDisplay::isIKSolutionCollisionFree, this, _1, _2, _3));
+  robot_state_handler_->setGroupStateValidityCallback(boost::bind(&CollisionDistanceFieldDisplay::isIKSolutionCollisionFree, this, _1, _2, _3));
 
   if (!active_group_property_->getStdString().empty() &&
       !getRobotModel()->hasJointModelGroup(active_group_property_->getStdString()))
@@ -842,13 +842,13 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::updateLinkColors(const r
     setLinkColor(&robot_visual_->getRobot(), *link, colliding_link_color_property_->getColor());
   }
 
-  std::vector<robot_state::JointState*>::const_iterator joint = state.getJointStateVector().begin();
-  std::vector<robot_state::JointState*>::const_iterator joint_end = state.getJointStateVector().end();
+  std::vector<const robot_model::JointModel*>::const_iterator joint = state.getRobotModel()->getJointModels().begin();
+  std::vector<const robot_model::JointModel*>::const_iterator joint_end = state.getRobotModel()->getJointModels().end();
   for ( ; joint != joint_end ; ++joint)
   {
-    if (!(*joint)->satisfiesBounds())
+    if (!state.satisfiesBounds(*joint))
     {
-      const std::string& link = (*joint)->getJointModel()->getChildLinkModel()->getName();
+      const std::string& link = (*joint)->getChildLinkModel()->getName();
       setLinkColor(&robot_visual_->getRobot(), link, joint_violation_link_color_property_->getColor());
     }
   }
@@ -918,20 +918,20 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
   if (!state)
     return;
 
-  const std::vector<robot_state::LinkState*> &ls = state->getLinkStateVector();
-  std::vector<geometry_msgs::TransformStamped> transforms(ls.size());
+  const std::vector<const robot_model::LinkModel*> &lm = state->getRobotModel()->getLinkModels();
+  std::vector<geometry_msgs::TransformStamped> transforms(lm.size());
   const std::string &planning_frame = planning_scene_monitor_->getPlanningScene()->getPlanningFrame();
   std::size_t j = 0;
   ros::Time now = ros::Time::now();
-  for (std::size_t i = 0 ; i < ls.size() ; ++i)
+  for (std::size_t i = 0 ; i < lm.size() ; ++i)
   {
-    if (ls[i]->getName() == planning_frame)
+    if (lm[i]->getName() == planning_frame)
       continue;
-    const Eigen::Affine3d &t = ls[i]->getGlobalLinkTransform();
-    const robot_state::LinkState* pls = ls[i]->getParentLinkState();
+    const Eigen::Affine3d &t = state->getGlobalLinkTransform(lm[i]);
+    const robot_model::LinkModel* pls = lm[i]->getParentJointModel() ? lm[i]->getParentJointModel()->getParentLinkModel() : NULL;
     if (PUBLISH_TF_AS_JOINT_TREE && pls)
     {
-      const Eigen::Affine3d &pt = pls->getGlobalLinkTransform();
+      const Eigen::Affine3d &pt = state->getGlobalLinkTransform(pls);
       Eigen::Affine3d rel = pt.inverse() * t;
 
       tf::transformEigenToMsg(rel, transforms[j].transform);
@@ -943,7 +943,7 @@ void moveit_rviz_plugin::CollisionDistanceFieldDisplay::publishTF()
       transforms[j].header.frame_id = planning_frame;
     }
     transforms[j].header.stamp = now;
-    transforms[j].child_frame_id = ls[i]->getName();
+    transforms[j].child_frame_id = lm[i]->getName();
     ++j;
   }
 

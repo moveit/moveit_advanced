@@ -40,6 +40,7 @@
 #include <rviz/robot/robot.h>
 #include <rviz/robot/robot_link.h>
 #include <eigen_stl_containers/eigen_stl_containers.h>
+#include <moveit/macros/class_forward.h>
 
 namespace rviz
 {
@@ -55,16 +56,14 @@ namespace robot_sphere_representation
 class LinkSphereRepresentation;
 }
 
-namespace robot_model
+namespace moveit
 {
-class RobotModel;
+namespace core
+{
+MOVEIT_CLASS_FORWARD(RobotModel);
+MOVEIT_CLASS_FORWARD(RobotState);
 class LinkModel;
 }
-
-namespace robot_state
-{
-class RobotState;
-class LinkState;
 }
 
 namespace moveit_rviz_plugin
@@ -95,10 +94,9 @@ public:
   void getLinkBoundingSphere(Eigen::Vector3d& center, double& radius) const;
 
   // access the display's RobotModel and RobotState
-  const boost::shared_ptr<const robot_model::RobotModel>& getRobotModel() const;
-  boost::shared_ptr<const robot_state::RobotState> getRobotState() const;
-  const robot_model::LinkModel *getLinkModel() const;
-  const robot_state::LinkState *getLinkState() const;
+  const moveit::core::RobotModelConstPtr& getRobotModel() const;
+  moveit::core::RobotStateConstPtr getRobotState() const;
+  const moveit::core::LinkModel *getLinkModel() const;
 
   // update displayed property values based on current RobotSphereRepresentation values.
   void updatePropertyValues();
