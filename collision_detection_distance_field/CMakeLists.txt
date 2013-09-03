@@ -77,7 +77,7 @@ add_library(
 # This is needed to ensure that messages are done being built before this is built
 add_dependencies(
   collision_detection_distance_field
-    moveit_msgs_gencpp
+  ${catkin_EXPORTED_TARGETS}
 )
 
 target_link_libraries(

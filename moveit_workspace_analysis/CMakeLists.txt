@@ -40,8 +40,7 @@ add_library(moveit_workspace_analysis
    src/workspace_analysis.cpp
 )
 
-add_dependencies(moveit_workspace_analysis moveit_msgs_gencpp)
-#add_dependencies(moveit_workspace_analysis moveit_msgs_EXPORTED_TARGETS)
+add_dependencies(moveit_workspace_analysis ${catkin_EXPORTED_TARGETS})
 
 add_executable(workspace_analysis_node src/main.cpp)
 add_executable(workspace_reader_node src/reader.cpp)
