@@ -42,7 +42,6 @@
 #include <console_bridge/console.h>
 #include <cassert>
 
-#include <moveit/distance_field/distance_field_common.h>
 #include <moveit/distance_field/propagation_distance_field.h>
 
 namespace

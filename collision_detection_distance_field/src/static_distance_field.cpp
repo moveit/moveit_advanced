@@ -39,7 +39,6 @@
 #include <geometric_shapes/body_operations.h>
 #include <console_bridge/console.h>
 #include "aabb.h"
-#include <moveit/distance_field/distance_field_common.h>
 #include <moveit/distance_field/propagation_distance_field.h>
 #include <cmath>
 

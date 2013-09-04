@@ -36,7 +36,7 @@
 
 #include <moveit/robot_sphere_representation/sphere_calc.h>
 #include <moveit/distance_field/propagation_distance_field.h>
-#include <moveit/distance_field/distance_field_common.h>
+#include <moveit/distance_field/find_internal_points.h>
 #include <moveit/robot_state/robot_state.h>
 #include <geometric_shapes/bodies.h>
 #include <geometric_shapes/body_operations.h>
@@ -2560,7 +2560,8 @@ void robot_sphere_representation::Link::calculatePoints()
 
   // \todo make this work for multiple shapes
   body_->setPose(robot_state_->getCollisionBodyTransform(lmodel_, 0));
-  EigenSTL::vector_Vector3d points = distance_field::determineCollisionPoints(body_, robot_->resolution_);
+  EigenSTL::vector_Vector3d points;
+  distance_field::findInternalPointsConvex(*body_, robot_->resolution_, points);
   for (EigenSTL::vector_Vector3d::const_iterator it = points.begin() ;
        it != points.end() ;
        ++it)
