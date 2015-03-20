@@ -38,6 +38,7 @@
 #define MOVEIT_WORKSPACE_ANALYSIS_H_
 
 #include <ros/ros.h>
+#include <time.h>
 
 // MoveIt!
 #include <moveit/robot_model/robot_model.h>
@@ -121,6 +122,9 @@ private:
                                                  double x_resolution,
                                                  double y_resolution,
                                                  double z_resolution) const;
+
+  std::string convertSecondsToString(double seconds) const;
+
   bool position_only_ik_, canceled_;
   kinematics_metrics::KinematicsMetricsPtr kinematics_metrics_;
   robot_state::GroupStateValidityCallbackFn state_validity_callback_fn_;
