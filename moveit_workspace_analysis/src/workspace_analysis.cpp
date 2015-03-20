@@ -59,7 +59,8 @@ bool WorkspaceAnalysis::isIKSolutionCollisionFree(robot_state::RobotState *joint
                                                   const double *ik_solution)
 {
   joint_state->setJointGroupPositions(joint_model_group, ik_solution);
-  bool result = !planning_scene_->isStateColliding(*joint_state, joint_model_group->getName());
+  std::string joint_model_group_name = joint_model_group->getName();
+  bool result = !planning_scene_->isStateColliding(*joint_state, joint_model_group_name);
   return result;
 }
 
@@ -132,17 +133,43 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   metrics.robot_name_ = joint_state->getRobotModel()->getName();
   metrics.frame_id_ =  joint_state->getRobotModel()->getModelFrame();
 
+  time_t timer, start_time;
+  int    total_ik_found = 0;
+
+  // Get current time
+  time(&start_time); 
+
   for(std::size_t i=0; i < points.size(); ++i)
   {
     if(!ros::ok() || canceled_)
       return metrics;
     bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 1, 0.01, state_validity_callback_fn_);
+    
     if(found_ik)
     {
-      ROS_DEBUG("Found IK: %d", (int) i);
+      total_ik_found++;
       metrics.points_.push_back(points[i]);
       updateMetrics(joint_state, joint_model_group, metrics);
     }
+
+    // Update timer
+    time(&timer);
+
+    // Get metrics
+    double seconds              = difftime(timer,start_time);
+    double percentage_completed = (double)i / (double)points.size();
+    double estimated_time       = (seconds/(double)i)*(points.size()-i);
+
+    ROS_DEBUG("Found %sIK: %d/%d (%f%%) \t estimated time: %s \t runtime: %s \t Total solutions found: %d", 
+                      (found_ik? "" : "NO "), 
+                      i, 
+                      (int)points.size(), 
+                      percentage_completed, 
+                      convertSecondsToString(estimated_time).c_str(), 
+                      convertSecondsToString(seconds).c_str(), 
+                      total_ik_found 
+    );
+
   }
   return metrics;
 }
@@ -191,7 +218,8 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetricsFK(robot_state::RobotState *jo
         joint_state->setJointPositions((*iter).first, (*iter).second);
       }
     }
-    if(planning_scene_->isStateColliding(*joint_state, joint_model_group->getName()))
+    std::string joint_model_group_name = joint_model_group->getName();
+    if(planning_scene_->isStateColliding(*joint_state, joint_model_group_name))
       continue;
     const Eigen::Affine3d &link_pose = joint_state->getGlobalLinkTransform(link_model);
     geometry_msgs::Pose pose;
@@ -211,13 +239,42 @@ void WorkspaceAnalysis::updateMetrics(robot_state::RobotState *joint_state,
                                               joint_model_group,
                                               manipulability_index,
                                               position_only_ik_);
-  std::pair<double,const robot_model::JointModel*> distance = joint_state->getMinDistanceToBounds(joint_model_group);
+  std::pair<double,const robot_model::JointModel*> distance = joint_state->getMinDistanceToPositionBounds(joint_model_group);
   std::vector<double> joint_values;
   joint_state->copyJointGroupPositions(joint_model_group, joint_values);
   metrics.joint_values_.push_back(joint_values);
   metrics.manipulability_.push_back(manipulability_index);
   metrics.min_distance_joint_limits_.push_back(distance.first);
   metrics.min_distance_joint_limit_index_.push_back(distance.second->getJointIndex());
+}
+
+std::string WorkspaceAnalysis::convertSecondsToString(double seconds) const
+{
+  if (seconds > 60)
+  {
+    // In minutes
+    seconds = seconds/60;
+    if ( seconds > 60 )
+    {
+      // In hours
+      seconds = seconds/60;
+      if ( seconds > 24 )
+      {
+        // In days
+        seconds = seconds/24;
+        return boost::lexical_cast<std::string>((int)seconds)+"D";
+      }
+      else
+        return boost::lexical_cast<std::string>((int)seconds)+"h";
+    }
+    else
+      return boost::lexical_cast<std::string>((int)seconds)+"m";
+  }
+  else
+    return boost::lexical_cast<std::string>((int)seconds)+"s";
+
+  // This return can never be reached
+  return "0";
 }
 
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
