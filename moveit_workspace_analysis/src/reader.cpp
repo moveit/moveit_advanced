@@ -46,8 +46,11 @@ int main(int argc, char **argv)
   /*Get some ROS params */
   ros::NodeHandle node_handle("~");
   std::string filename;
+  double marker_scale;
   if (!node_handle.getParam("filename", filename))
     ROS_FATAL("No filename to read from");
+  if (!node_handle.getParam("marker_scale", marker_scale))
+    marker_scale = 0.20;
 
   moveit_workspace_analysis::WorkspaceMetrics metrics;
 
@@ -66,7 +69,7 @@ int main(int argc, char **argv)
       ROS_INFO("Could not write to file");
   */
   ros::Publisher display_publisher = node_handle.advertise<visualization_msgs::Marker>("workspace", 1, true);
-  visualization_msgs::Marker marker = metrics.getMarker(0.25, 0, "me");
+  visualization_msgs::Marker marker = metrics.getMarker(marker_scale, 0, "me");
   marker.header.frame_id = metrics.frame_id_;
   marker.header.stamp = ros::Time::now();
   display_publisher.publish(marker);
