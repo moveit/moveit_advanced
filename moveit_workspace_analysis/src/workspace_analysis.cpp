@@ -157,7 +157,7 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
 
     // Get metrics
     double seconds              = difftime(timer,start_time);
-    double percentage_completed = (double)i / (double)points.size();
+    double percentage_completed = ((double)i / (double)points.size())*100;
     double estimated_time       = (seconds/(double)i)*(points.size()-i);
 
     ROS_DEBUG("Found %sIK: %d/%d (%f%%) \t estimated time: %s \t runtime: %s \t Total solutions found: %d", 
