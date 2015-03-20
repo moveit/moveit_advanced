@@ -36,15 +36,16 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
 
-add_library(moveit_workspace_analysis
+add_library(moveit_workspace_analysis SHARED
    src/workspace_analysis.cpp
 )
 
 add_dependencies(moveit_workspace_analysis ${catkin_EXPORTED_TARGETS})
 
+target_link_libraries(moveit_workspace_analysis ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(workspace_analysis_node src/main.cpp)
 add_executable(workspace_reader_node src/reader.cpp)
-
 
 target_link_libraries(workspace_analysis_node
   moveit_workspace_analysis ${catkin_LIBRARIES} ${Boost_LIBRARIES})
