@@ -1,5 +1,6 @@
 <launch>
   <node name="moveit_workspace_reader" pkg="moveit_workspace_analysis" type="workspace_reader_node" respawn="false" output="screen">
+  	<param name="marker_scale" value="0.20" />
     <param name="filename" value="$(env ROS_LOG_DIR)/workspace_analysis_results.txt" />
   </node>
 </launch>
