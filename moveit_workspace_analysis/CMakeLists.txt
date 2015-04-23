@@ -7,7 +7,9 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core
   moveit_ros_planning
   moveit_ros_planning_interface
-  pluginlib)
+  pluginlib
+  cmake_modules
+)
 
 find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
@@ -45,6 +47,8 @@ add_dependencies(moveit_workspace_analysis ${catkin_EXPORTED_TARGETS})
 add_executable(workspace_analysis_node src/main.cpp)
 add_executable(workspace_reader_node src/reader.cpp)
 
+target_link_libraries(moveit_workspace_analysis
+  ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 target_link_libraries(workspace_analysis_node
   moveit_workspace_analysis ${catkin_LIBRARIES} ${Boost_LIBRARIES})

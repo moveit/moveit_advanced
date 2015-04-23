@@ -1,5 +1,5 @@
 <launch>
   <node name="moveit_workspace_reader" pkg="moveit_workspace_analysis" type="workspace_reader_node" respawn="false" output="screen">
-    <param name="filename" value="$(env ROS_LOG_DIR)/workspace_analysis_results.txt" />
+    <param name="filename" value="$(find moveit_workspace_analysis)/workspace_analysis_results.txt" />
   </node>
 </launch>

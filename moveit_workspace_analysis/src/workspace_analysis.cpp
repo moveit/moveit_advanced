@@ -139,7 +139,7 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
     bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 1, 0.01, state_validity_callback_fn_);
     if(found_ik)
     {
-      ROS_DEBUG("Found IK: %d", (int) i);
+      ROS_INFO("Found IK: %d", (int) i);
       metrics.points_.push_back(points[i]);
       updateMetrics(joint_state, joint_model_group, metrics);
     }
@@ -211,7 +211,7 @@ void WorkspaceAnalysis::updateMetrics(robot_state::RobotState *joint_state,
                                               joint_model_group,
                                               manipulability_index,
                                               position_only_ik_);
-  std::pair<double,const robot_model::JointModel*> distance = joint_state->getMinDistanceToBounds(joint_model_group);
+  std::pair<double,const robot_model::JointModel*> distance = joint_state->getMinDistanceToPositionBounds (joint_model_group);
   std::vector<double> joint_values;
   joint_state->copyJointGroupPositions(joint_model_group, joint_values);
   metrics.joint_values_.push_back(joint_values);
@@ -222,7 +222,7 @@ void WorkspaceAnalysis::updateMetrics(robot_state::RobotState *joint_state,
 
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
 {
-  ROS_DEBUG("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());
+  ROS_INFO("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());
   if(points_.size() != manipulability_.size() || points_.size() != joint_values_.size() || points_.size() != min_distance_joint_limits_.size())
   {
     ROS_ERROR("Workspace metrics not fully formed");
@@ -327,7 +327,7 @@ bool WorkspaceMetrics::readFromFile(const std::string &filename, unsigned int nu
 visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsigned int id, const std::string &ns) const
 {
   visualization_msgs::Marker marker;
-  marker.type = marker.SPHERE_LIST;
+  marker.type = marker.CUBE_LIST;
   marker.action = 0;
   marker.pose.orientation.w = 1.0;
   marker.scale.x = marker_scale;
@@ -350,7 +350,7 @@ visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsi
   {
     marker.points.push_back(points_[i].position);
     std_msgs::ColorRGBA color;
-    color.a = 1.0;
+    color.a = 0.2;
     color.g = 0.0;
     color.r = manipulability_[i]/max_manip;
     color.b = 1 - manipulability_[i]/max_manip;

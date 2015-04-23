@@ -117,7 +117,10 @@ int main(int argc, char **argv)
 
   /* Compute the metrics */
   std::vector<geometry_msgs::Quaternion> orientations;
-  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
+  // moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
+
+  ros::WallDuration duration(100.0);
+  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetricsFK(&(*robot_state), joint_model_group, 40000, duration);
 
   if(!filename.empty())
     if(!metrics.writeToFile(filename,",",false))
