@@ -50,6 +50,7 @@ int main(int argc, char **argv)
   double res_x, res_y, res_z;
   double min_x, min_y, min_z;
   double max_x, max_y, max_z;
+  int max_attempts;
   double joint_limits_penalty_multiplier;
   std::string group_name;
 
@@ -73,12 +74,18 @@ int main(int argc, char **argv)
     max_z = 0.0;
   if (!node_handle.getParam("res_z", res_z))
     res_z = 0.1;
+  if (!node_handle.getParam("max_attempts", max_attempts))
+    max_attempts = 10000;
 
   if (!node_handle.getParam("joint_limits_penalty_multiplier", joint_limits_penalty_multiplier))
     joint_limits_penalty_multiplier = 0.0;
 
   std::string filename;
   if (!node_handle.getParam("filename", filename))
+    ROS_ERROR("Will not write to file");
+
+  std::string quat_filename;
+  if (!node_handle.getParam("quat_filename", quat_filename))
     ROS_ERROR("Will not write to file");
 
   if (!node_handle.getParam("group_name", group_name))
@@ -116,11 +123,23 @@ int main(int argc, char **argv)
   moveit_workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);
 
   /* Compute the metrics */
-  std::vector<geometry_msgs::Quaternion> orientations;
-  // moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
 
-  ros::WallDuration duration(100.0);
-  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetricsFK(&(*robot_state), joint_model_group, 40000, duration);
+  // load the set of quaternions
+  std::vector<geometry_msgs::Quaternion> orientations;
+  std::ifstream quat_file;
+  quat_file.open(quat_filename.c_str());
+  while(!quat_file.eof())
+  {
+    geometry_msgs::Quaternion temp_quat;
+    quat_file >> temp_quat.x >> temp_quat.y >> temp_quat.z >> temp_quat.w ;
+    std::cout << temp_quat << std::endl;
+    orientations.push_back(temp_quat);
+  }
+
+  moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
+
+  //ros::WallDuration duration(100.0);
+  //moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetricsFK(&(*robot_state), joint_model_group, max_attempts, duration);
 
   if(!filename.empty())
     if(!metrics.writeToFile(filename,",",false))
