@@ -136,7 +136,7 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   {
     if(!ros::ok() || canceled_)
       return metrics;
-    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 1, 0.01, state_validity_callback_fn_);
+    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 10, 0.005, state_validity_callback_fn_);
     if(found_ik)
     {
       ROS_INFO("Found IK: %d", (int) i);
