@@ -39,6 +39,8 @@
 #include <fstream>
 #include <iostream>
 
+#define NUM_QUATERNIONS 100.0
+
 namespace moveit_workspace_analysis
 {
 
@@ -354,6 +356,50 @@ visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsi
     color.g = 0.0;
     color.r = manipulability_[i]/max_manip;
     color.b = 1 - manipulability_[i]/max_manip;
+    marker.colors.push_back(color);
+  }
+  return marker;
+}
+
+visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scale, unsigned int id, const std::string &ns) const
+{
+  visualization_msgs::Marker marker;
+  marker.type = marker.CUBE_LIST;
+  marker.action = 0;
+  marker.pose.orientation.w = 1.0;
+  marker.scale.x = marker_scale;
+  marker.scale.y = marker_scale;
+  marker.scale.z = marker_scale;
+  marker.id = id;
+  marker.ns = ns;
+
+  std::map<point3D,int> density;
+  
+  for(std::size_t i=0; i < points_.size(); ++i)
+  {
+    point3D p(points_.at(i).position.x,points_.at(i).position.y,points_.at(i).position.z);
+    if(density.count(p) == 0)
+      density[p] = 0;
+    
+    density[p]++;
+  }
+
+  for(auto pt:density)
+  {
+    geometry_msgs::Point p;
+    p.x = pt.first.x;
+    p.y = pt.first.y;
+    p.z = pt.first.z;
+    marker.points.push_back(p);
+    std_msgs::ColorRGBA color;
+    color.a = 1.0;
+    double scale = (double)pt.second/NUM_QUATERNIONS;
+    // color.g = scale>0.5?2*(scale-0.5):0.0;
+    // color.r = scale<0.5?1.0-2*scale:0.0;
+    // color.b = scale<0.5?2*scale:1.0-2*(scale-0.5);
+    color.g = scale<0.5?2*scale:1.0;
+    color.r = scale<0.5?1.0:1.0-2*(scale-0.5);
+    color.b = scale<0.5?0.0:1.0-color.r;
     marker.colors.push_back(color);
   }
   return marker;
