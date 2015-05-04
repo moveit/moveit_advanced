@@ -6,17 +6,17 @@
   <node name="moveit_workspace_analysis" pkg="moveit_workspace_analysis" type="workspace_analysis_node" respawn="false" output="screen">
 
     <!-- parameters for IK analysis -->
-    <param name="min_x" value="-1.5" />
+    <param name="min_x" value="-1.0" />
     <param name="max_x" value="0.0" />
-    <param name="res_x" value="0.1" />
+    <param name="res_x" value="0.05" />
 
-    <param name="min_y" value="-0.3" />
-    <param name="max_y" value="1.5" />
-    <param name="res_y" value="0.1" />
+    <param name="min_y" value="-1.0" />
+    <param name="max_y" value="1.0" />
+    <param name="res_y" value="0.05" />
 
-    <param name="min_z" value="0.0" />
-    <param name="max_z" value="1.5" />
-    <param name="res_z" value="0.1" />
+    <param name="min_z" value="0.1" />
+    <param name="max_z" value="0.6" />
+    <param name="res_z" value="0.05" />
 
     <!-- parameters for FK analysis -->
     <param name="max_attempts" value="40000" />
