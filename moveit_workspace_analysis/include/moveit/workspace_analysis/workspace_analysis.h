@@ -50,6 +50,24 @@ namespace moveit_workspace_analysis
 {
 static const double DEFAULT_RESOLUTION = 2.0;
 
+struct point3D
+{
+  double x,y,z;
+  point3D(double x, double y, double z):x(x),y(y),z(z){};
+  point3D operator=(point3D p){x = p.x; y = p.y; z=p.z; return *this;};
+  bool operator==(const point3D& p) const {return (x == p.x) && (y == p.y) && (z==p.z);};
+  bool operator<(const point3D& p) const
+  {
+    if (x < p.x) 
+      return true; 
+    else if ((x == p.x)&&(y < p.y))
+      return true;
+    else if ((x == p.x)&&(y == p.y)&&(z < p.z))
+      return true;
+    return false;
+  };
+};
+
 struct WorkspaceMetrics
 {
   std::string robot_name_;
