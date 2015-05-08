@@ -67,7 +67,11 @@ int main(int argc, char **argv)
   */
   ros::Publisher display_publisher = node_handle.advertise<visualization_msgs::Marker>("workspace", 1, true);
   // visualization_msgs::Marker marker = metrics.getMarker(0.02, 0, "me");
-  visualization_msgs::Marker marker = metrics.getDensityMarker(0.02, 0, "me");
+  
+  bool smooth_colors;
+  node_handle.param("smooth_colors",smooth_colors,true);
+  
+  visualization_msgs::Marker marker = metrics.getDensityMarker(0.02, 0, "me",smooth_colors);
   marker.header.frame_id = metrics.frame_id_;
   marker.header.stamp = ros::Time::now();
   display_publisher.publish(marker);

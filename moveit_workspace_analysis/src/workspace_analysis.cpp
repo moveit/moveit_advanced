@@ -377,7 +377,7 @@ visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsi
   return marker;
 }
 
-visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scale, unsigned int id, const std::string &ns) const
+visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scale, unsigned int id, const std::string& ns, bool smooth_colors) const
 {
   visualization_msgs::Marker marker;
   marker.type = marker.CUBE_LIST;
@@ -413,9 +413,19 @@ visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scal
     // color.g = scale>0.5?2*(scale-0.5):0.0;
     // color.r = scale<0.5?1.0-2*scale:0.0;
     // color.b = scale<0.5?2*scale:1.0-2*(scale-0.5);
-    color.g = scale<0.5?2*scale:1.0;
-    color.r = scale<0.5?1.0:1.0-2*(scale-0.5);
-    color.b = scale<0.5?0.0:1.0-color.r;
+    
+    if(smooth_colors)
+    {
+      color.g = scale<0.5?2*scale:1.0;
+      color.r = scale<0.5?1.0:1.0-2*(scale-0.5);
+      color.b = scale<0.5?0.0:1.0-color.r;
+    }
+    else
+    {
+      color.g = scale<0.4?0:1;
+      color.b = scale<0.2?1:scale<0.8?0:1;
+      color.r = scale<0.6?1:0;
+    }
     marker.colors.push_back(color);
   }
   return marker;
