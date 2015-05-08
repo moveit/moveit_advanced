@@ -39,7 +39,7 @@
 #include <fstream>
 #include <iostream>
 
-#define NUM_QUATERNIONS 100.0
+#define NUM_QUATERNIONS 101.0
 
 namespace moveit_workspace_analysis
 {
@@ -134,16 +134,32 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   metrics.robot_name_ = joint_state->getRobotModel()->getName();
   metrics.frame_id_ =  joint_state->getRobotModel()->getModelFrame();
 
+  int ik_good = 0, ik_bad = 0;
+  int last_ik_good = 0, last_ik_bad = 0;
+  ros::Time start = ros::Time::now();
   for(std::size_t i=0; i < points.size(); ++i)
   {
     if(!ros::ok() || canceled_)
       return metrics;
-    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 10, 0.005, state_validity_callback_fn_);
+    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 5, 0.005, state_validity_callback_fn_);
     if(found_ik)
     {
-      ROS_INFO("Found IK: %d", (int) i);
+      ik_good++;
+      last_ik_good++;
       metrics.points_.push_back(points[i]);
       updateMetrics(joint_state, joint_model_group, metrics);
+    }
+    else
+    {
+      ik_bad++;
+      last_ik_bad++;
+    }
+    if((i+1) % (int)NUM_QUATERNIONS == 0)
+    {
+      double elapsed_time = (ros::Time::now()-start).toSec();
+      ROS_INFO_STREAM(ik_good << " IK found and " << ik_bad << " NOT found (" << (double)ik_good/(i+1)*100.0 << "%), LAST pose only " << last_ik_good << " IK found and " << last_ik_bad << " NOT found (" << (double)last_ik_good/NUM_QUATERNIONS*100.0 << "%); estimated time to completion " << elapsed_time/(i+1)*points.size() - elapsed_time << "s" );
+      last_ik_bad = 0;
+      last_ik_good = 0;
     }
   }
   return metrics;
