@@ -137,9 +137,12 @@ int main(int argc, char **argv)
   {
     geometry_msgs::Quaternion temp_quat;
     quat_file >> temp_quat.x >> temp_quat.y >> temp_quat.z >> temp_quat.w ;
-    std::cout << temp_quat << std::endl;
+    // std::cout << temp_quat << std::endl;
     orientations.push_back(temp_quat);
   }
+  
+  ros::Time init_time;
+  init_time = ros::Time::now();
 
   moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
 
@@ -152,6 +155,9 @@ int main(int argc, char **argv)
   if(!filename.empty())
     if(!metrics.writeToFile(filename,",",false))
       ROS_INFO("Could not write to file");
+
+  ros::Duration total_duration = ros::Time::now() - init_time;
+  ROS_INFO_STREAM("Total duration: " << total_duration.toSec() << "s");
 
   ros::shutdown();
   return 0;

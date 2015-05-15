@@ -133,6 +133,8 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   metrics.group_name_ = joint_model_group->getName();
   metrics.robot_name_ = joint_state->getRobotModel()->getName();
   metrics.frame_id_ =  joint_state->getRobotModel()->getModelFrame();
+  
+  ROS_INFO_STREAM("Root frame ID: " << metrics.frame_id_);
 
   int ik_good = 0, ik_bad = 0;
   int last_ik_good = 0, last_ik_bad = 0;
