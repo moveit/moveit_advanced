@@ -44,6 +44,11 @@ int main(int argc, char **argv)
   ros::init (argc, argv, "workspace_analysis");
   ros::AsyncSpinner spinner(1);
   spinner.start();
+  
+  // wait some time for everything to be loaded correctly...
+  ROS_INFO_STREAM("Waiting a few seconds to load the robot description correctly...");
+  sleep(3);
+  ROS_INFO_STREAM("Hope this was enough!");
 
   /*Get some ROS params */
   ros::NodeHandle node_handle("~");
@@ -138,6 +143,9 @@ int main(int argc, char **argv)
 
   moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
 
+  if(metrics.points_.empty())
+    ROS_WARN_STREAM("No point to be written to file: consider changing the workspace, or recompiling moveit_workspace_analysis with a longer sleeping time at the beginning (if this could be the cause)");
+  
   //ros::WallDuration duration(100.0);
   //moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetricsFK(&(*robot_state), joint_model_group, max_attempts, duration);
 
