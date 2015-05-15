@@ -4,39 +4,44 @@
   <!-- include file="$(find vito_moveit_configuration)/launch/demo.launch"/-->
 
   <arg name="plane_region" default="true"/>
+  <arg name="file" default="workspace_analysis_results.txt"/>
+  <arg name="namespace" default="ws_analysis"/>
 
-  <node name="moveit_workspace_analysis" pkg="moveit_workspace_analysis" type="workspace_analysis_node" respawn="false" output="screen">
+  <group ns="$(arg namespace)">
+    <node name="moveit_workspace_analysis" pkg="moveit_workspace_analysis" type="workspace_analysis_node" respawn="false" output="screen">
 
-    <!-- parameters for IK analysis -->
-    <param name="min_x" value="-1.3" />
-    <param name="max_x" value="-0.1" />
-    <param name="res_x" value="0.05" />
-    <param name="res_y" value="0.05" />
-    <param name="res_z" value="0.05" />
+      <!-- parameters for IK analysis -->
+      <param name="min_x" value="-1.3" />
+      <param name="max_x" value="-0.1" />
+      <param name="res_x" value="0.05" />
+      <param name="res_y" value="0.05" />
+      <param name="res_z" value="0.05" />
 
-    <param name="min_y" value="-0.2" if="$(arg plane_region)"/>
-    <param name="min_y" value="-0.3" unless="$(arg plane_region)"/>
+      <param name="min_y" value="-0.2" if="$(arg plane_region)"/>
+      <param name="min_y" value="-0.3" unless="$(arg plane_region)"/>
 
-    <param name="max_y" value="1.2" if="$(arg plane_region)"/>
-    <param name="max_y" value="0.3" unless="$(arg plane_region)"/>
+      <param name="max_y" value="1.2" if="$(arg plane_region)"/>
+      <param name="max_y" value="0.3" unless="$(arg plane_region)"/>
 
-    <param name="min_z" value="0.20" if="$(arg plane_region)"/>
-    <param name="min_z" value="0.30" unless="$(arg plane_region)"/>
+      <param name="min_z" value="0.20" if="$(arg plane_region)"/>
+      <param name="min_z" value="0.30" unless="$(arg plane_region)"/>
 
-    <param name="max_z" value="0.30" if="$(arg plane_region)"/>
-    <param name="max_z" value="0.70" unless="$(arg plane_region)"/>
+      <param name="max_z" value="0.30" if="$(arg plane_region)"/>
+      <param name="max_z" value="0.70" unless="$(arg plane_region)"/>
 
-    <!-- parameters for FK analysis -->
-    <param name="max_attempts" value="40000" />
+      <!-- parameters for FK analysis -->
+      <param name="max_attempts" value="40000" />
 
-    <!-- group name, it  must exist in the moveit configuration you include above -->
-    <param name="group_name" value="right_hand_arm" />
+      <!-- group name, it  must exist in the moveit configuration you include above -->
+      <param name="group_name" value="right_hand_arm" />
 
-    <param name="joint_limits_penalty_multiplier" value="0.0" />
+      <param name="joint_limits_penalty_multiplier" value="0.0" />
 
-    <!-- result file parameter -->
-    <param name="filename" value="$(find moveit_workspace_analysis)/workspace_analysis_results.txt" />
-    <param name="quat_filename" value="$(find moveit_workspace_analysis)/quaternions/data.qua" />
+      <!-- result file parameter -->
+      <param name="filename" value="$(find moveit_workspace_analysis)/$(arg file)" />
+      <param name="quat_filename" value="$(find moveit_workspace_analysis)/quaternions/data.qua" />
 
-  </node>
+    </node>
+  </group>
+
 </launch>
