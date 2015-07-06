@@ -8,15 +8,15 @@
     <!-- parameters for IK analysis -->
     <param name="min_x" value="-1.0" />
     <param name="max_x" value="0.0" />
-    <param name="res_x" value="0.05" />
+    <param name="res_x" value="0.2" />
 
     <param name="min_y" value="-1.0" />
     <param name="max_y" value="1.0" />
-    <param name="res_y" value="0.05" />
+    <param name="res_y" value="0.2" />
 
     <param name="min_z" value="0.1" />
     <param name="max_z" value="0.6" />
-    <param name="res_z" value="0.05" />
+    <param name="res_z" value="0.2" />
 
     <!-- parameters for FK analysis -->
     <param name="max_attempts" value="40000" />

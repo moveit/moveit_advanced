@@ -132,7 +132,6 @@ int main(int argc, char **argv)
   {
     geometry_msgs::Quaternion temp_quat;
     quat_file >> temp_quat.x >> temp_quat.y >> temp_quat.z >> temp_quat.w ;
-    std::cout << temp_quat << std::endl;
     orientations.push_back(temp_quat);
   }
 
