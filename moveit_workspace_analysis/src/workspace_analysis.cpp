@@ -39,7 +39,7 @@
 #include <fstream>
 #include <iostream>
 
-#define NUM_QUATERNIONS 100.0
+#define NUM_QUATERNIONS 101.0
 
 namespace moveit_workspace_analysis
 {
@@ -133,17 +133,35 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   metrics.group_name_ = joint_model_group->getName();
   metrics.robot_name_ = joint_state->getRobotModel()->getName();
   metrics.frame_id_ =  joint_state->getRobotModel()->getModelFrame();
+  
+  ROS_INFO_STREAM("Root frame ID: " << metrics.frame_id_);
 
+  int ik_good = 0, ik_bad = 0;
+  int last_ik_good = 0, last_ik_bad = 0;
+  ros::Time start = ros::Time::now();
   for(std::size_t i=0; i < points.size(); ++i)
   {
     if(!ros::ok() || canceled_)
       return metrics;
-    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 10, 0.005, state_validity_callback_fn_);
+    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 5, 0.005, state_validity_callback_fn_);
     if(found_ik)
     {
-      ROS_INFO("Found IK: %d", (int) i);
+      ik_good++;
+      last_ik_good++;
       metrics.points_.push_back(points[i]);
       updateMetrics(joint_state, joint_model_group, metrics);
+    }
+    else
+    {
+      ik_bad++;
+      last_ik_bad++;
+    }
+    if((i+1) % (int)NUM_QUATERNIONS == 0)
+    {
+      double elapsed_time = (ros::Time::now()-start).toSec();
+      ROS_INFO_STREAM(ik_good << " IK found and " << ik_bad << " NOT found (" << (double)ik_good/(i+1)*100.0 << "%), LAST pose only " << last_ik_good << " IK found and " << last_ik_bad << " NOT found (" << (double)last_ik_good/NUM_QUATERNIONS*100.0 << "%); estimated time to completion " << elapsed_time/(i+1)*points.size() - elapsed_time << "s" );
+      last_ik_bad = 0;
+      last_ik_good = 0;
     }
   }
   return metrics;
@@ -361,7 +379,7 @@ visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsi
   return marker;
 }
 
-visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scale, unsigned int id, const std::string &ns) const
+visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scale, unsigned int id, const std::string& ns, bool smooth_colors) const
 {
   visualization_msgs::Marker marker;
   marker.type = marker.CUBE_LIST;
@@ -397,9 +415,19 @@ visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scal
     // color.g = scale>0.5?2*(scale-0.5):0.0;
     // color.r = scale<0.5?1.0-2*scale:0.0;
     // color.b = scale<0.5?2*scale:1.0-2*(scale-0.5);
-    color.g = scale<0.5?2*scale:1.0;
-    color.r = scale<0.5?1.0:1.0-2*(scale-0.5);
-    color.b = scale<0.5?0.0:1.0-color.r;
+    
+    if(smooth_colors)
+    {
+      color.g = scale<0.5?2*scale:1.0;
+      color.r = scale<0.5?1.0:1.0-2*(scale-0.5);
+      color.b = scale<0.5?0.0:1.0-color.r;
+    }
+    else
+    {
+      color.g = scale<0.4?0:1;
+      color.b = scale<0.2?1:scale<0.8?0:1;
+      color.r = scale<0.6?1:0;
+    }
     marker.colors.push_back(color);
   }
   return marker;
