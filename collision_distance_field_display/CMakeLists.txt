@@ -5,19 +5,6 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED thread date_time system filesystem)
-
-# Ogre
-pkg_check_modules(OGRE OGRE)
-link_directories( ${OGRE_LIBRARY_DIRS} )
-
-# Qt Stuff
-find_package(Qt4 REQUIRED)
-include(${QT_USE_FILE})
-add_definitions(-DQT_NO_KEYWORDS)
-
-
 # Find ROS packages
 find_package(catkin REQUIRED COMPONENTS
   collision_detection_distance_field
@@ -34,7 +21,20 @@ find_package(catkin REQUIRED COMPONENTS
   robot_sphere_representation
   roscpp
   rosconsole
+  cmake_modules
 )
+
+find_package(Eigen REQUIRED)
+find_package(Boost REQUIRED thread date_time system filesystem)
+
+# Ogre
+pkg_check_modules(OGRE OGRE)
+link_directories( ${OGRE_LIBRARY_DIRS} )
+
+# Qt Stuff
+find_package(Qt4 REQUIRED)
+include(${QT_USE_FILE})
+add_definitions(-DQT_NO_KEYWORDS)
 
 set(LIBNAME collision_distance_field_display)
 

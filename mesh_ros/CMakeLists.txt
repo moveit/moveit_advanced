@@ -5,18 +5,6 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
-
-# Ogre
-pkg_check_modules(OGRE OGRE)
-link_directories( ${OGRE_LIBRARY_DIRS} )
-
-# Qt Stuff
-find_package(Qt4 REQUIRED)
-include(${QT_USE_FILE})
-add_definitions(-DQT_NO_KEYWORDS)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -33,7 +21,20 @@ find_package(
     roscpp
     rviz
     tf
+    cmake_modules
 )
+
+find_package(Eigen REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
+
+# Ogre
+pkg_check_modules(OGRE OGRE)
+link_directories( ${OGRE_LIBRARY_DIRS} )
+
+# Qt Stuff
+find_package(Qt4 REQUIRED)
+include(${QT_USE_FILE})
+add_definitions(-DQT_NO_KEYWORDS)
 
 ###################################
 ## catkin specific configuration ##
