@@ -12,7 +12,7 @@ find_package(
   catkin
   REQUIRED
   COMPONENTS
-    console_bridge
+    rosconsole_bridge
     eigen_stl_containers
     cmake_modules
 )
@@ -37,7 +37,7 @@ catkin_package(
     eigen_stl_containers
   DEPENDS
     Eigen
-    console_bridge
+    rosconsole_bridge
 )
 
 ###########
