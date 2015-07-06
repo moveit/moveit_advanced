@@ -39,6 +39,8 @@
 #include <fstream>
 #include <iostream>
 
+#define NUM_QUATERNIONS 101.0
+
 namespace moveit_workspace_analysis
 {
 
@@ -131,17 +133,35 @@ WorkspaceMetrics WorkspaceAnalysis::computeMetrics(const moveit_msgs::WorkspaceP
   metrics.group_name_ = joint_model_group->getName();
   metrics.robot_name_ = joint_state->getRobotModel()->getName();
   metrics.frame_id_ =  joint_state->getRobotModel()->getModelFrame();
+  
+  ROS_INFO_STREAM("Root frame ID: " << metrics.frame_id_);
 
+  int ik_good = 0, ik_bad = 0;
+  int last_ik_good = 0, last_ik_bad = 0;
+  ros::Time start = ros::Time::now();
   for(std::size_t i=0; i < points.size(); ++i)
   {
     if(!ros::ok() || canceled_)
       return metrics;
-    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 1, 0.01, state_validity_callback_fn_);
+    bool found_ik = joint_state->setFromIK(joint_model_group, points[i], 5, 0.005, state_validity_callback_fn_);
     if(found_ik)
     {
-      ROS_DEBUG("Found IK: %d", (int) i);
+      ik_good++;
+      last_ik_good++;
       metrics.points_.push_back(points[i]);
       updateMetrics(joint_state, joint_model_group, metrics);
+    }
+    else
+    {
+      ik_bad++;
+      last_ik_bad++;
+    }
+    if((i+1) % (int)NUM_QUATERNIONS == 0)
+    {
+      double elapsed_time = (ros::Time::now()-start).toSec();
+      ROS_INFO_STREAM(ik_good << " IK found and " << ik_bad << " NOT found (" << (double)ik_good/(i+1)*100.0 << "%), LAST pose only " << last_ik_good << " IK found and " << last_ik_bad << " NOT found (" << (double)last_ik_good/NUM_QUATERNIONS*100.0 << "%); estimated time to completion " << elapsed_time/(i+1)*points.size() - elapsed_time << "s" );
+      last_ik_bad = 0;
+      last_ik_good = 0;
     }
   }
   return metrics;
@@ -211,7 +231,7 @@ void WorkspaceAnalysis::updateMetrics(robot_state::RobotState *joint_state,
                                               joint_model_group,
                                               manipulability_index,
                                               position_only_ik_);
-  std::pair<double,const robot_model::JointModel*> distance = joint_state->getMinDistanceToBounds(joint_model_group);
+  std::pair<double,const robot_model::JointModel*> distance = joint_state->getMinDistanceToPositionBounds (joint_model_group);
   std::vector<double> joint_values;
   joint_state->copyJointGroupPositions(joint_model_group, joint_values);
   metrics.joint_values_.push_back(joint_values);
@@ -222,7 +242,7 @@ void WorkspaceAnalysis::updateMetrics(robot_state::RobotState *joint_state,
 
 bool WorkspaceMetrics::writeToFile(const std::string &filename, const std::string &delimiter, bool exclude_strings)
 {
-  ROS_DEBUG("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());
+  ROS_INFO("Writing %d total points to file: %s",(int) points_.size(),filename.c_str());
   if(points_.size() != manipulability_.size() || points_.size() != joint_values_.size() || points_.size() != min_distance_joint_limits_.size())
   {
     ROS_ERROR("Workspace metrics not fully formed");
@@ -327,7 +347,7 @@ bool WorkspaceMetrics::readFromFile(const std::string &filename, unsigned int nu
 visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsigned int id, const std::string &ns) const
 {
   visualization_msgs::Marker marker;
-  marker.type = marker.SPHERE_LIST;
+  marker.type = marker.CUBE_LIST;
   marker.action = 0;
   marker.pose.orientation.w = 1.0;
   marker.scale.x = marker_scale;
@@ -350,10 +370,64 @@ visualization_msgs::Marker WorkspaceMetrics::getMarker(double marker_scale, unsi
   {
     marker.points.push_back(points_[i].position);
     std_msgs::ColorRGBA color;
-    color.a = 1.0;
+    color.a = 0.2;
     color.g = 0.0;
     color.r = manipulability_[i]/max_manip;
     color.b = 1 - manipulability_[i]/max_manip;
+    marker.colors.push_back(color);
+  }
+  return marker;
+}
+
+visualization_msgs::Marker WorkspaceMetrics::getDensityMarker(double marker_scale, unsigned int id, const std::string& ns, bool smooth_colors) const
+{
+  visualization_msgs::Marker marker;
+  marker.type = marker.CUBE_LIST;
+  marker.action = 0;
+  marker.pose.orientation.w = 1.0;
+  marker.scale.x = marker_scale;
+  marker.scale.y = marker_scale;
+  marker.scale.z = marker_scale;
+  marker.id = id;
+  marker.ns = ns;
+
+  std::map<point3D,int> density;
+  
+  for(std::size_t i=0; i < points_.size(); ++i)
+  {
+    point3D p(points_.at(i).position.x,points_.at(i).position.y,points_.at(i).position.z);
+    if(density.count(p) == 0)
+      density[p] = 0;
+    
+    density[p]++;
+  }
+
+  for(auto pt:density)
+  {
+    geometry_msgs::Point p;
+    p.x = pt.first.x;
+    p.y = pt.first.y;
+    p.z = pt.first.z;
+    marker.points.push_back(p);
+    std_msgs::ColorRGBA color;
+    color.a = 1.0;
+    double scale = (double)pt.second/NUM_QUATERNIONS;
+    // color.g = scale>0.5?2*(scale-0.5):0.0;
+    // color.r = scale<0.5?1.0-2*scale:0.0;
+    // color.b = scale<0.5?2*scale:1.0-2*(scale-0.5);
+    
+    if(smooth_colors)
+    {
+      color.g = scale<0.5?2*scale:1.0;
+      color.r = scale<0.5?1.0:1.0-2*(scale-0.5);
+      color.b = scale<0.5?0.0:1.0-color.r;
+    }
+    else
+    {
+      color.g = scale<0.4?0:1;
+      color.b = scale<0.2?1:scale<0.8?0:1;
+      color.r = scale<0.6?1:0;
+    }
     marker.colors.push_back(color);
   }
   return marker;

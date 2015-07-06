@@ -5,9 +5,6 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -15,10 +12,13 @@ find_package(
   catkin
   REQUIRED
   COMPONENTS
-    console_bridge
-    eigen
+    rosconsole_bridge
     eigen_stl_containers
+    cmake_modules
 )
+
+find_package(Eigen REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
 
 ###################################
 ## catkin specific configuration ##
@@ -37,7 +37,7 @@ catkin_package(
     eigen_stl_containers
   DEPENDS
     Eigen
-    console_bridge
+    rosconsole_bridge
 )
 
 ###########

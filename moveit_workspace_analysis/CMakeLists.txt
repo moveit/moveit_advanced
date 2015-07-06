@@ -1,13 +1,28 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(moveit_workspace_analysis)
 
+ENABLE_LANGUAGE(CXX)
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
+check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else()
+    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif()
+
 
 find_package(catkin REQUIRED COMPONENTS
   moveit_msgs
   moveit_core
   moveit_ros_planning
   moveit_ros_planning_interface
-  pluginlib)
+  pluginlib
+  cmake_modules
+)
 
 find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
@@ -45,6 +60,8 @@ add_dependencies(moveit_workspace_analysis ${catkin_EXPORTED_TARGETS})
 add_executable(workspace_analysis_node src/main.cpp)
 add_executable(workspace_reader_node src/reader.cpp)
 
+target_link_libraries(moveit_workspace_analysis
+  ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 target_link_libraries(workspace_analysis_node
   moveit_workspace_analysis ${catkin_LIBRARIES} ${Boost_LIBRARIES})

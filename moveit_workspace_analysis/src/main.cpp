@@ -44,12 +44,18 @@ int main(int argc, char **argv)
   ros::init (argc, argv, "workspace_analysis");
   ros::AsyncSpinner spinner(1);
   spinner.start();
+  
+  // wait some time for everything to be loaded correctly...
+  ROS_INFO_STREAM("Waiting a few seconds to load the robot description correctly...");
+  sleep(3);
+  ROS_INFO_STREAM("Hope this was enough!");
 
   /*Get some ROS params */
   ros::NodeHandle node_handle("~");
   double res_x, res_y, res_z;
   double min_x, min_y, min_z;
   double max_x, max_y, max_z;
+  int max_attempts;
   double joint_limits_penalty_multiplier;
   std::string group_name;
 
@@ -73,12 +79,18 @@ int main(int argc, char **argv)
     max_z = 0.0;
   if (!node_handle.getParam("res_z", res_z))
     res_z = 0.1;
+  if (!node_handle.getParam("max_attempts", max_attempts))
+    max_attempts = 10000;
 
   if (!node_handle.getParam("joint_limits_penalty_multiplier", joint_limits_penalty_multiplier))
     joint_limits_penalty_multiplier = 0.0;
 
   std::string filename;
   if (!node_handle.getParam("filename", filename))
+    ROS_ERROR("Will not write to file");
+
+  std::string quat_filename;
+  if (!node_handle.getParam("quat_filename", quat_filename))
     ROS_ERROR("Will not write to file");
 
   if (!node_handle.getParam("group_name", group_name))
@@ -116,12 +128,34 @@ int main(int argc, char **argv)
   moveit_workspace_analysis::WorkspaceAnalysis workspace_analysis(planning_scene, true, joint_limits_penalty_multiplier);
 
   /* Compute the metrics */
+
+  // load the set of quaternions
   std::vector<geometry_msgs::Quaternion> orientations;
+  std::ifstream quat_file;
+  quat_file.open(quat_filename.c_str());
+  while(!quat_file.eof())
+  {
+    geometry_msgs::Quaternion temp_quat;
+    orientations.push_back(temp_quat);
+  }
+  
+  ros::Time init_time;
+  init_time = ros::Time::now();
+
   moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetrics(workspace, orientations, robot_state.get(), joint_model_group, res_x, res_y, res_z);
+
+  if(metrics.points_.empty())
+    ROS_WARN_STREAM("No point to be written to file: consider changing the workspace, or recompiling moveit_workspace_analysis with a longer sleeping time at the beginning (if this could be the cause)");
+  
+  //ros::WallDuration duration(100.0);
+  //moveit_workspace_analysis::WorkspaceMetrics metrics = workspace_analysis.computeMetricsFK(&(*robot_state), joint_model_group, max_attempts, duration);
 
   if(!filename.empty())
     if(!metrics.writeToFile(filename,",",false))
       ROS_INFO("Could not write to file");
+
+  ros::Duration total_duration = ros::Time::now() - init_time;
+  ROS_INFO_STREAM("Total duration: " << total_duration.toSec() << "s");
 
   ros::shutdown();
   return 0;
