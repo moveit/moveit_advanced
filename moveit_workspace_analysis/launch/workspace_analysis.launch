@@ -3,6 +3,7 @@
   <!-- include your robot moveit configuration -->
   <!-- include file="$(find vito_moveit_configuration)/launch/demo.launch"/-->
 
+  <arg name="group_name" default="right_hand_arm"/>
   <arg name="plane_region" default="true"/>
   <arg name="file" default="workspace_analysis_results.txt"/>
   <arg name="namespace" default="ws_analysis"/>
@@ -33,7 +34,7 @@
       <param name="max_attempts" value="40000" />
 
       <!-- group name, it  must exist in the moveit configuration you include above -->
-      <param name="group_name" value="right_hand_arm" />
+      <param name="group_name" value="$(arg group_name)" />
 
       <param name="joint_limits_penalty_multiplier" value="0.0" />
 

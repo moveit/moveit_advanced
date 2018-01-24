@@ -136,6 +136,7 @@ int main(int argc, char **argv)
   while(!quat_file.eof())
   {
     geometry_msgs::Quaternion temp_quat;
+    quat_file >> temp_quat.x >> temp_quat.y >> temp_quat.z >> temp_quat.w;
     orientations.push_back(temp_quat);
   }
   

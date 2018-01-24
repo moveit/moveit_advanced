@@ -24,7 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
 )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
 
 catkin_package(
@@ -39,10 +39,10 @@ catkin_package(
     interactive_markers
   DEPENDS
     Boost
-    Eigen
+    EIGEN3
 )
 
-include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS}
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS}
                            ${Boost_INCLUDE_DIR}
                            )
 
